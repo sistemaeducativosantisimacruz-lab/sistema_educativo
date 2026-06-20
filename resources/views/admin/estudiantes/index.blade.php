@@ -14,7 +14,9 @@
         editApoderado: null,
         editPadre: null,
         editMadre: null,
-        editSexo: 'M'
+        editSexo: 'M',
+        editTipoMatricula: 'Normal',
+        originalTipoMatricula: 'Normal'
     }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
@@ -180,7 +182,9 @@
                                                     editApoderado = {{ json_encode($matricula->estudiante->apoderado) }};
                                                     editPadre = {{ json_encode($matricula->estudiante->padre) }};
                                                     editMadre = {{ json_encode($matricula->estudiante->madre) }};
-                                                    editSexo = editEstudiante.sexo;" 
+                                                    editSexo = editEstudiante.sexo;
+                                                    editTipoMatricula = '{{ $matricula->tipo_matricula ?? 'Normal' }}';
+                                                    originalTipoMatricula = '{{ $matricula->tipo_matricula ?? 'Normal' }}';" 
                                                     class="text-indigo-600 hover:text-indigo-900 font-bold">Editar</button>
                                                 
                                                 @if($matricula->estado === 'matriculado')
@@ -312,6 +316,14 @@
                                             </template>
                                         </select>
                                         @error('grado_seccion_id') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-bold text-gray-700">Tipo de Matrícula (Para mensualidades) *</label>
+                                        <select name="tipo_matricula" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
+                                            <option value="Normal" {{ old('tipo_matricula') == 'Normal' ? 'selected' : '' }}>Normal (Paga pensión completa)</option>
+                                            <option value="Beneficio" {{ old('tipo_matricula') == 'Beneficio' ? 'selected' : '' }}>Beneficio (Media beca / Dscto)</option>
+                                            <option value="Exonerado" {{ old('tipo_matricula') == 'Exonerado' ? 'selected' : '' }}>Exonerado (Beca completa / No paga)</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -461,6 +473,24 @@
                                         <option value="M">Masculino</option>
                                         <option value="F">Femenino</option>
                                     </select>
+                                </div>
+                                <div class="md:col-span-2 p-4 bg-purple-50 rounded-lg border border-purple-200 mt-2">
+                                    <label class="block text-sm font-bold text-gray-700 text-purple-900">Tipo de Matrícula *</label>
+                                    <p class="text-xs text-purple-600 mb-2">Define cómo se generarán las deudas automáticas de mensualidad.</p>
+                                    <select name="tipo_matricula" x-model="editTipoMatricula" class="mt-1 block w-full border-purple-300 rounded-md shadow-sm bg-white" required>
+                                        <option value="Normal">Normal (Paga pensión completa)</option>
+                                        <option value="Beneficio">Beneficio (Media beca / Dscto)</option>
+                                        <option value="Exonerado">Exonerado (Beca completa / No paga)</option>
+                                    </select>
+
+                                    <!-- Opción para aplicar retroactivamente si se cambia el tipo -->
+                                    <div x-show="originalTipoMatricula !== editTipoMatricula" x-transition class="mt-3 bg-white p-3 rounded border border-purple-100 flex items-start gap-2 shadow-sm">
+                                        <input type="checkbox" name="aplicar_retroactivo" id="aplicar_retroactivo" value="1" class="mt-1 text-purple-600 rounded border-gray-300 focus:ring-purple-500">
+                                        <div>
+                                            <label for="aplicar_retroactivo" class="text-sm font-bold text-gray-800 cursor-pointer">¿Aplicar este cambio a meses pasados?</label>
+                                            <p class="text-xs text-gray-600">Si marca esta opción, las deudas no pagadas de meses anteriores en este año se actualizarán al nuevo estado. Si no lo marca, el cambio aplicará desde el próximo mes que se genere.</p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Datos Primaria (Colegio Inicial, Padre, Madre) para Edición -->

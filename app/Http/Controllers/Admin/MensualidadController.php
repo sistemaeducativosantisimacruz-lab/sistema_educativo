@@ -132,17 +132,23 @@ class MensualidadController extends Controller
         $nuevos = 0;
         DB::transaction(function () use ($matriculas, $mes, $anio, &$nuevos) {
             foreach ($matriculas as $matricula) {
-                $existe = Mensualidad::where('matricula_id', $matricula->id)
+                $yaExiste = Mensualidad::where('matricula_id', $matricula->id)
                     ->where('mes', $mes)
                     ->where('anio', $anio)
                     ->exists();
 
-                if (! $existe) {
+                if (!$yaExiste) {
+                    $estadoBase = match ($matricula->tipo_matricula ?? 'Normal') {
+                        'Beneficio' => 'BENEFICIADO',
+                        'Exonerado' => 'EXONERADO',
+                        default     => 'DEBE',
+                    };
+
                     Mensualidad::create([
                         'matricula_id' => $matricula->id,
                         'mes'          => $mes,
                         'anio'         => $anio,
-                        'estado'       => 'DEBE',
+                        'estado'       => $estadoBase,
                     ]);
                     $nuevos++;
                 }

@@ -105,6 +105,7 @@ class EstudianteController extends Controller
             'sexo'              => 'required|in:M,F',
             'nivel'             => 'required|in:primaria,secundaria',
             'grado_seccion_id'  => 'required|exists:grado_secciones,id',
+            'tipo_matricula'    => 'required|in:Normal,Beneficio,Exonerado',
             'apoderado_nombres'          => 'nullable|string|max:255',
             'apoderado_apellido_paterno' => 'nullable|string|max:255',
             'apoderado_apellido_materno' => 'nullable|string|max:255',
@@ -186,6 +187,7 @@ class EstudianteController extends Controller
                 'grado_seccion_id' => $request->grado_seccion_id,
                 'ano_lectivo_id'   => $anoActivo->id,
                 'estado'           => 'matriculado',
+                'tipo_matricula'   => $request->tipo_matricula,
             ]);
 
             if ($request->filled('apoderado_dni') && $request->filled('apoderado_nombres')) {
@@ -234,6 +236,7 @@ class EstudianteController extends Controller
             'nombres'           => 'required|string|max:255',
             'fecha_nacimiento'  => 'required|date',
             'sexo'              => 'required|in:M,F',
+            'tipo_matricula'    => 'nullable|in:Normal,Beneficio,Exonerado',
             'apoderado_nombres'          => 'nullable|string|max:255',
             'apoderado_apellido_paterno' => 'nullable|string|max:255',
             'apoderado_apellido_materno' => 'nullable|string|max:255',
@@ -274,6 +277,32 @@ class EstudianteController extends Controller
                     Matricula::where('estudiante_id', $estudiante->id)
                         ->where('ano_lectivo_id', $anoActivo->id)
                         ->update(['estado' => 'matriculado']);
+                }
+            }
+
+            if ($request->filled('tipo_matricula')) {
+                $anoActivo = AnoLectivo::where('activo', true)->first();
+                if ($anoActivo) {
+                    $matricula = Matricula::where('estudiante_id', $estudiante->id)
+                        ->where('ano_lectivo_id', $anoActivo->id)
+                        ->first();
+                        
+                    if ($matricula) {
+                        $matricula->update(['tipo_matricula' => $request->tipo_matricula]);
+
+                        // Aplicar retroactivo si se solicita
+                        if ($request->boolean('aplicar_retroactivo')) {
+                            $nuevoEstado = match ($request->tipo_matricula) {
+                                'Beneficio' => 'BENEFICIADO',
+                                'Exonerado' => 'EXONERADO',
+                                default     => 'DEBE',
+                            };
+
+                            \App\Models\Mensualidad::where('matricula_id', $matricula->id)
+                                ->where('estado', '!=', 'PAGÓ') // Idealmente no afectar a los que ya pagaron
+                                ->update(['estado' => $nuevoEstado]);
+                        }
+                    }
                 }
             }
 
