@@ -24,8 +24,11 @@ class AppServiceProvider extends ServiceProvider
         }
 
         \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(function (object $notifiable, string $token) {
+            $logo = new \Illuminate\Support\HtmlString('<div style="text-align: center;"><img src="'.asset('img/logo.png').'" width="100" style="margin: 0 auto; display: inline-block; padding-bottom: 20px;" alt="Insignia Colegio"></div>');
+            
             return (new \Illuminate\Notifications\Messages\MailMessage)
-                ->subject('Restablecer Contraseña')
+                ->subject('Restablecer Contraseña - Seguridad')
+                ->line($logo)
                 ->greeting('¡Hola!')
                 ->line('Estás recibiendo este correo porque recibimos una solicitud de restablecimiento de contraseña para tu cuenta.')
                 ->action('Restablecer Contraseña', url(route('password.reset', [
@@ -35,6 +38,19 @@ class AppServiceProvider extends ServiceProvider
                 ->line('Este enlace de restablecimiento de contraseña caducará en 60 minutos.')
                 ->line('Si no solicitaste un restablecimiento de contraseña, no es necesario realizar ninguna otra acción.')
                 ->salutation('Saludos, ' . config('app.name'));
+        });
+
+        \Illuminate\Auth\Notifications\VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
+            $logo = new \Illuminate\Support\HtmlString('<div style="text-align: center;"><img src="'.asset('img/logo.png').'" width="100" style="margin: 0 auto; display: inline-block; padding-bottom: 20px;" alt="Insignia Colegio"></div>');
+            
+            return (new \Illuminate\Notifications\Messages\MailMessage)
+                ->subject('Verificar Correo Electrónico - Seguridad')
+                ->line($logo)
+                ->greeting('¡Hola, ' . $notifiable->name . '!')
+                ->line('Por favor, haz clic en el botón de abajo para verificar tu dirección de correo electrónico y asegurar tu cuenta.')
+                ->action('Verificar Correo Electrónico', $url)
+                ->line('Si no creaste una cuenta o no solicitaste este cambio, puedes ignorar este mensaje sin problemas.')
+                ->salutation('Atentamente, ' . config('app.name'));
         });
     }
 }
