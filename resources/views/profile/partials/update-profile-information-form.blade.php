@@ -24,6 +24,18 @@
             <p class="text-xs text-gray-500 mt-1">El nombre no puede ser modificado por el usuario.</p>
         </div>
 
+        @if ($user->estudiante)
+            <div>
+                <x-input-label for="sexo" :value="__('Sexo')" />
+                <select id="sexo" name="sexo" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    <option value="M" {{ old('sexo', $user->estudiante->sexo) === 'M' ? 'selected' : '' }}>Masculino</option>
+                    <option value="F" {{ old('sexo', $user->estudiante->sexo) === 'F' ? 'selected' : '' }}>Femenino</option>
+                </select>
+                <x-input-error class="mt-2" :messages="$errors->get('sexo')" />
+                <p class="text-xs text-gray-500 mt-1">Actualice su género si fue registrado incorrectamente.</p>
+            </div>
+        @endif
+
         <div>
             <x-input-label for="email" :value="__('Correo Electrónico')" />
             @php

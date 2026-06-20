@@ -36,6 +36,10 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
+        if ($request->has('sexo') && $request->user()->estudiante) {
+            $request->user()->estudiante->update(['sexo' => $request->sexo]);
+        }
+
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 

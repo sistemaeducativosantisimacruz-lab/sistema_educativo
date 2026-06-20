@@ -23,6 +23,11 @@
                         <x-nav-link :href="route('docente.secciones')" :active="request()->routeIs('docente.secciones')">
                             {{ __('Secciones a cargo') }}
                         </x-nav-link>
+                        @if(auth()->user()->docente && auth()->user()->docente->tutoriaSecciones()->count() > 0)
+                            <x-nav-link :href="route('docente.importar')" :active="request()->routeIs('docente.importar')">
+                                {{ __('Importar Notas') }}
+                            </x-nav-link>
+                        @endif
                     @endif
 
                     @if(auth()->user()->role?->nombre === 'admin')
@@ -115,6 +120,11 @@
                 <x-responsive-nav-link :href="route('docente.secciones')" :active="request()->routeIs('docente.secciones')">
                     {{ __('Secciones a cargo') }}
                 </x-responsive-nav-link>
+                @if(auth()->user()->docente && auth()->user()->docente->tutoriaSecciones()->count() > 0)
+                    <x-responsive-nav-link :href="route('docente.importar')" :active="request()->routeIs('docente.importar')">
+                        {{ __('Importar Notas') }}
+                    </x-responsive-nav-link>
+                @endif
             @endif
 
             @if(auth()->user()->role?->nombre === 'admin')
