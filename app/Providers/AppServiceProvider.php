@@ -24,7 +24,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(function (object $notifiable, string $token) {
-            $logo = new \Illuminate\Support\HtmlString('<div style="text-align: center;"><img src="'.asset('img/logo.png').'" width="100" style="margin: 0 auto; display: inline-block; padding-bottom: 20px;" alt="Insignia Colegio"></div>');
+            $logoUrl = 'https://sistema-educativo-santisima-cruz.vercel.app/img/logo.png';
+            $logo = new \Illuminate\Support\HtmlString('<div style="text-align: center;"><img src="'.$logoUrl.'" width="100" style="margin: 0 auto; display: inline-block; padding-bottom: 20px;" alt="Insignia Colegio"></div>');
             
             return (new \Illuminate\Notifications\Messages\MailMessage)
                 ->subject('Restablecer Contraseña - Seguridad')
@@ -41,7 +42,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         \Illuminate\Auth\Notifications\VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
-            $logo = new \Illuminate\Support\HtmlString('<div style="text-align: center;"><img src="'.asset('img/logo.png').'" width="100" style="margin: 0 auto; display: inline-block; padding-bottom: 20px;" alt="Insignia Colegio"></div>');
+            $logoUrl = 'https://sistema-educativo-santisima-cruz.vercel.app/img/logo.png';
+            $logo = new \Illuminate\Support\HtmlString('<div style="text-align: center;"><img src="'.$logoUrl.'" width="100" style="margin: 0 auto; display: inline-block; padding-bottom: 20px;" alt="Insignia Colegio"></div>');
             
             return (new \Illuminate\Notifications\Messages\MailMessage)
                 ->subject('Verificar Correo Electrónico - Seguridad')

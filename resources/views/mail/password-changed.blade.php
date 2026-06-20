@@ -1,4 +1,8 @@
 <x-mail::message>
+<div style="text-align: center;">
+    <img src="https://sistema-educativo-santisima-cruz.vercel.app/img/logo.png" width="100" style="margin: 0 auto; display: inline-block; padding-bottom: 20px;" alt="Insignia Colegio">
+</div>
+
 # Hola, {{ $user->name }}
 
 Te escribimos para confirmarte que **la contraseña de tu cuenta en el Sistema Educativo ha sido modificada con éxito**.
