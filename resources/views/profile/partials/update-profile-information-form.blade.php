@@ -30,23 +30,43 @@
                 $isDefault = $user->email === $user->dni || !str_contains($user->email, '@') || str_ends_with($user->email, '@sistema.edu') || str_ends_with($user->email, '@sistema.edu.pe');
                 $displayEmail = $isDefault ? '' : $user->email;
             @endphp
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $displayEmail)" autocomplete="username" />
-            <p class="text-xs text-gray-500 mt-1">Añade un correo real para mayor seguridad en tu cuenta.</p>
+            <div class="relative">
+                <x-text-input id="email" name="email" type="email" class="mt-1 block w-full pr-10" :value="old('email', $displayEmail)" autocomplete="username" />
+                @if (!$isDefault && $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && $user->hasVerifiedEmail())
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none" title="Correo verificado">
+                        <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                @endif
+            </div>
+
+            @if ($isDefault)
+                <p class="text-xs text-amber-600 mt-1 flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Añade un correo real para habilitar notificaciones y recuperación de cuenta.
+                </p>
+            @endif
+            
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div>
-                    <p class="text-sm mt-2 text-gray-800">
-                        {{ __('Su dirección de correo electrónico no está verificada.') }}
-
-                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            {{ __('Haga clic aquí para reenviar el correo de verificación.') }}
-                        </button>
+            @if (!$isDefault && $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
+                <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-sm text-red-800 flex items-center font-medium">
+                        <svg class="w-4 h-4 mr-1.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Correo no verificado
                     </p>
+                    <p class="text-xs text-red-600 mt-1 mb-2">
+                        Verifica tu correo para asegurar tu cuenta y poder recuperar tu contraseña.
+                    </p>
+                    <button form="send-verification" class="text-xs font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        {{ __('Reenviar enlace de verificación') }}
+                    </button>
 
                     @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
-                            {{ __('Se ha enviado un nuevo enlace de verificación a su dirección de correo electrónico.') }}
+                        <p class="mt-2 font-medium text-xs text-green-600 flex items-center">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            {{ __('Enlace enviado exitosamente.') }}
                         </p>
                     @endif
                 </div>

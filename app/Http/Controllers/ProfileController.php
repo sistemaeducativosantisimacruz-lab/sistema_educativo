@@ -24,6 +24,14 @@ class ProfileController extends Controller
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
+            
+            // Send verification email if it's a real email address
+            $email = $request->user()->email;
+            $isDefault = $email === $request->user()->dni || !str_contains($email, '@') || str_ends_with($email, '@sistema.edu') || str_ends_with($email, '@sistema.edu.pe');
+            
+            if (!$isDefault && $request->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail) {
+                $request->user()->sendEmailVerificationNotification();
+            }
         }
 
         $request->user()->save();

@@ -62,6 +62,10 @@ class PasswordController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        if (!$isDefaultEmail) {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\PasswordChangedNotification($user));
+        }
+
         return back()->with('status', 'password-updated');
     }
 }
