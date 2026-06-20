@@ -32,6 +32,11 @@ if (isset($_SERVER['HTTP_HOST'])) {
     putenv('ASSET_URL=' . $currentUrl);
 }
 
+// Arreglar variables de servidor para que Laravel no añada /api/index.php a las URLs
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+$_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/../public/index.php';
+$_SERVER['DOCUMENT_ROOT'] = __DIR__ . '/../public';
+
 // Ignorar la caché generada en el entorno de build (que tiene rutas estáticas /vercel/path0)
 $_SERVER['APP_SERVICES_CACHE'] = '/tmp/storage/bootstrap/cache/services.php';
 $_SERVER['APP_PACKAGES_CACHE'] = '/tmp/storage/bootstrap/cache/packages.php';
