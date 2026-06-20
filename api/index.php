@@ -19,6 +19,16 @@ if (!is_dir($appStorage)) {
 $_ENV['VIEW_COMPILED_PATH'] = $appStorage . '/framework/views';
 putenv('VIEW_COMPILED_PATH=' . $appStorage . '/framework/views');
 
+// Ignorar la caché generada en el entorno de build (que tiene rutas estáticas /vercel/path0)
+$_SERVER['APP_SERVICES_CACHE'] = '/tmp/storage/bootstrap/cache/services.php';
+$_SERVER['APP_PACKAGES_CACHE'] = '/tmp/storage/bootstrap/cache/packages.php';
+$_SERVER['APP_CONFIG_CACHE'] = '/tmp/storage/bootstrap/cache/config.php';
+$_SERVER['APP_ROUTES_CACHE'] = '/tmp/storage/bootstrap/cache/routes-v7.php';
+
+if (!is_dir('/tmp/storage/bootstrap/cache')) {
+    mkdir('/tmp/storage/bootstrap/cache', 0777, true);
+}
+
 require __DIR__.'/../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../bootstrap/app.php';
