@@ -26,4 +26,11 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 // Redirigir el almacenamiento a /tmp
 $app->useStoragePath($appStorage);
 
-$app->handleRequest(Request::capture());
+try {
+    $app->handleRequest(Request::capture());
+} catch (\Throwable $e) {
+    echo "<h1>Error en la aplicación:</h1>";
+    echo "<pre>" . $e->getMessage() . "</pre>";
+    echo "<h2>Stack Trace:</h2>";
+    echo "<pre>" . $e->getTraceAsString() . "</pre>";
+}
