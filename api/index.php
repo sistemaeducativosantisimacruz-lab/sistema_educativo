@@ -19,21 +19,17 @@ if (!is_dir($appStorage)) {
 $_ENV['VIEW_COMPILED_PATH'] = $appStorage . '/framework/views';
 putenv('VIEW_COMPILED_PATH=' . $appStorage . '/framework/views');
 
-// Forzar modo depuración temporalmente para descubrir la falla
-$_ENV['APP_DEBUG'] = true;
-$_SERVER['APP_DEBUG'] = true;
-putenv('APP_DEBUG=true');
-
-// Forzar URL dinámica de Vercel para que Vite cargue los estilos correctamente
-if (isset($_ENV['VERCEL_URL'])) {
-    $vercelUrl = 'https://' . $_ENV['VERCEL_URL'];
-    $_ENV['APP_URL'] = $vercelUrl;
-    $_SERVER['APP_URL'] = $vercelUrl;
-    putenv('APP_URL=' . $vercelUrl);
+// Forzar URL dinámica basada en el dominio actual que visita el usuario
+// Esto evita problemas de CORS cuando se usan los distintos dominios de Vercel
+if (isset($_SERVER['HTTP_HOST'])) {
+    $currentUrl = 'https://' . $_SERVER['HTTP_HOST'];
+    $_ENV['APP_URL'] = $currentUrl;
+    $_SERVER['APP_URL'] = $currentUrl;
+    putenv('APP_URL=' . $currentUrl);
     
-    $_ENV['ASSET_URL'] = $vercelUrl;
-    $_SERVER['ASSET_URL'] = $vercelUrl;
-    putenv('ASSET_URL=' . $vercelUrl);
+    $_ENV['ASSET_URL'] = $currentUrl;
+    $_SERVER['ASSET_URL'] = $currentUrl;
+    putenv('ASSET_URL=' . $currentUrl);
 }
 
 // Ignorar la caché generada en el entorno de build (que tiene rutas estáticas /vercel/path0)
