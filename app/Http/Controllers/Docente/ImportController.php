@@ -48,8 +48,7 @@ class ImportController extends AdminImportController
             ->whereIn('grado_seccion_id', $secciones->pluck('id'))
             ->where('tipo', 'notas')
             ->orderBy('created_at', 'desc')
-            ->take(20)
-            ->get();
+            ->paginate(20);
 
         return view('docente.importar', compact('secciones', 'anoActivo', 'bimestres', 'historial'));
     }
