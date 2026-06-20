@@ -15,6 +15,8 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <!-- Chart.js -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+        <!-- SweetAlert2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <style>
             .uppercase-input {
