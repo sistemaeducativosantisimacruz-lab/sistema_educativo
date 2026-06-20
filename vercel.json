@@ -9,13 +9,18 @@
             "src": "package.json",
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "public"
+                "distDir": "public/build"
             }
         }
     ],
     "routes": [
         {
-            "handle": "filesystem"
+            "src": "/build/(.*)",
+            "dest": "/public/build/$1"
+        },
+        {
+            "src": "/img/(.*)",
+            "dest": "/public/img/$1"
         },
         {
             "src": "/(.*)",
