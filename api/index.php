@@ -19,6 +19,11 @@ if (!is_dir($appStorage)) {
 $_ENV['VIEW_COMPILED_PATH'] = $appStorage . '/framework/views';
 putenv('VIEW_COMPILED_PATH=' . $appStorage . '/framework/views');
 
+// Forzar modo depuración temporalmente para descubrir la falla
+$_ENV['APP_DEBUG'] = true;
+$_SERVER['APP_DEBUG'] = true;
+putenv('APP_DEBUG=true');
+
 // Ignorar la caché generada en el entorno de build (que tiene rutas estáticas /vercel/path0)
 $_SERVER['APP_SERVICES_CACHE'] = '/tmp/storage/bootstrap/cache/services.php';
 $_SERVER['APP_PACKAGES_CACHE'] = '/tmp/storage/bootstrap/cache/packages.php';
