@@ -24,6 +24,18 @@ $_ENV['APP_DEBUG'] = true;
 $_SERVER['APP_DEBUG'] = true;
 putenv('APP_DEBUG=true');
 
+// Forzar URL dinámica de Vercel para que Vite cargue los estilos correctamente
+if (isset($_ENV['VERCEL_URL'])) {
+    $vercelUrl = 'https://' . $_ENV['VERCEL_URL'];
+    $_ENV['APP_URL'] = $vercelUrl;
+    $_SERVER['APP_URL'] = $vercelUrl;
+    putenv('APP_URL=' . $vercelUrl);
+    
+    $_ENV['ASSET_URL'] = $vercelUrl;
+    $_SERVER['ASSET_URL'] = $vercelUrl;
+    putenv('ASSET_URL=' . $vercelUrl);
+}
+
 // Ignorar la caché generada en el entorno de build (que tiene rutas estáticas /vercel/path0)
 $_SERVER['APP_SERVICES_CACHE'] = '/tmp/storage/bootstrap/cache/services.php';
 $_SERVER['APP_PACKAGES_CACHE'] = '/tmp/storage/bootstrap/cache/packages.php';
