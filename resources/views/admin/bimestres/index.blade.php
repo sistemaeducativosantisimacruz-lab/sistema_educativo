@@ -113,7 +113,7 @@
                                                             Cerrar
                                                         </a>
                                                     @else
-                                                        <form action="{{ route('admin.bimestres.abrir', $bimestre) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas reabrir este bimestre?');" class="inline">
+                                                        <form action="{{ route('admin.bimestres.abrir', $bimestre) }}" method="POST" class="inline form-reabrir">
                                                             @csrf
                                                             <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded shadow-sm transition">
                                                                 Reabrir
@@ -386,6 +386,27 @@
                     });
                 });
             }
+
+            const reabrirForms = document.querySelectorAll('.form-reabrir');
+            reabrirForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: '¿Seguro que deseas reabrir este bimestre?',
+                        text: 'Esto permitirá a los docentes ingresar y modificar notas nuevamente para este bimestre.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ca8a04',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Sí, reabrir',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+            });
         });
     </script>
 </x-app-layout>
