@@ -227,27 +227,84 @@ class GradoSeccionController extends Controller
         }
 
         // ── Para primaria polidocente: asignación general (sin curso específico) ─
-        if ($grado && $grado->nivel === 'primaria' && in_array($grado->orden, [1, 2, 3, 4])) {
-            // Eliminar asignación general (curso_id NULL) del tutor anterior
-            if ($tutorCambio && $tutorAnteriorId) {
-                AsignacionDocente::where('docente_id', $tutorAnteriorId)
-                    ->where('grado_seccion_id', $gradoSeccione->id)
-                    ->where('ano_lectivo_id', $gradoSeccione->ano_lectivo_id)
-                    ->whereNull('curso_id')
-                    ->delete();
-            }
+        if ($grado && $grado->nivel === 'primaria') {
+            if (in_array($grado->orden, [1, 2, 3, 4])) {
+                // Eliminar asignación general (curso_id NULL) del tutor anterior
+                if ($tutorCambio && $tutorAnteriorId) {
+                    AsignacionDocente::where('docente_id', $tutorAnteriorId)
+                        ->where('grado_seccion_id', $gradoSeccione->id)
+                        ->where('ano_lectivo_id', $gradoSeccione->ano_lectivo_id)
+                        ->whereNull('curso_id')
+                        ->delete();
+                }
 
-            // Crear asignación general para el nuevo tutor
-            if ($nuevoTutorId) {
-                AsignacionDocente::firstOrCreate(
-                    [
-                        'docente_id'       => $nuevoTutorId,
-                        'grado_seccion_id' => $gradoSeccione->id,
-                        'ano_lectivo_id'   => $gradoSeccione->ano_lectivo_id,
-                        'curso_id'         => null,
-                    ],
-                    ['activo' => true]
-                );
+                // Crear asignación general para el nuevo tutor
+                if ($nuevoTutorId) {
+                    AsignacionDocente::firstOrCreate(
+                        [
+                            'docente_id'       => $nuevoTutorId,
+                            'grado_seccion_id' => $gradoSeccione->id,
+                            'ano_lectivo_id'   => $gradoSeccione->ano_lectivo_id,
+                            'curso_id'         => null,
+                        ],
+                        ['activo' => true]
+                    );
+                }
+            } elseif (in_array($grado->orden, [5, 6])) {
+                // ── Para primaria 5to y 6to: asignación múltiple automática ─
+                $cursosAuto = Curso::where(function ($q) {
+                    $q->whereRaw('LOWER(nombre) LIKE ?', ['%personal social%'])
+                      ->orWhereRaw('LOWER(nombre) LIKE ?', ['%religi%'])
+                      ->orWhereRaw('LOWER(nombre) LIKE ?', ['%arte%']);
+                })
+                ->where(function ($q) use ($grado) {
+                    $q->where('nivel', $grado->nivel)->orWhere('nivel', 'ambos');
+                })
+                ->pluck('id')
+                ->toArray();
+
+                if ($tutorCambio && $tutorAnteriorId) {
+                    $tutorAnteriorModel = Docente::find($tutorAnteriorId);
+                    $cursosEspecialidadAnt = $tutorAnteriorModel ? $tutorAnteriorModel->cursos()->pluck('cursos.id')->toArray() : [];
+                    $cursosARemover = array_unique(array_merge($cursosAuto, $cursosEspecialidadAnt));
+
+                    if (!empty($cursosARemover)) {
+                        AsignacionDocente::where('docente_id', $tutorAnteriorId)
+                            ->where('grado_seccion_id', $gradoSeccione->id)
+                            ->where('ano_lectivo_id', $gradoSeccione->ano_lectivo_id)
+                            ->whereIn('curso_id', $cursosARemover)
+                            ->delete();
+                    }
+                }
+
+                if ($nuevoTutorId) {
+                    $tutorModel = Docente::find($nuevoTutorId);
+                    $cursosEspecialidad = $tutorModel ? $tutorModel->cursos()->pluck('cursos.id')->toArray() : [];
+                    $cursosAAsignar = array_unique(array_merge($cursosAuto, $cursosEspecialidad));
+
+                    foreach ($cursosAAsignar as $cId) {
+                        // Evitar conflictos eliminando la asignación previa de este curso en esta sección para otros docentes
+                        AsignacionDocente::where('grado_seccion_id', $gradoSeccione->id)
+                            ->where('ano_lectivo_id', $gradoSeccione->ano_lectivo_id)
+                            ->where('curso_id', $cId)
+                            ->where('docente_id', '!=', $nuevoTutorId)
+                            ->delete();
+
+                        AsignacionDocente::firstOrCreate(
+                            [
+                                'docente_id'       => $nuevoTutorId,
+                                'grado_seccion_id' => $gradoSeccione->id,
+                                'ano_lectivo_id'   => $gradoSeccione->ano_lectivo_id,
+                                'curso_id'         => $cId,
+                            ],
+                            ['activo' => true]
+                        );
+
+                        if ($tutorModel) {
+                            $tutorModel->cursos()->syncWithoutDetaching([$cId]);
+                        }
+                    }
+                }
             }
         }
         // ─────────────────────────────────────────────────────────────────────
