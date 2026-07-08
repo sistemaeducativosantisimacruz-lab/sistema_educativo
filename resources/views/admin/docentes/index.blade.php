@@ -103,6 +103,7 @@
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-100 sticky top-0 z-10">
                                     <tr>
+                                        <th class="px-4 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider w-12">N°</th>
                                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider hidden sm:table-cell">DNI</th>
                                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Apellidos y Nombres</th>
                                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider hidden md:table-cell">Nivel / Tipo</th>
@@ -112,8 +113,11 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach($docentes as $docente)
+                                    @foreach($docentes as $index => $docente)
                                         <tr class="hover:bg-gray-50 transition">
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 font-bold text-center">
+                                                {{ $docentes->firstItem() + $index }}
+                                            </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-700 hidden sm:table-cell">{{ $docente->dni }}</td>
                                             <td class="px-6 py-4">
                                                 <div class="text-sm font-bold text-gray-900">
@@ -189,6 +193,9 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="p-4 border-t">
+                            {{ $docentes->links() }}
                         </div>
                     @endif
                 </div>
@@ -428,6 +435,46 @@
                                     <label class="block text-sm font-bold text-gray-700">Celular <span class="text-xs text-gray-400 font-normal">(Opcional)</span></label>
                                     <input type="text" name="celular" x-model="docente.celular" maxlength="15"
                                         class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                </div>
+
+                                <div class="md:col-span-2 border-t pt-3 mt-1">
+                                    <h4 class="font-bold text-gray-700 text-sm mb-3">Asignación Académica</h4>
+                                </div>
+
+                                {{-- Nivel --}}
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700">Nivel Educativo *</label>
+                                    <select name="nivel" x-model="docente.nivel" required
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
+                                        <option value="">-- Seleccione Nivel --</option>
+                                        <option value="primaria">Primaria</option>
+                                        <option value="secundaria">Secundaria</option>
+                                    </select>
+                                </div>
+
+                                {{-- Tipo de docencia --}}
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de Docencia *</label>
+                                    <div class="flex gap-3">
+                                        <label class="flex-1 cursor-pointer">
+                                            <input type="radio" name="tipo" value="especialista" x-model="docente.tipo" class="sr-only">
+                                            <div :class="docente.tipo === 'especialista'
+                                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                    : 'border-gray-300 bg-white text-gray-600'"
+                                                class="border-2 rounded-lg p-3 text-center transition">
+                                                <div class="font-bold text-sm">Especialista</div>
+                                            </div>
+                                        </label>
+                                        <label class="flex-1 cursor-pointer">
+                                            <input type="radio" name="tipo" value="polidocente" x-model="docente.tipo" class="sr-only">
+                                            <div :class="docente.tipo === 'polidocente'
+                                                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                                    : 'border-gray-300 bg-white text-gray-600'"
+                                                class="border-2 rounded-lg p-3 text-center transition">
+                                                <div class="font-bold text-sm">Polidocente</div>
+                                            </div>
+                                        </label>
+                                    </div>
                                 </div>
 
                                 {{-- Cursos (Solo si es Especialista) --}}

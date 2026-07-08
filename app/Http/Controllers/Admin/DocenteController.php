@@ -54,7 +54,7 @@ class DocenteController extends Controller
             }
         }
 
-        $docentes = $query->orderBy('apellido_paterno')->get();
+        $docentes = $query->orderBy('apellido_paterno')->paginate(10)->withQueryString();
         $cursos   = Curso::where('activo', true)->soloCursos()->orderBy('nombre')->get();
         $grados   = Grado::orderBy('orden')->get();
 
@@ -115,7 +115,7 @@ class DocenteController extends Controller
 
     public function update(Request $request, Docente $docente)
     {
-        $esEspecialista = $docente->esEspecialista();
+        $esEspecialista = $request->tipo === 'especialista';
 
         $request->validate([
             'dni'              => 'required|string|size:8|unique:docentes,dni,' . $docente->id,
@@ -124,6 +124,8 @@ class DocenteController extends Controller
             'apellido_materno' => 'required|string|max:255',
             'email'            => 'nullable|email|unique:users,email,' . $docente->user_id,
             'celular'          => 'nullable|string|max:15',
+            'nivel'            => 'required|in:primaria,secundaria',
+            'tipo'             => 'required|in:especialista,polidocente',
             'curso_ids'        => $esEspecialista ? 'required|array|min:1' : 'nullable|array',
             'curso_ids.*'      => $esEspecialista ? 'exists:cursos,id' : 'nullable',
         ]);
@@ -139,6 +141,8 @@ class DocenteController extends Controller
                 'apellido_paterno' => $apPaterno,
                 'apellido_materno' => $apMaterno,
                 'celular'          => $request->celular,
+                'nivel'            => $request->nivel,
+                'tipo'             => $request->tipo,
             ]);
 
             $nombreCompleto = "{$apPaterno} {$apMaterno} {$nombres}";
@@ -152,6 +156,8 @@ class DocenteController extends Controller
 
             if ($esEspecialista) {
                 $docente->cursos()->sync($request->curso_ids);
+            } else {
+                $docente->cursos()->detach();
             }
         });
 
