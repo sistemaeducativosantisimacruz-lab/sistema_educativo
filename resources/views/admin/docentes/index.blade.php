@@ -8,7 +8,7 @@
     <div class="py-12" x-data="{
         showModal: false,
         nivel: '{{ old('nivel') }}',
-        tipo: '{{ old('tipo', 'especialista') }}',
+        tipo: '{{ old('tipo') }}',
         cursos: {{ $cursos->toJson() }},
         get filteredCursos() {
             if (!this.nivel) return [];
@@ -127,24 +127,40 @@
                                                     {{ $docente->user->email ?? 'Sin correo' }} | {{ $docente->celular ?? 'Sin celular' }}
                                                 </div>
                                                 <div class="text-xs mt-0.5 md:hidden flex items-center gap-1">
-                                                    <span class="px-1.5 py-0.5 rounded text-xs font-bold {{ $docente->nivel === 'primaria' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800' }}">
-                                                        {{ ucfirst($docente->nivel) }}
-                                                    </span>
-                                                    <span class="px-1.5 py-0.5 rounded text-xs font-bold {{ $docente->tipo === 'polidocente' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' }}">
-                                                        {{ ucfirst($docente->tipo) }}
-                                                    </span>
+                                                    @if($docente->nivel || $docente->tipo)
+                                                        @if($docente->nivel)
+                                                            <span class="px-1.5 py-0.5 rounded text-xs font-bold {{ $docente->nivel === 'primaria' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800' }}">
+                                                                {{ ucfirst($docente->nivel) }}
+                                                            </span>
+                                                        @endif
+                                                        @if($docente->tipo)
+                                                            <span class="px-1.5 py-0.5 rounded text-xs font-bold {{ $docente->tipo === 'polidocente' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' }}">
+                                                                {{ ucfirst($docente->tipo) }}
+                                                            </span>
+                                                        @endif
+                                                    @else
+                                                        <span class="text-red-500 font-bold text-xs">(falta asignar datos)</span>
+                                                    @endif
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm hidden md:table-cell">
                                                 <div class="flex flex-col gap-1">
-                                                    <span class="px-2 py-0.5 inline-flex text-xs font-bold rounded-full w-fit
-                                                        {{ $docente->nivel === 'primaria' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800' }}">
-                                                        {{ ucfirst($docente->nivel) }}
-                                                    </span>
-                                                    <span class="px-2 py-0.5 inline-flex text-xs font-bold rounded-full w-fit
-                                                        {{ $docente->tipo === 'polidocente' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' }}">
-                                                        {{ ucfirst($docente->tipo) }}
-                                                    </span>
+                                                    @if($docente->nivel || $docente->tipo)
+                                                        @if($docente->nivel)
+                                                            <span class="px-2 py-0.5 inline-flex text-xs font-bold rounded-full w-fit
+                                                                {{ $docente->nivel === 'primaria' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800' }}">
+                                                                {{ ucfirst($docente->nivel) }}
+                                                            </span>
+                                                        @endif
+                                                        @if($docente->tipo)
+                                                            <span class="px-2 py-0.5 inline-flex text-xs font-bold rounded-full w-fit
+                                                                {{ $docente->tipo === 'polidocente' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' }}">
+                                                                {{ ucfirst($docente->tipo) }}
+                                                            </span>
+                                                        @endif
+                                                    @else
+                                                        <span class="text-red-500 font-bold text-xs">(falta asignar datos)</span>
+                                                    @endif
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 text-sm hidden lg:table-cell">
@@ -272,10 +288,10 @@
 
                                 {{-- Nivel --}}
                                 <div>
-                                    <label for="modal_nivel" class="block text-sm font-bold text-gray-700">Nivel Educativo *</label>
-                                    <select name="nivel" id="modal_nivel" x-model="nivel" required
+                                    <label for="modal_nivel" class="block text-sm font-bold text-gray-700">Nivel Educativo</label>
+                                    <select name="nivel" id="modal_nivel" x-model="nivel"
                                         class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
-                                        <option value="">-- Seleccione Nivel --</option>
+                                        <option value="">-- Sin asignar --</option>
                                         <option value="primaria">Primaria</option>
                                         <option value="secundaria">Secundaria</option>
                                     </select>
@@ -284,7 +300,7 @@
 
                                 {{-- Tipo de docencia --}}
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de Docencia *</label>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de Docencia</label>
                                     <div class="flex gap-3">
                                         <label class="flex-1 cursor-pointer">
                                             <input type="radio" name="tipo" value="especialista" x-model="tipo" class="sr-only">
@@ -306,6 +322,16 @@
                                                 <div class="text-xs mt-0.5 opacity-75">Enseña todos los cursos al grado</div>
                                             </div>
                                         </label>
+                                        <label class="flex-1 cursor-pointer">
+                                            <input type="radio" name="tipo" value="" x-model="tipo" class="sr-only">
+                                            <div :class="!tipo || tipo === ''
+                                                    ? 'border-gray-500 bg-gray-100 text-gray-700'
+                                                    : 'border-gray-300 bg-white text-gray-600'"
+                                                class="border-2 rounded-lg p-3 text-center transition">
+                                                <div class="font-bold text-sm">Sin asignar</div>
+                                                <div class="text-xs mt-0.5 opacity-75">Datos pendientes</div>
+                                            </div>
+                                        </label>
                                     </div>
                                     @error('tipo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
@@ -313,7 +339,7 @@
                                 {{-- Cursos: solo si es especialista --}}
                                 <div class="md:col-span-2" x-show="esEspecialista" x-transition>
                                     <label class="block text-sm font-bold text-gray-700 mb-2">
-                                        Curso(s) que imparte *
+                                        Curso(s) que imparte
                                         <span class="text-xs font-normal text-gray-500">(puede seleccionar más de uno)</span>
                                     </label>
                                     @error('curso_ids') <p class="text-red-500 text-xs mb-2 font-bold">{{ $message }}</p> @enderror
@@ -443,10 +469,10 @@
 
                                 {{-- Nivel --}}
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700">Nivel Educativo *</label>
-                                    <select name="nivel" x-model="docente.nivel" required
+                                    <label class="block text-sm font-bold text-gray-700">Nivel Educativo</label>
+                                    <select name="nivel" x-model="docente.nivel"
                                         class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
-                                        <option value="">-- Seleccione Nivel --</option>
+                                        <option value="">-- Sin asignar --</option>
                                         <option value="primaria">Primaria</option>
                                         <option value="secundaria">Secundaria</option>
                                     </select>
@@ -454,7 +480,7 @@
 
                                 {{-- Tipo de docencia --}}
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de Docencia *</label>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de Docencia</label>
                                     <div class="flex gap-3">
                                         <label class="flex-1 cursor-pointer">
                                             <input type="radio" name="tipo" value="especialista" x-model="docente.tipo" class="sr-only">
@@ -474,12 +500,21 @@
                                                 <div class="font-bold text-sm">Polidocente</div>
                                             </div>
                                         </label>
+                                        <label class="flex-1 cursor-pointer">
+                                            <input type="radio" name="tipo" value="" x-model="docente.tipo" class="sr-only">
+                                            <div :class="!docente.tipo || docente.tipo === ''
+                                                    ? 'border-gray-500 bg-gray-100 text-gray-700'
+                                                    : 'border-gray-300 bg-white text-gray-600'"
+                                                class="border-2 rounded-lg p-3 text-center transition">
+                                                <div class="font-bold text-sm">Sin asignar</div>
+                                            </div>
+                                        </label>
                                     </div>
                                 </div>
 
                                 {{-- Cursos (Solo si es Especialista) --}}
                                 <div class="md:col-span-2 border-t pt-3 mt-1" x-show="docente.tipo === 'especialista'">
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">Cursos a Impartir *</label>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Cursos a Impartir</label>
                                     <div class="grid grid-cols-2 gap-2">
                                         @foreach($cursos as $curso)
                                             <label class="flex items-center space-x-2 text-sm bg-gray-50 p-2 rounded border border-gray-200 hover:bg-indigo-50 cursor-pointer"

@@ -72,14 +72,13 @@ class DocenteController extends Controller
             'apellido_materno' => 'required|string|max:255',
             'email'            => 'nullable|email|unique:users,email',
             'celular'          => 'nullable|string|max:15',
-            'nivel'            => 'required|in:primaria,secundaria',
-            'tipo'             => 'required|in:especialista,polidocente',
-            'curso_ids'        => $esEspecialista ? 'required|array|min:1' : 'nullable|array',
+            'nivel'            => 'nullable|in:primaria,secundaria',
+            'tipo'             => 'nullable|in:especialista,polidocente',
+            'curso_ids'        => 'nullable|array',
             'curso_ids.*'      => 'exists:cursos,id',
         ], [
             'dni.unique'         => 'El DNI ya está registrado en el sistema.',
             'email.unique'       => 'El correo ya está registrado en el sistema.',
-            'curso_ids.required' => 'Debes seleccionar al menos un curso para el docente especialista.',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -104,8 +103,8 @@ class DocenteController extends Controller
                 'apellido_materno' => $request->apellido_materno,
             ]);
 
-            if ($request->tipo === 'especialista' && $request->filled('curso_ids')) {
-                $docente->cursos()->sync($request->curso_ids);
+            if ($request->tipo === 'especialista' && $request->has('curso_ids')) {
+                $docente->cursos()->sync($request->curso_ids ?? []);
             }
         });
 
@@ -124,10 +123,10 @@ class DocenteController extends Controller
             'apellido_materno' => 'required|string|max:255',
             'email'            => 'nullable|email|unique:users,email,' . $docente->user_id,
             'celular'          => 'nullable|string|max:15',
-            'nivel'            => 'required|in:primaria,secundaria',
-            'tipo'             => 'required|in:especialista,polidocente',
-            'curso_ids'        => $esEspecialista ? 'required|array|min:1' : 'nullable|array',
-            'curso_ids.*'      => $esEspecialista ? 'exists:cursos,id' : 'nullable',
+            'nivel'            => 'nullable|in:primaria,secundaria',
+            'tipo'             => 'nullable|in:especialista,polidocente',
+            'curso_ids'        => 'nullable|array',
+            'curso_ids.*'      => 'nullable|exists:cursos,id',
         ]);
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($request, $docente, $esEspecialista) {
@@ -155,7 +154,7 @@ class DocenteController extends Controller
             ]);
 
             if ($esEspecialista) {
-                $docente->cursos()->sync($request->curso_ids);
+                $docente->cursos()->sync($request->curso_ids ?? []);
             } else {
                 $docente->cursos()->detach();
             }
