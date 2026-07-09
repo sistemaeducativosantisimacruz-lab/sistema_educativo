@@ -374,8 +374,10 @@ class GradoSeccionController extends Controller
             ->orderBy('apellido_paterno')
             ->get();
 
+        $esPolidocencia = $gradoSeccion->grado->nivel === 'primaria' && in_array($gradoSeccion->grado->orden, [1, 2, 3, 4]);
+
         // Construir lista de cursos con su docente actual y los docentes disponibles
-        $cursosConDocentes = $cursos->map(function ($curso) use ($asignacionesPorCurso, $docentesDelNivel, $gradoSeccion) {
+        $cursosConDocentes = $cursos->map(function ($curso) use ($asignacionesPorCurso, $docentesDelNivel, $gradoSeccion, $esPolidocencia) {
             $asignacion = $asignacionesPorCurso->get($curso->id);
 
             $isTutoria = stripos($curso->nombre, 'tutoría') !== false || stripos($curso->nombre, 'tutoria') !== false;
@@ -399,16 +401,26 @@ class GradoSeccionController extends Controller
                 });
             }
 
+            $docenteAsignado = null;
+            if ($asignacion && $asignacion->docente) {
+                $docenteAsignado = $asignacion->docente;
+            } elseif ($esPolidocencia && $gradoSeccion->tutor) {
+                $isEducacionFisica = stripos($curso->nombre, 'educación física') !== false || stripos($curso->nombre, 'educacion fisica') !== false;
+                if (!$isEducacionFisica) {
+                    $docenteAsignado = $gradoSeccion->tutor;
+                }
+            }
+
             $disponibles = $disponibles->map(fn($d) => [
                 'id'     => $d->id,
                 'nombre' => $d->apellido_paterno . ' ' . $d->apellido_materno . ', ' . $d->nombres,
             ]);
 
-            if ($asignacion && $asignacion->docente) {
-                if (! $disponibles->contains('id', $asignacion->docente_id)) {
+            if ($docenteAsignado) {
+                if (! $disponibles->contains('id', $docenteAsignado->id)) {
                     $disponibles->push([
-                        'id'     => $asignacion->docente->id,
-                        'nombre' => $asignacion->docente->apellido_paterno . ' ' . $asignacion->docente->apellido_materno . ', ' . $asignacion->docente->nombres,
+                        'id'     => $docenteAsignado->id,
+                        'nombre' => $docenteAsignado->apellido_paterno . ' ' . $docenteAsignado->apellido_materno . ', ' . $docenteAsignado->nombres,
                     ]);
                 }
             }
@@ -418,8 +430,8 @@ class GradoSeccionController extends Controller
             return [
                 'curso_id'    => $curso->id,
                 'curso_nombre'=> $curso->nombre,
-                'docente_id'  => $asignacion ? $asignacion->docente_id : null,
-                'docente_nombre' => $asignacion ? ($asignacion->docente->apellido_paterno . ' ' . $asignacion->docente->apellido_materno . ', ' . $asignacion->docente->nombres) : null,
+                'docente_id'  => $docenteAsignado ? $docenteAsignado->id : null,
+                'docente_nombre' => $docenteAsignado ? ($docenteAsignado->apellido_paterno . ' ' . $docenteAsignado->apellido_materno . ', ' . $docenteAsignado->nombres) : null,
                 'disponibles' => $disponibles,
             ];
         })->values();
@@ -498,18 +510,30 @@ class GradoSeccionController extends Controller
 
             // Crear nueva si hay docente seleccionado
             if ($docenteId) {
-                AsignacionDocente::create([
-                    'docente_id'       => $docenteId,
-                    'grado_seccion_id' => $gradoSeccion->id,
-                    'curso_id'         => $cursoId,
-                    'ano_lectivo_id'   => $anoLectivoId,
-                    'activo'           => true,
-                ]);
+                $skipCrear = false;
+                
+                // Si es polidocencia, el tutor ya tiene los cursos (excepto Educación Física y Tutoría, que requieren manejo explícito)
+                $esPolidocencia = $gradoSeccion->grado->nivel === 'primaria' && in_array($gradoSeccion->grado->orden, [1, 2, 3, 4]);
+                $isEducacionFisica = $cursoObj && (stripos($cursoObj->nombre, 'educación física') !== false || stripos($cursoObj->nombre, 'educacion fisica') !== false);
+                
+                if ($esPolidocencia && !$isEducacionFisica && !$isTutoria && $docenteId == $gradoSeccion->tutor_id) {
+                    $skipCrear = true;
+                }
 
-                // Agregar el curso a docente_cursos si no lo tiene
-                $docenteModel = \App\Models\Docente::find($docenteId);
-                if ($docenteModel) {
-                    $docenteModel->cursos()->syncWithoutDetaching([$cursoId]);
+                if (!$skipCrear) {
+                    AsignacionDocente::create([
+                        'docente_id'       => $docenteId,
+                        'grado_seccion_id' => $gradoSeccion->id,
+                        'curso_id'         => $cursoId,
+                        'ano_lectivo_id'   => $anoLectivoId,
+                        'activo'           => true,
+                    ]);
+
+                    // Agregar el curso a docente_cursos si no lo tiene
+                    $docenteModel = \App\Models\Docente::find($docenteId);
+                    if ($docenteModel) {
+                        $docenteModel->cursos()->syncWithoutDetaching([$cursoId]);
+                    }
                 }
             }
         }
