@@ -240,7 +240,9 @@ class DocenteController extends Controller
             if (!$gradoSeccion) continue;
             $grado = $gradoSeccion->grado;
 
-            if ($grado && $grado->nivel === 'primaria' && in_array($grado->orden, [1, 2, 3, 4])) {
+            $forzar = $request->boolean('forzar', false);
+
+            if (!$esEspecialista && $grado && $grado->nivel === 'primaria' && in_array($grado->orden, [1, 2, 3, 4])) {
                 AsignacionDocente::where('grado_seccion_id', $gs_id)
                     ->where('ano_lectivo_id', $anoActivo->id)
                     ->delete();
@@ -254,15 +256,19 @@ class DocenteController extends Controller
                         ->first();
 
                     if ($conflicto) {
-                        $nombreConflicto = $conflicto->docente
-                            ? "{$conflicto->docente->apellido_paterno}, {$conflicto->docente->nombres}"
-                            : 'otro docente';
-                        $esMismoDocente = $conflicto->docente_id === $docente->id;
-                        $msg = $esMismoDocente
-                            ? "El docente ya tiene ese curso en {$grado->nombre} \"Sección {$gradoSeccion->seccion->nombre}\"."
-                            : "El docente '{$nombreConflicto}' ya tiene ese curso en {$grado->nombre} \"Sección {$gradoSeccion->seccion->nombre}\". No se puede asignar dos docentes del mismo curso a una sección.";
-                        $errores[] = $msg;
-                        continue;
+                        if ($forzar) {
+                            $conflicto->delete();
+                        } else {
+                            $nombreConflicto = $conflicto->docente
+                                ? "{$conflicto->docente->apellido_paterno}, {$conflicto->docente->nombres}"
+                                : 'otro docente';
+                            $esMismoDocente = $conflicto->docente_id === $docente->id;
+                            $msg = $esMismoDocente
+                                ? "El docente ya tiene ese curso en {$grado->nombre} \"Sección {$gradoSeccion->seccion->nombre}\"."
+                                : "El docente '{$nombreConflicto}' ya tiene ese curso en {$grado->nombre} \"Sección {$gradoSeccion->seccion->nombre}\". No se puede asignar dos docentes del mismo curso a una sección.";
+                            $errores[] = $msg;
+                            continue;
+                        }
                     }
                 }
             }

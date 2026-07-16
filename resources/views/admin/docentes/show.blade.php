@@ -53,8 +53,8 @@
                             Cancelar
                         </button>
                         <button @click="forzarEnvio()"
-                            class="px-4 py-2 text-sm font-bold text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg transition">
-                            Continuar de todas formas
+                            class="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition">
+                            Reemplazar docente(s) actual(es)
                         </button>
                     </div>
                 </div>
@@ -281,7 +281,7 @@
                                                 </div>
                                             </div>
                                             <form action="{{ route('admin.docentes.desasignar', [$docente->id, $asignacion->id]) }}"
-                                                  method="POST" onsubmit="return confirm('¿Remover esta asignación?');">
+                                                  method="POST" class="form-desasignar">
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold py-1.5 px-3 rounded transition">
                                                     Remover
@@ -406,10 +406,41 @@
                     if (a.curso_id) addInput(`asignaciones[${i}][curso_id]`, a.curso_id);
                 });
 
+                if (this.forzar) {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = 'forzar';
+                    inp.value = '1';
+                    form.appendChild(inp);
+                }
+
                 form.submit();
             },
         };
     }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.form-desasignar');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: '¿Remover esta asignación?',
+                    text: "El docente ya no impartirá clases en esta sección.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, remover',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    });
     </script>
     @endpush
 </x-app-layout>
