@@ -2,15 +2,23 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Illuminate\Contracts\View\View;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Cell\StringValueBinder;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 
-class EstudiantesFaltanNotasExport implements FromView, WithTitle, WithColumnWidths, WithStyles
+class EstudiantesFaltanNotasExport extends StringValueBinder implements FromCollection, WithTitle, WithColumnWidths, WithStyles, WithHeadings, WithMapping, WithEvents, WithCustomValueBinder
 {
     protected $nivel;
     protected $anoLectivoId;
@@ -23,7 +31,7 @@ class EstudiantesFaltanNotasExport implements FromView, WithTitle, WithColumnWid
         $this->bimestre = $bimestre;
     }
 
-    public function view(): View
+    public function collection()
     {
         $estudiantesFaltan = collect();
 
@@ -53,7 +61,7 @@ class EstudiantesFaltanNotasExport implements FromView, WithTitle, WithColumnWid
 
         $cursos = DB::table('cursos')
             ->where('activo', true)
-            ->whereIn('nivel', [$this->nivel, 'ambos', 'none']) // Include 'none' if used for general
+            ->whereIn('nivel', [$this->nivel, 'ambos', 'none'])
             ->pluck('id');
 
         $totalCompetencias = DB::table('competencias')
@@ -71,17 +79,36 @@ class EstudiantesFaltanNotasExport implements FromView, WithTitle, WithColumnWid
         foreach ($estudiantesQuery as $estudiante) {
             $notasEstudiante = $notasConteo[$estudiante->estudiante_id] ?? 0;
             if ($notasEstudiante < $totalCompetencias) {
-                // Add property for missing notes if needed, but not strictly requested
-                $estudiante->faltantes = $totalCompetencias - $notasEstudiante;
                 $estudiantesFaltan->push($estudiante);
             }
         }
 
-        return view('exports.estudiantes_faltan_notas', [
-            'estudiantes' => $estudiantesFaltan,
-            'nivel' => ucfirst($this->nivel),
-            'bimestre' => $this->bimestre
-        ]);
+        return $estudiantesFaltan;
+    }
+
+    public function headings(): array
+    {
+        return [
+            ['Reporte de Estudiantes que faltan notas - ' . ucfirst($this->nivel) . ' - Bimestre ' . $this->bimestre->numero],
+            [
+                'Grado',
+                'Sección',
+                'DNI',
+                'Código Modular',
+                'Nombres y Apellidos'
+            ]
+        ];
+    }
+
+    public function map($estudiante): array
+    {
+        return [
+            $estudiante->grado,
+            $estudiante->seccion,
+            $estudiante->dni,
+            $estudiante->codigo_modular,
+            $estudiante->apellido_paterno . ' ' . $estudiante->apellido_materno . ', ' . $estudiante->nombres
+        ];
     }
 
     public function title(): string
@@ -92,18 +119,75 @@ class EstudiantesFaltanNotasExport implements FromView, WithTitle, WithColumnWid
     public function columnWidths(): array
     {
         return [
-            'A' => 15, // Grado
-            'B' => 10, // Seccion
-            'C' => 15, // DNI
-            'D' => 40, // Codigo Modular
-            'E' => 40, // Apellidos y Nombres
+            'A' => 15,
+            'B' => 10,
+            'C' => 15,
+            'D' => 40,
+            'E' => 40,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         return [
-            1 => ['font' => ['bold' => true]],
+            1 => [
+                'font' => ['bold' => true, 'size' => 14],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ],
+            2 => [
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'f3f4f6']
+                ],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => 'd1d5db'],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function(AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $highestRow = $sheet->getHighestRow();
+
+                // Unir celdas para el título (Fila 1, de A a E)
+                $sheet->mergeCells('A1:E1');
+
+                // Aplicar estilo de texto a las columnas C (DNI) y D (Código Modular)
+                // StringValueBinder ya lo hace, pero esto asegura que Excel no intente convertirlo después.
+                $sheet->getStyle('C3:D' . $highestRow)
+                      ->getNumberFormat()
+                      ->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_TEXT);
+
+                // Alternar colores en las filas y agregar bordes + centrado
+                for ($row = 3; $row <= $highestRow; $row++) {
+                    $bgColor = ($row % 2 == 0) ? 'f9fafb' : 'ffffff';
+                    
+                    $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray([
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['rgb' => $bgColor]
+                        ],
+                        'borders' => [
+                            'allBorders' => [
+                                'borderStyle' => Border::BORDER_THIN,
+                                'color' => ['rgb' => 'd1d5db'],
+                            ],
+                        ],
+                    ]);
+
+                    // Centrar A, B, C, D
+                    $sheet->getStyle('A' . $row . ':D' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                }
+            },
         ];
     }
 }
