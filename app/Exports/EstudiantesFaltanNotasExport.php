@@ -95,8 +95,8 @@ class EstudiantesFaltanNotasExport implements FromView, WithTitle, WithColumnWid
             'A' => 15, // Grado
             'B' => 10, // Seccion
             'C' => 15, // DNI
-            'D' => 20, // Codigo Modular
-            'E' => 30, // Apellidos y Nombres
+            'D' => 40, // Codigo Modular
+            'E' => 40, // Apellidos y Nombres
         ];
     }
 

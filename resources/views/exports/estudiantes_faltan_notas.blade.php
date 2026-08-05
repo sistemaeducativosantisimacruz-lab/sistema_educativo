@@ -14,12 +14,12 @@
         </tr>
     </thead>
     <tbody>
-        @foreach($estudiantes as $estudiante)
-            <tr>
+        @foreach($estudiantes as $index => $estudiante)
+            <tr style="background-color: {{ $index % 2 == 0 ? '#ffffff' : '#f3f4f6' }};">
                 <td style="border: 1px solid #d1d5db; text-align: center;">{{ $estudiante->grado }}</td>
                 <td style="border: 1px solid #d1d5db; text-align: center;">{{ $estudiante->seccion }}</td>
-                <td style="border: 1px solid #d1d5db; text-align: center;">{{ $estudiante->dni }}</td>
-                <td style="border: 1px solid #d1d5db; text-align: center;">{{ $estudiante->codigo_modular }}</td>
+                <td style="border: 1px solid #d1d5db; text-align: center; mso-number-format:'\@';">{{ $estudiante->dni }}</td>
+                <td style="border: 1px solid #d1d5db; text-align: center; mso-number-format:'\@';">{{ $estudiante->codigo_modular }}</td>
                 <td style="border: 1px solid #d1d5db;">{{ $estudiante->apellido_paterno }} {{ $estudiante->apellido_materno }}, {{ $estudiante->nombres }}</td>
             </tr>
         @endforeach
