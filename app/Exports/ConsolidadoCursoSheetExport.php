@@ -36,11 +36,15 @@ class ConsolidadoCursoSheetExport implements FromView, WithTitle, WithColumnWidt
         $datosPorGrado = [];
 
         foreach ($grados as $grado) {
-            $matriculados = DB::table('matriculas')
+            $matriculasGrado = DB::table('matriculas')
                 ->join('grado_secciones', 'matriculas.grado_seccion_id', '=', 'grado_secciones.id')
                 ->where('grado_secciones.grado_id', $grado->id)
                 ->where('matriculas.ano_lectivo_id', $this->anoLectivoId)
-                ->count();
+                ->select('matriculas.estudiante_id', 'matriculas.estado')
+                ->get();
+                
+            $matriculadosActivos = $matriculasGrado->where('estado', '!=', 'retirado')->count();
+            $estudiantesRetirados = $matriculasGrado->where('estado', 'retirado')->pluck('estudiante_id')->toArray();
 
             $datosCompetencias = [];
 
@@ -66,6 +70,15 @@ class ConsolidadoCursoSheetExport implements FromView, WithTitle, WithColumnWidt
                 }
                 
                 $evaluados = count($notasEstudiantes);
+                
+                $retiradosEvaluados = 0;
+                foreach ($notasEstudiantes as $estudianteId => $nota) {
+                    if (in_array($estudianteId, $estudiantesRetirados)) {
+                        $retiradosEvaluados++;
+                    }
+                }
+                
+                $matriculados = $matriculadosActivos + $retiradosEvaluados;
                 $sinEvaluar = max(0, $matriculados - $evaluados);
                 
                 $conteo = ['AD' => 0, 'A' => 0, 'B' => 0, 'C' => 0];

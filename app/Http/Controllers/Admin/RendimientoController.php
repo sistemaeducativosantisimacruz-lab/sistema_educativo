@@ -198,7 +198,9 @@ class RendimientoController extends Controller
                 ->join('secciones', 'grado_secciones.seccion_id', '=', 'secciones.id')
                 ->join('grados as g_ord', 'grado_secciones.grado_id', '=', 'g_ord.id')
                 ->where('grado_secciones.ano_lectivo_id', $anoActivo->id)
-                ->withCount('matriculas')
+                ->withCount(['matriculas' => function($q) {
+                    $q->where('estado', '!=', 'retirado');
+                }])
                 ->orderBy('g_ord.orden')
                 ->orderBy('secciones.nombre')
                 ->select('grado_secciones.*');
@@ -729,7 +731,8 @@ class RendimientoController extends Controller
             ->join('grado_secciones', 'matriculas.grado_seccion_id', '=', 'grado_secciones.id')
             ->join('grados', 'grado_secciones.grado_id', '=', 'grados.id')
             ->join('secciones', 'grado_secciones.seccion_id', '=', 'secciones.id')
-            ->where('matriculas.ano_lectivo_id', $anoActivo->id);
+            ->where('matriculas.ano_lectivo_id', $anoActivo->id)
+            ->where('matriculas.estado', '!=', 'retirado');
 
         if ($request->filled('nivel')) {
             $query->where('grados.nivel', $request->nivel);
