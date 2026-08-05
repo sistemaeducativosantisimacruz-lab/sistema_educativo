@@ -784,6 +784,14 @@ class RendimientoController extends Controller
         $nivel = $request->nivel;
         $bimestre = \App\Models\Bimestre::find($request->bimestre_id);
 
+        if ($request->boolean('estudiantes_faltan_notas')) {
+            $fileName = 'Estudiantes_Faltan_Notas_' . ucfirst($nivel) . '_B' . $bimestre->numero . '_' . date('Ymd_His') . '.xlsx';
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\EstudiantesFaltanNotasExport($nivel, $anoActivo->id, $bimestre),
+                $fileName
+            );
+        }
+
         if ($request->boolean('generar_grafico')) {
             $fileName = 'Datos_Grafico_B' . $bimestre->numero . '_' . ucfirst($nivel) . '_' . date('Ymd_His') . '.xlsx';
             return \Maatwebsite\Excel\Facades\Excel::download(

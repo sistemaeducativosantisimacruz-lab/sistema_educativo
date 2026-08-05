@@ -372,6 +372,13 @@
                                         </label>
                                     </div>
 
+                                    <div class="mt-4">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="estudiantes_faltan_notas" value="1" class="rounded border-gray-300 text-rose-600 shadow-sm focus:border-rose-500 focus:ring focus:ring-rose-200">
+                                            <span class="ml-2 text-sm font-semibold text-gray-700">Solo estudiantes que faltan notas</span>
+                                        </label>
+                                    </div>
+
                                     <div class="mt-6 flex justify-end">
                                         <button type="button" x-on:click="$dispatch('close')" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-2 px-4 rounded-lg text-sm transition-colors mr-2">
                                             {{ __('Cancelar') }}
