@@ -16,6 +16,7 @@
         editMadre: null,
         editSexo: 'M',
         editCodigoEstudiante: '',
+        editData: {},
         editTipoMatricula: 'Normal',
         originalTipoMatricula: 'Normal'
     }">
@@ -186,6 +187,27 @@
                                                     editSexo = editEstudiante.sexo;
                                                     editCodigoEstudiante = editEstudiante.codigo_estudiante || '';
                                                     editTipoMatricula = '{{ $matricula->tipo_matricula ?? 'Normal' }}';
+                                                    editData = {
+                                                        dni: editEstudiante.dni || '',
+                                                        nombres: editEstudiante.nombres || '',
+                                                        apellido_paterno: editEstudiante.apellido_paterno || '',
+                                                        apellido_materno: editEstudiante.apellido_materno || '',
+                                                        fecha_nacimiento: editEstudiante.fecha_nacimiento ? editEstudiante.fecha_nacimiento.split('T')[0] : '',
+                                                        colegio_inicial: editEstudiante.colegio_inicial || '',
+                                                        padre_dni: editPadre ? editPadre.dni : '',
+                                                        padre_nombres: editPadre ? (editPadre.apellido_paterno + ' ' + (editPadre.apellido_materno || '') + ', ' + editPadre.nombres) : '',
+                                                        padre_telefono: editPadre ? editPadre.telefono : '',
+                                                        madre_dni: editMadre ? editMadre.dni : '',
+                                                        madre_nombres: editMadre ? (editMadre.apellido_paterno + ' ' + (editMadre.apellido_materno || '') + ', ' + editMadre.nombres) : '',
+                                                        madre_telefono: editMadre ? editMadre.telefono : '',
+                                                        apoderado_dni: editApoderado ? editApoderado.dni : '',
+                                                        apoderado_parentesco: editApoderado ? editApoderado.parentesco : '',
+                                                        apoderado_nombres: editApoderado ? editApoderado.nombres : '',
+                                                        apoderado_apellido_paterno: editApoderado ? editApoderado.apellido_paterno : '',
+                                                        apoderado_apellido_materno: editApoderado ? editApoderado.apellido_materno : '',
+                                                        apoderado_telefono: editApoderado ? editApoderado.telefono : '',
+                                                        apoderado_direccion: editApoderado ? editApoderado.direccion : ''
+                                                    };
                                                     originalTipoMatricula = '{{ $matricula->tipo_matricula ?? 'Normal' }}';" 
                                                     class="text-indigo-600 hover:text-indigo-900 font-bold">Editar</button>
                                                 
@@ -383,7 +405,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-600">Parentesco</label>
-                                    <select name="apoderado_parentesco" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
+                                    <select name="apoderado_parentesco" x-model="editData.apoderado_parentesco" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
                                         <option value="APODERADO" {{ old('apoderado_parentesco') == 'APODERADO' ? 'selected' : '' }}>Apoderado</option>
                                         <option value="PADRE" {{ old('apoderado_parentesco') == 'PADRE' ? 'selected' : '' }}>Padre</option>
                                         <option value="MADRE" {{ old('apoderado_parentesco') == 'MADRE' ? 'selected' : '' }}>Madre</option>
@@ -446,7 +468,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">DNI *</label>
-                                    <input type="text" name="dni" :value="editEstudiante ? editEstudiante.dni : ''" required maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm @error('dni') border-red-500 @enderror font-mono">
+                                    <input type="text" name="dni" x-model="editData.dni" required maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm @error('dni') border-red-500 @enderror font-mono">
                                     @error('dni') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
                                 </div>
                                 <div>
@@ -456,19 +478,19 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Nombres *</label>
-                                    <input type="text" name="nombres" :value="editEstudiante ? editEstudiante.nombres : ''" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                    <input type="text" name="nombres" x-model="editData.nombres" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Apellido Paterno *</label>
-                                    <input type="text" name="apellido_paterno" :value="editEstudiante ? editEstudiante.apellido_paterno : ''" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                    <input type="text" name="apellido_paterno" x-model="editData.apellido_paterno" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Apellido Materno *</label>
-                                    <input type="text" name="apellido_materno" :value="editEstudiante ? editEstudiante.apellido_materno : ''" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                    <input type="text" name="apellido_materno" x-model="editData.apellido_materno" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Fecha de Nacimiento *</label>
-                                    <input type="date" name="fecha_nacimiento" :value="editEstudiante && editEstudiante.fecha_nacimiento ? editEstudiante.fecha_nacimiento.split('T')[0] : ''" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                    <input type="date" name="fecha_nacimiento" x-model="editData.fecha_nacimiento" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Sexo *</label>
@@ -500,7 +522,7 @@
                                 <div class="md:col-span-2 space-y-4 my-2" x-show="editEstudiante && editEstudiante.nivel === 'primaria'" x-cloak x-transition>
                                     <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                                         <label class="block text-sm font-bold text-yellow-800">Colegio Inicial de Procedencia</label>
-                                        <input type="text" name="colegio_inicial" :value="editEstudiante ? editEstudiante.colegio_inicial : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Ej. PRONOEI Rayito de Sol">
+                                        <input type="text" name="colegio_inicial" x-model="editData.colegio_inicial" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Ej. PRONOEI Rayito de Sol">
                                     </div>
                                     
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -509,15 +531,15 @@
                                             <h5 class="font-extrabold text-blue-800 uppercase tracking-wide text-xs">Datos del Padre</h5>
                                             <div>
                                                 <label class="block text-xs font-bold text-gray-700">DNI del Padre</label>
-                                                <input type="text" name="padre_dni" :value="editPadre ? editPadre.dni : ''" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="8 dígitos">
+                                                <input type="text" name="padre_dni" x-model="editData.padre_dni" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="8 dígitos">
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-bold text-gray-700">Nombres y Apellidos del Padre</label>
-                                                <input type="text" name="padre_nombres" :value="editPadre ? (editPadre.apellido_paterno + ' ' + (editPadre.apellido_materno || '') + ', ' + editPadre.nombres) : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Nombre completo">
+                                                <input type="text" name="padre_nombres" x-model="editData.padre_nombres" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Nombre completo">
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-bold text-gray-700">Teléfono del Padre</label>
-                                                <input type="text" name="padre_telefono" :value="editPadre ? editPadre.telefono : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ej. 987654321">
+                                                <input type="text" name="padre_telefono" x-model="editData.padre_telefono" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ej. 987654321">
                                             </div>
                                         </div>
 
@@ -526,15 +548,15 @@
                                             <h5 class="font-extrabold text-pink-800 uppercase tracking-wide text-xs">Datos de la Madre</h5>
                                             <div>
                                                 <label class="block text-xs font-bold text-gray-700">DNI de la Madre</label>
-                                                <input type="text" name="madre_dni" :value="editMadre ? editMadre.dni : ''" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="8 dígitos">
+                                                <input type="text" name="madre_dni" x-model="editData.madre_dni" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="8 dígitos">
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-bold text-gray-700">Nombres y Apellidos de la Madre</label>
-                                                <input type="text" name="madre_nombres" :value="editMadre ? (editMadre.apellido_paterno + ' ' + (editMadre.apellido_materno || '') + ', ' + editMadre.nombres) : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Nombre completo">
+                                                <input type="text" name="madre_nombres" x-model="editData.madre_nombres" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Nombre completo">
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-bold text-gray-700">Teléfono de la Madre</label>
-                                                <input type="text" name="madre_telefono" :value="editMadre ? editMadre.telefono : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ej. 987654321">
+                                                <input type="text" name="madre_telefono" x-model="editData.madre_telefono" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ej. 987654321">
                                             </div>
                                         </div>
                                     </div>
@@ -546,11 +568,11 @@
 
                                 <div>
                                     <label class="block text-sm font-bold text-gray-600">DNI del Apoderado</label>
-                                    <input type="text" name="apoderado_dni" :value="editApoderado ? editApoderado.dni : ''" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                    <input type="text" name="apoderado_dni" x-model="editData.apoderado_dni" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-600">Parentesco</label>
-                                    <select name="apoderado_parentesco" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
+                                    <select name="apoderado_parentesco" x-model="editData.apoderado_parentesco" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
                                         <option value="APODERADO" :selected="editApoderado && editApoderado.parentesco === 'APODERADO'">Apoderado</option>
                                         <option value="PADRE" :selected="editApoderado && editApoderado.parentesco === 'PADRE'">Padre</option>
                                         <option value="MADRE" :selected="editApoderado && editApoderado.parentesco === 'MADRE'">Madre</option>
@@ -561,23 +583,23 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-600">Nombres del Apoderado</label>
-                                    <input type="text" name="apoderado_nombres" :value="editApoderado ? editApoderado.nombres : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                    <input type="text" name="apoderado_nombres" x-model="editData.apoderado_nombres" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-600">Apellido Paterno</label>
-                                    <input type="text" name="apoderado_apellido_paterno" :value="editApoderado ? editApoderado.apellido_paterno : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                    <input type="text" name="apoderado_apellido_paterno" x-model="editData.apoderado_apellido_paterno" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-600">Apellido Materno</label>
-                                    <input type="text" name="apoderado_apellido_materno" :value="editApoderado ? editApoderado.apellido_materno : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                    <input type="text" name="apoderado_apellido_materno" x-model="editData.apoderado_apellido_materno" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-600">Teléfono</label>
-                                    <input type="text" name="apoderado_telefono" :value="editApoderado ? editApoderado.telefono : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                    <input type="text" name="apoderado_telefono" x-model="editData.apoderado_telefono" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-sm font-bold text-gray-600">Dirección / Domicilio</label>
-                                    <input type="text" name="apoderado_direccion" :value="editApoderado ? editApoderado.direccion : ''" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                    <input type="text" name="apoderado_direccion" x-model="editData.apoderado_direccion" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
                                 </div>
                             </div>
                         </form>
