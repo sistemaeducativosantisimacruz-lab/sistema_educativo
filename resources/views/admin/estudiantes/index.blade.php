@@ -1070,22 +1070,33 @@
     </script>
     <script>
         function openRawRetirarModal(data) {
-            alert('Abriendo modal para: ' + data.nombre);
-            var modal = document.getElementById('raw-retirar-modal');
-            
-            // Move modal to body to bypass any stacking context issues
-            if (modal.parentNode !== document.body) {
-                document.body.appendChild(modal);
+            try {
+                alert('Abriendo modal para: ' + data.nombre);
+                var modal = document.getElementById('raw-retirar-modal');
+                
+                if (!modal) {
+                    alert('ERROR: El modal raw-retirar-modal no existe en el DOM');
+                    return;
+                }
+                
+                // Move modal to body to bypass any stacking context issues
+                if (modal.parentNode !== document.body) {
+                    document.body.appendChild(modal);
+                }
+                
+                modal.style.setProperty('display', 'block', 'important');
+                modal.style.setProperty('z-index', '999999', 'important');
+                
+                document.getElementById('raw-retirar-estudiante-id').value = data.estudiante_id;
+                document.getElementById('raw-retirar-nombre').innerText = data.nombre;
+                
+                var form = document.getElementById('retirarEstudianteForm');
+                form.action = '/admin/estudiantes/' + data.estudiante_id + '/retirar';
+                
+                alert('Modal abierto y datos cargados exitosamente sin errores JS.');
+            } catch (e) {
+                alert('JS ERROR: ' + e.message);
             }
-            
-            modal.style.setProperty('display', 'block', 'important');
-            modal.style.setProperty('z-index', '999999', 'important');
-            
-            document.getElementById('raw-retirar-estudiante-id').value = data.estudiante_id;
-            document.getElementById('raw-retirar-nombre').innerText = data.nombre;
-            
-            var form = document.getElementById('retirarEstudianteForm');
-            form.action = '/admin/estudiantes/' + data.estudiante_id + '/retirar';
         }
         
         function closeRawRetirarModal() {
