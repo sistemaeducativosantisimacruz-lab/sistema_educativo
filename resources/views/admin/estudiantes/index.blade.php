@@ -921,9 +921,9 @@
         <!-- Ventana Modal para Retirar Estudiante (Raw JS version) -->
         <div id="raw-retirar-modal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-retirar" role="dialog" aria-modal="true" style="display: {{ (count($errors) > 0 && old('motivo_baja')) ? 'block' : 'none' }}; opacity: 1 !important; visibility: visible !important;">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeRawRetirarModal()" aria-hidden="true"></div>
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeRawRetirarModal()" aria-hidden="true" style="z-index: 10;"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" style="position: relative; z-index: 9999999;">
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b">
                         <div class="sm:flex sm:items-start">
                             <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -1072,6 +1072,12 @@
         function openRawRetirarModal(data) {
             alert('Abriendo modal para: ' + data.nombre);
             var modal = document.getElementById('raw-retirar-modal');
+            
+            // Move modal to body to bypass any stacking context issues
+            if (modal.parentNode !== document.body) {
+                document.body.appendChild(modal);
+            }
+            
             modal.style.setProperty('display', 'block', 'important');
             modal.style.setProperty('z-index', '999999', 'important');
             
