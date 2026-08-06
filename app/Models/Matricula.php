@@ -47,4 +47,9 @@ class Matricula extends Model
     {
         return $this->hasMany(Mensualidad::class);
     }
+
+    public function movimientos(): HasMany
+    {
+        return $this->hasMany(MovimientoMatricula::class)->orderBy('fecha_movimiento', 'desc');
+    }
 }

@@ -446,6 +446,49 @@ class EstudianteController extends Controller
         ]);
         $estudiante->update(['estado' => 'retirado']);
 
+        \App\Models\MovimientoMatricula::create([
+            'matricula_id' => $matricula->id,
+            'tipo_movimiento' => 'retiro',
+            'fecha_movimiento' => $request->fecha_baja,
+            'motivo' => $request->motivo_baja,
+            'observaciones' => $request->observaciones_baja,
+            'user_id' => auth()->id(),
+        ]);
+
         return back()->with('success', 'El estudiante ha sido retirado del año lectivo.');
+    }
+
+    public function reincorporar(Request $request, Estudiante $estudiante)
+    {
+        $request->validate([
+            'fecha_reincorporacion' => 'required|date',
+            'observaciones'         => 'nullable|string|max:1000',
+        ]);
+
+        $anoActivo = AnoLectivo::where('activo', true)->firstOrFail();
+
+        $matricula = Matricula::where('estudiante_id', $estudiante->id)
+            ->where('ano_lectivo_id', $anoActivo->id)
+            ->where('estado', 'retirado')
+            ->firstOrFail();
+
+        $matricula->update([
+            'estado'             => 'matriculado',
+            'fecha_baja'         => null,
+            'motivo_baja'        => null,
+            'observaciones_baja' => null,
+        ]);
+        $estudiante->update(['estado' => 'matriculado']);
+
+        \App\Models\MovimientoMatricula::create([
+            'matricula_id' => $matricula->id,
+            'tipo_movimiento' => 'reincorporacion',
+            'fecha_movimiento' => $request->fecha_reincorporacion,
+            'motivo' => 'Reincorporación',
+            'observaciones' => $request->observaciones,
+            'user_id' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'El estudiante ha sido reincorporado exitosamente.');
     }
 }

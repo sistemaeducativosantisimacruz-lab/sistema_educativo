@@ -34,6 +34,7 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     Route::resource('estudiantes', EstudianteController::class);
     Route::patch('estudiantes/{estudiante}/mover', [EstudianteController::class, 'mover'])->name('estudiantes.mover');
     Route::post('estudiantes/{estudiante}/retirar', [EstudianteController::class, 'retirar'])->name('estudiantes.retirar');
+    Route::post('estudiantes/{estudiante}/reincorporar', [EstudianteController::class, 'reincorporar'])->name('estudiantes.reincorporar');
 
 
     // Bimestres

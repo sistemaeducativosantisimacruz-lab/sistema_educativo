@@ -277,6 +277,11 @@
                                                         'fecha_baja' => $matricula->fecha_baja ? \Carbon\Carbon::parse($matricula->fecha_baja)->format('d/m/Y') : '',
                                                         'observaciones_baja' => $matricula->observaciones_baja,
                                                     ]) }})" class="text-gray-600 hover:text-gray-900 font-bold">Detalles de Baja</button>
+                                                    |
+                                                    <button type="button" onclick="openRawReincorporarModal({{ json_encode([
+                                                        'estudiante_id' => $matricula->estudiante->id,
+                                                        'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
+                                                    ]) }})" class="text-green-600 hover:text-green-900 font-bold">Reincorporar</button>
                                                 @endif
                                             </td>
                                         </tr>
@@ -820,6 +825,50 @@
                     </div>
                 </div>
             </div>
+        <!-- Ventana Modal para Reincorporar Estudiante (Raw JS version) -->
+        <div id="raw-reincorporar-modal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-reincorporar" role="dialog" aria-modal="true" style="display: none; opacity: 1 !important; visibility: visible !important;">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeRawReincorporarModal()" aria-hidden="true" style="z-index: 10;"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" style="position: relative; z-index: 9999999;">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-2">Reincorporar Estudiante</h3>
+                                <p class="text-sm text-gray-500 mb-4">
+                                    Reincorporando a: <span class="font-bold text-gray-900" id="raw-reincorporar-nombre"></span>
+                                </p>
+                                
+                                <form action="#" method="POST" id="reincorporarEstudianteForm">
+                                    @csrf
+                                    <input type="hidden" id="raw-reincorporar-estudiante-id" name="estudiante_id" value="">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-bold text-gray-700">Fecha de Reincorporación</label>
+                                        <input type="date" name="fecha_reincorporacion" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50" required value="{{ date('Y-m-d') }}">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-bold text-gray-700">Observaciones (Opcional)</label>
+                                        <textarea name="observaciones" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ej. El estudiante regresa después de un mes de viaje..."></textarea>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t">
+                        <button type="submit" form="reincorporarEstudianteForm" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 sm:ml-3 sm:w-auto sm:text-sm">
+                            Reincorporar
+                        </button>
+                        <button type="button" onclick="closeRawReincorporarModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -927,6 +976,32 @@
 
         function closeRawDetallesBajaModal() {
             document.getElementById('raw-detalles-baja-modal').style.setProperty('display', 'none', 'important');
+        }
+        function openRawReincorporarModal(data) {
+            var modal = document.getElementById('raw-reincorporar-modal');
+            
+            if (!modal) {
+                console.error('El modal raw-reincorporar-modal no existe en el DOM.');
+                return;
+            }
+            
+            // Move modal to body to bypass any stacking context issues
+            if (modal.parentNode !== document.body) {
+                document.body.appendChild(modal);
+            }
+            
+            modal.style.setProperty('display', 'block', 'important');
+            modal.style.setProperty('z-index', '999999', 'important');
+            
+            document.getElementById('raw-reincorporar-estudiante-id').value = data.estudiante_id;
+            document.getElementById('raw-reincorporar-nombre').innerText = data.nombre;
+            
+            var form = document.getElementById('reincorporarEstudianteForm');
+            form.action = '/admin/estudiantes/' + data.estudiante_id + '/reincorporar';
+        }
+
+        function closeRawReincorporarModal() {
+            document.getElementById('raw-reincorporar-modal').style.setProperty('display', 'none', 'important');
         }
     </script>
 </x-app-layout>
