@@ -258,14 +258,14 @@
                                                     class="text-indigo-600 hover:text-indigo-900 font-bold">Editar</button>
                                                 
                                                 @if($matricula->estado === 'matriculado')
-                                                    <button type="button" @click="openMoverModal({{ json_encode([
+                                                    <button type="button" @click="$dispatch('open-mover', {{ json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'grado_id' => $matricula->gradoSeccion->grado_id,
                                                         'seccion_actual_id' => $matricula->grado_seccion_id,
                                                     ]) }})" class="text-blue-600 hover:text-blue-900 font-bold">Mover</button>
                                                     |
-                                                    <button type="button" @click="openRetirarModal({{ json_encode([
+                                                    <button type="button" @click="$dispatch('open-retirar', {{ json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'grado_id' => null,
@@ -273,7 +273,7 @@
                                                     ]) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
                                                 @elseif($matricula->estado === 'retirado')
                                                     |
-                                                    <button type="button" @click="openDetallesBajaModal({{ json_encode([
+                                                    <button type="button" @click="$dispatch('open-detalles-baja', {{ json_encode([
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'motivo_baja' => $matricula->motivo_baja,
                                                         'fecha_baja' => $matricula->fecha_baja ? \Carbon\Carbon::parse($matricula->fecha_baja)->format('d/m/Y') : '',
@@ -921,7 +921,7 @@
             </div>
         </div>
         <!-- Ventana Modal para Retirar Estudiante -->
-        <div x-show="showRetirarModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-retirar" role="dialog" aria-modal="true" x-cloak>
+        <div x-show="showRetirarModal" @open-retirar.window="selectedMatricula = $event.detail; showRetirarModal = true" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-retirar" role="dialog" aria-modal="true" x-cloak>
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div x-show="showRetirarModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showRetirarModal = false" aria-hidden="true"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
