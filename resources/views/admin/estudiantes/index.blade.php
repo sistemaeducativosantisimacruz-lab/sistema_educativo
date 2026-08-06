@@ -46,7 +46,19 @@
             apoderado_direccion: {{ json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apoderado_direccion', '') : '') }}
         },
         editTipoMatricula: {{ json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('tipo_matricula', 'Normal') : 'Normal') }},
-        originalTipoMatricula: {{ json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('original_tipo_matricula', 'Normal') : 'Normal') }}
+        originalTipoMatricula: {{ json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('original_tipo_matricula', 'Normal') : 'Normal') }},
+        openMoverModal(data) {
+            this.selectedMatricula = data;
+            this.showMoverModal = true;
+        },
+        openRetirarModal(data) {
+            this.selectedMatricula = data;
+            this.showRetirarModal = true;
+        },
+        openDetallesBajaModal(data) {
+            this.detallesBaja = data;
+            this.showDetallesBajaModal = true;
+        }
     }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
@@ -246,27 +258,27 @@
                                                     class="text-indigo-600 hover:text-indigo-900 font-bold">Editar</button>
                                                 
                                                 @if($matricula->estado === 'matriculado')
-                                                    <button type="button" @click="showMoverModal = true; selectedMatricula = {{ json_encode([
+                                                    <button type="button" @click="openMoverModal({{ json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'grado_id' => $matricula->gradoSeccion->grado_id,
                                                         'seccion_actual_id' => $matricula->grado_seccion_id,
-                                                    ]) }};" class="text-blue-600 hover:text-blue-900 font-bold">Mover</button>
+                                                    ]) }})" class="text-blue-600 hover:text-blue-900 font-bold">Mover</button>
                                                     |
-                                                    <button type="button" @click="showRetirarModal = true; selectedMatricula = {{ json_encode([
+                                                    <button type="button" @click="openRetirarModal({{ json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'grado_id' => null,
                                                         'seccion_actual_id' => null,
-                                                    ]) }};" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
+                                                    ]) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
                                                 @elseif($matricula->estado === 'retirado')
                                                     |
-                                                    <button type="button" @click="showDetallesBajaModal = true; detallesBaja = {{ json_encode([
+                                                    <button type="button" @click="openDetallesBajaModal({{ json_encode([
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'motivo_baja' => $matricula->motivo_baja,
                                                         'fecha_baja' => $matricula->fecha_baja ? \Carbon\Carbon::parse($matricula->fecha_baja)->format('d/m/Y') : '',
                                                         'observaciones_baja' => $matricula->observaciones_baja,
-                                                    ]) }};" class="text-gray-600 hover:text-gray-900 font-bold">Detalles de Baja</button>
+                                                    ]) }})" class="text-gray-600 hover:text-gray-900 font-bold">Detalles de Baja</button>
                                                 @endif
                                             </td>
                                         </tr>
