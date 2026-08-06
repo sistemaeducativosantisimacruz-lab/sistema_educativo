@@ -1070,7 +1070,11 @@
     </script>
     <script>
         function openRawRetirarModal(data) {
-            document.getElementById('raw-retirar-modal').style.display = 'block';
+            alert('Abriendo modal para: ' + data.nombre);
+            var modal = document.getElementById('raw-retirar-modal');
+            modal.style.setProperty('display', 'block', 'important');
+            modal.style.setProperty('z-index', '999999', 'important');
+            
             document.getElementById('raw-retirar-estudiante-id').value = data.estudiante_id;
             document.getElementById('raw-retirar-nombre').innerText = data.nombre;
             
@@ -1079,7 +1083,7 @@
         }
         
         function closeRawRetirarModal() {
-            document.getElementById('raw-retirar-modal').style.display = 'none';
+            document.getElementById('raw-retirar-modal').style.setProperty('display', 'none', 'important');
         }
     </script>
 </x-app-layout>
