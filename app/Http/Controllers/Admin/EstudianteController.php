@@ -222,13 +222,12 @@ class EstudianteController extends Controller
 
     public function update(Request $request, Estudiante $estudiante)
     {
-        dd($request->all());
-        
         $request->validate([
             'dni' => [
                 'required',
                 'string',
-                'size:8',
+                'min:7',
+                'max:8',
                 Rule::unique('estudiantes', 'dni')->ignore($estudiante->id),
                 Rule::unique('users', 'dni')->ignore($estudiante->user_id),
             ],
@@ -242,15 +241,15 @@ class EstudianteController extends Controller
             'apoderado_nombres'          => 'nullable|string|max:255',
             'apoderado_apellido_paterno' => 'nullable|string|max:255',
             'apoderado_apellido_materno' => 'nullable|string|max:255',
-            'apoderado_dni'              => 'nullable|string|size:8',
+            'apoderado_dni'              => 'nullable|string|min:7|max:8',
             'apoderado_direccion'        => 'nullable|string|max:255',
             'apoderado_telefono'         => 'nullable|string|max:20',
             'apoderado_parentesco'       => 'nullable|string|max:50',
             'colegio_inicial'            => 'nullable|string|max:255',
-            'padre_dni'                  => 'nullable|string|size:8',
+            'padre_dni'                  => 'nullable|string|min:7|max:8',
             'padre_nombres'              => 'nullable|string|max:255',
             'padre_telefono'             => 'nullable|string|max:20',
-            'madre_dni'                  => 'nullable|string|size:8',
+            'madre_dni'                  => 'nullable|string|min:7|max:8',
             'madre_nombres'              => 'nullable|string|max:255',
             'madre_telefono'             => 'nullable|string|max:20',
         ], [
