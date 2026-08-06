@@ -788,7 +788,7 @@
         </div>
 
         <!-- Ventana Modal para Detalles de Baja -->
-        <div x-show="showDetallesBajaModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-detalles" role="dialog" aria-modal="true" x-cloak>
+        <div x-show="showDetallesBajaModal" @open-detalles-baja.window="detallesBaja = $event.detail; showDetallesBajaModal = true" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-detalles" role="dialog" aria-modal="true" x-cloak>
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div x-show="showDetallesBajaModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showDetallesBajaModal = false" aria-hidden="true"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
