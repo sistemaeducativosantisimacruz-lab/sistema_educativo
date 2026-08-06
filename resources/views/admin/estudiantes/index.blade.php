@@ -9,13 +9,13 @@
         showModal: {{ (count($errors) > 0 && old('_method') !== 'PUT' && old('_method') !== 'PATCH') ? 'true' : 'false' }}, 
         showMoverModal: {{ (count($errors) > 0 && old('_method') === 'PATCH') ? 'true' : 'false' }}, 
         showEditModal: {{ (count($errors) > 0 && old('_method') === 'PUT') ? 'true' : 'false' }},
-        showRetirarModal: {{ (count($errors) > 0 && old('_method') === 'DELETE') ? 'true' : 'false' }},
+        showRetirarModal: {{ (count($errors) > 0 && old('motivo_baja')) ? 'true' : 'false' }},
         showDetallesBajaModal: false,
         detallesBaja: null,
         retirarData: {
-            motivo_baja: '{{ old('motivo_baja', 'Traslado') }}',
-            fecha_baja: '{{ old('fecha_baja', date('Y-m-d')) }}',
-            observaciones_baja: '{{ old('observaciones_baja', '') }}'
+            motivo_baja: {{ json_encode(old('motivo_baja', 'Traslado')) }},
+            fecha_baja: {{ json_encode(old('fecha_baja', date('Y-m-d'))) }},
+            observaciones_baja: {{ json_encode(old('observaciones_baja', '')) }}
         },
         selectedMatricula: null,
         editEstudiante: {{ (count($errors) > 0 && old('_method') === 'PUT') ? json_encode(['id' => old('estudiante_id'), 'nivel' => old('nivel')]) : 'null' }},
