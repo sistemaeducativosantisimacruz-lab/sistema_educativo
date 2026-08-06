@@ -1075,7 +1075,12 @@
                 var modal = document.getElementById('raw-retirar-modal');
                 
                 if (!modal) {
-                    alert('ERROR: El modal raw-retirar-modal no existe en el DOM');
+                    var allHtml = document.body.innerHTML;
+                    if (allHtml.includes('raw-retirar-modal')) {
+                        alert('CRÍTICO: El string raw-retirar-modal EXISTE en el código HTML del body, pero getElementById devuelve null. El DOM está corrupto o Alpine lo rompió.');
+                    } else {
+                        alert('CRÍTICO: El string raw-retirar-modal NO EXISTE en el código HTML de la página. Vercel no está sirviendo la parte de abajo de la vista.');
+                    }
                     return;
                 }
                 
