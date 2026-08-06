@@ -699,6 +699,201 @@
                     tableContainer.scrollTop = parseInt(tableScrollY);
                 }
                 localStorage.removeItem('estudiantes_table_scroll_y');
+                                        <option value="Beneficio">Beneficio (Media beca / Dscto)</option>
+                                        <option value="Exonerado">Exonerado (Beca completa / No paga)</option>
+                                    </select>
+
+                                    <!-- Opción para aplicar retroactivamente si se cambia el tipo -->
+                                    <div x-show="originalTipoMatricula !== editTipoMatricula" x-transition class="mt-3 bg-white p-3 rounded border border-purple-100 flex items-start gap-2 shadow-sm">
+                                        <input type="checkbox" name="aplicar_retroactivo" id="aplicar_retroactivo" value="1" class="mt-1 text-purple-600 rounded border-gray-300 focus:ring-purple-500">
+                                        <div>
+                                            <label for="aplicar_retroactivo" class="text-sm font-bold text-gray-800 cursor-pointer">¿Aplicar este cambio a meses pasados?</label>
+                                            <p class="text-xs text-gray-600">Si marca esta opción, las deudas no pagadas de meses anteriores en este año se actualizarán al nuevo estado. Si no lo marca, el cambio aplicará desde el próximo mes que se genere.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Datos Primaria (Colegio Inicial, Padre, Madre) para Edición -->
+                                <div class="md:col-span-2 space-y-4 my-2" x-show="editEstudiante && editEstudiante.nivel === 'primaria'" x-cloak x-transition>
+                                    <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                        <label class="block text-sm font-bold text-yellow-800">Colegio Inicial de Procedencia</label>
+                                        <input type="text" name="colegio_inicial" x-model="editData.colegio_inicial" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Ej. PRONOEI Rayito de Sol">
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <!-- Datos del Padre -->
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
+                                            <h5 class="font-extrabold text-blue-800 uppercase tracking-wide text-xs">Datos del Padre</h5>
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-700">DNI del Padre</label>
+                                                <input type="text" name="padre_dni" x-model="editData.padre_dni" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="8 dígitos">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-700">Nombres y Apellidos del Padre</label>
+                                                <input type="text" name="padre_nombres" x-model="editData.padre_nombres" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Nombre completo">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-700">Teléfono del Padre</label>
+                                                <input type="text" name="padre_telefono" x-model="editData.padre_telefono" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ej. 987654321">
+                                            </div>
+                                        </div>
+
+                                        <!-- Datos de la Madre -->
+                                        <div class="p-4 bg-pink-50 rounded-lg border border-pink-200 space-y-3">
+                                            <h5 class="font-extrabold text-pink-800 uppercase tracking-wide text-xs">Datos de la Madre</h5>
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-700">DNI de la Madre</label>
+                                                <input type="text" name="madre_dni" x-model="editData.madre_dni" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="8 dígitos">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-700">Nombres y Apellidos de la Madre</label>
+                                                <input type="text" name="madre_nombres" x-model="editData.madre_nombres" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input" placeholder="Nombre completo">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-700">Teléfono de la Madre</label>
+                                                <input type="text" name="madre_telefono" x-model="editData.madre_telefono" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ej. 987654321">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="md:col-span-2 mt-4 mb-2 pb-2 border-b flex justify-between items-center">
+                                    <h4 class="font-extrabold text-gray-500 uppercase tracking-wide text-xs">Datos del Apoderado (Opcional)</h4>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-600">DNI del Apoderado</label>
+                                    <input type="text" name="apoderado_dni" x-model="editData.apoderado_dni" maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-600">Parentesco</label>
+                                    <select name="apoderado_parentesco" x-model="editData.apoderado_parentesco" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50">
+                                        <option value="APODERADO" :selected="editApoderado && editApoderado.parentesco === 'APODERADO'">Apoderado</option>
+                                        <option value="PADRE" :selected="editApoderado && editApoderado.parentesco === 'PADRE'">Padre</option>
+                                        <option value="MADRE" :selected="editApoderado && editApoderado.parentesco === 'MADRE'">Madre</option>
+                                        <option value="TUTOR" :selected="editApoderado && editApoderado.parentesco === 'TUTOR'">Tutor Legal</option>
+                                        <option value="ABUELO/A" :selected="editApoderado && editApoderado.parentesco === 'ABUELO/A'">Abuelo/a</option>
+                                        <option value="OTRO" :selected="editApoderado && editApoderado.parentesco === 'OTRO'">Otro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-600">Nombres del Apoderado</label>
+                                    <input type="text" name="apoderado_nombres" x-model="editData.apoderado_nombres" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-600">Apellido Paterno</label>
+                                    <input type="text" name="apoderado_apellido_paterno" x-model="editData.apoderado_apellido_paterno" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-600">Apellido Materno</label>
+                                    <input type="text" name="apoderado_apellido_materno" x-model="editData.apoderado_apellido_materno" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-600">Teléfono</label>
+                                    <input type="text" name="apoderado_telefono" x-model="editData.apoderado_telefono" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-bold text-gray-600">Dirección / Domicilio</label>
+                                    <input type="text" name="apoderado_direccion" x-model="editData.apoderado_direccion" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm uppercase-input">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t">
+                        <button type="submit" form="editarEstudianteForm" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">
+                            Guardar Cambios
+                        </button>
+                        <button type="button" @click="showEditModal = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ventana Modal para Mover Estudiante -->
+        <div x-show="showMoverModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-mover" role="dialog" aria-modal="true" x-cloak>
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div x-show="showMoverModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showMoverModal = false" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div x-show="showMoverModal" class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                                <h3 class="text-xl leading-6 font-bold text-gray-900 mb-2">Mover Estudiante de Sección</h3>
+                                <p class="text-sm text-gray-500 mb-4">Mueva a <span class="font-bold text-indigo-700" x-text="selectedMatricula ? selectedMatricula.nombre : ''"></span> a otra sección de su mismo grado.</p>
+                                
+                                <form :action="selectedMatricula ? '/admin/estudiantes/' + selectedMatricula.estudiante_id + '/mover' : '#'" method="POST" id="moverEstudianteForm">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="mb-4" x-data="{
+                                        gradoSecciones: {{ $gradoSecciones->map(function($gs) {
+                                            return [
+                                                'id' => $gs->id,
+                                                'grado_id' => $gs->grado_id,
+                                                'seccion_nombre' => $gs->seccion->nombre
+                                            ];
+                                        })->toJson() }},
+                                        get seccionesMismoGrado() {
+                                            if (!selectedMatricula) return [];
+                                            return this.gradoSecciones.filter(gs => gs.grado_id === selectedMatricula.grado_id && gs.id !== selectedMatricula.seccion_actual_id);
+                                        }
+                                    }">
+                                        <label class="block text-sm font-bold text-gray-700">Nueva Sección</label>
+                                        <select name="grado_seccion_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-yellow-500 rounded-md shadow-sm bg-gray-50" required>
+                                            <option value="">-- Seleccione Sección --</option>
+                                            <template x-for="gs in seccionesMismoGrado" :key="gs.id">
+                                                <option :value="gs.id" x-text="'Sección ' + gs.seccion_nombre"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t">
+                        <button type="submit" form="moverEstudianteForm" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
+                            Mover Estudiante
+                        </button>
+                        <button type="button" @click="showMoverModal = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script para preservar posición de scroll tras guardar cambios y reabrir modal si hay errores -->
+    <script>
+        // Guardar posición de scroll al enviar formularios de tipo POST
+        document.addEventListener('submit', (e) => {
+            const form = e.target;
+            if (form && form.method && form.method.toLowerCase() === 'post') {
+                localStorage.setItem('estudiantes_scroll_y', window.scrollY);
+                const tableContainer = document.getElementById('students-table-container');
+                if (tableContainer) {
+                    localStorage.setItem('estudiantes_table_scroll_y', tableContainer.scrollTop);
+                }
+            }
+        });
+
+        // Restaurar posición de scroll al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            const scrollY = localStorage.getItem('estudiantes_scroll_y');
+            const tableScrollY = localStorage.getItem('estudiantes_table_scroll_y');
+            
+            if (scrollY !== null) {
+                window.scrollTo(0, parseInt(scrollY));
+                localStorage.removeItem('estudiantes_scroll_y');
+            }
+            
+            if (tableScrollY !== null) {
+                const tableContainer = document.getElementById('students-table-container');
+                if (tableContainer) {
+                    tableContainer.scrollTop = parseInt(tableScrollY);
+                }
+                localStorage.removeItem('estudiantes_table_scroll_y');
             }
 
             // Reabrir modal de registro si hay errores de validación
@@ -709,5 +904,16 @@
                 }
             @endif
         });
+        @if($errors->any())
+            document.addEventListener('DOMContentLoaded', function() {
+                let errores = @json($errors->all());
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al guardar',
+                    html: '<ul style="text-align: left; font-size: 0.9em; margin-left: 20px;"><li style="list-style-type: disc;">' + errores.join('</li><li style="list-style-type: disc;">') + '</li></ul>',
+                    confirmButtonText: 'Entendido'
+                });
+            });
+        @endif
     </script>
 </x-app-layout>
