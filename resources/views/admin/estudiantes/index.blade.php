@@ -268,7 +268,7 @@
                                                     <button type="button" onclick="openRawRetirarModal({{ htmlspecialchars(json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
-                                                    ])) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
+                                                    ])) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar (V3)</button>
                                                 @elseif($matricula->estado === 'retirado')
                                                     |
                                                     <button type="button" @click="$dispatch('open-detalles-baja', {{ json_encode([
@@ -919,7 +919,7 @@
             </div>
         </div>
         <!-- Ventana Modal para Retirar Estudiante (Raw JS version) -->
-        <div id="raw-retirar-modal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-retirar" role="dialog" aria-modal="true" style="display: {{ (count($errors) > 0 && old('motivo_baja')) ? 'block' : 'none' }};">
+        <div id="raw-retirar-modal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-retirar" role="dialog" aria-modal="true" style="display: {{ (count($errors) > 0 && old('motivo_baja')) ? 'block' : 'none' }}; opacity: 1 !important; visibility: visible !important;">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeRawRetirarModal()" aria-hidden="true"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
