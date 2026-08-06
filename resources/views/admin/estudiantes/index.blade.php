@@ -247,20 +247,20 @@
                                                 
                                                 @if($matricula->estado === 'matriculado')
                                                     |
-                                                    <button @click="showMoverModal = true; selectedMatricula = {{ json_encode([
+                                                    <button type="button" @click="showMoverModal = true; selectedMatricula = {{ json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'grado_id' => $matricula->gradoSeccion->grado_id,
                                                         'seccion_actual_id' => $matricula->grado_seccion_id,
                                                     ]) }}" class="text-blue-600 hover:text-blue-900 font-bold">Mover</button>
                                                     |
-                                                    <button @click="showRetirarModal = true; selectedMatricula = {{ json_encode([
+                                                    <button type="button" @click="showRetirarModal = true; selectedMatricula = {{ json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                     ]) }}" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
                                                 @elseif($matricula->estado === 'retirado')
                                                     |
-                                                    <button @click="showDetallesBajaModal = true; detallesBaja = {{ json_encode([
+                                                    <button type="button" @click="showDetallesBajaModal = true; detallesBaja = {{ json_encode([
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'motivo_baja' => $matricula->motivo_baja,
                                                         'fecha_baja' => $matricula->fecha_baja ? \Carbon\Carbon::parse($matricula->fecha_baja)->format('d/m/Y') : '',
