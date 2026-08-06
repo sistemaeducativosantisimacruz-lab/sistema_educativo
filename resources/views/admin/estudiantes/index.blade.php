@@ -265,10 +265,10 @@
                                                         'seccion_actual_id' => $matricula->grado_seccion_id,
                                                     ]) }})" class="text-blue-600 hover:text-blue-900 font-bold">Mover</button>
                                                     |
-                                                    <button type="button" onclick="openRawRetirarModal({{ htmlspecialchars(json_encode([
+                                                    <button type="button" onclick="openRawRetirarModal({{ json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
-                                                    ])) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar (V3)</button>
+                                                    ]) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar (Final)</button>
                                                 @elseif($matricula->estado === 'retirado')
                                                     |
                                                     <button type="button" @click="$dispatch('open-detalles-baja', {{ json_encode([
