@@ -451,7 +451,8 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Cód. Estudiante (SIAGIE)</label>
-                                    <input type="text" name="codigo_estudiante" x-model="editCodigoEstudiante" maxlength="20" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Opcional">
+                                    <input type="text" name="codigo_estudiante" x-model="editCodigoEstudiante" maxlength="20" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm @error('codigo_estudiante') border-red-500 @enderror" placeholder="Opcional">
+                                    @error('codigo_estudiante') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Nombres *</label>
