@@ -6,19 +6,39 @@
     </x-slot>
 
     <div class="py-12" x-data="{ 
-        showModal: false, 
-        showMoverModal: false, 
-        showEditModal: false,
+        showModal: {{ (count($errors) > 0 && old('_method') !== 'PUT' && old('_method') !== 'PATCH') ? 'true' : 'false' }}, 
+        showMoverModal: {{ (count($errors) > 0 && old('_method') === 'PATCH') ? 'true' : 'false' }}, 
+        showEditModal: {{ (count($errors) > 0 && old('_method') === 'PUT') ? 'true' : 'false' }},
         selectedMatricula: null,
-        editEstudiante: null,
+        editEstudiante: {!! (count($errors) > 0 && old('_method') === 'PUT') ? json_encode(['id' => old('estudiante_id'), 'nivel' => old('nivel')]) : 'null' !!},
         editApoderado: null,
         editPadre: null,
         editMadre: null,
-        editSexo: 'M',
-        editCodigoEstudiante: '',
-        editData: {},
-        editTipoMatricula: 'Normal',
-        originalTipoMatricula: 'Normal'
+        editSexo: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('sexo', 'M') : 'M') !!},
+        editCodigoEstudiante: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('codigo_estudiante', '') : '') !!},
+        editData: {
+            dni: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('dni', '') : '') !!},
+            nombres: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('nombres', '') : '') !!},
+            apellido_paterno: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apellido_paterno', '') : '') !!},
+            apellido_materno: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apellido_materno', '') : '') !!},
+            fecha_nacimiento: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('fecha_nacimiento', '') : '') !!},
+            colegio_inicial: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('colegio_inicial', '') : '') !!},
+            padre_dni: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('padre_dni', '') : '') !!},
+            padre_nombres: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('padre_nombres', '') : '') !!},
+            padre_telefono: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('padre_telefono', '') : '') !!},
+            madre_dni: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('madre_dni', '') : '') !!},
+            madre_nombres: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('madre_nombres', '') : '') !!},
+            madre_telefono: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('madre_telefono', '') : '') !!},
+            apoderado_dni: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apoderado_dni', '') : '') !!},
+            apoderado_parentesco: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apoderado_parentesco', '') : '') !!},
+            apoderado_nombres: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apoderado_nombres', '') : '') !!},
+            apoderado_apellido_paterno: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apoderado_apellido_paterno', '') : '') !!},
+            apoderado_apellido_materno: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apoderado_apellido_materno', '') : '') !!},
+            apoderado_telefono: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apoderado_telefono', '') : '') !!},
+            apoderado_direccion: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('apoderado_direccion', '') : '') !!}
+        },
+        editTipoMatricula: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('tipo_matricula', 'Normal') : 'Normal') !!},
+        originalTipoMatricula: {!! json_encode((count($errors) > 0 && old('_method') === 'PUT') ? old('original_tipo_matricula', 'Normal') : 'Normal') !!}
     }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
@@ -278,12 +298,12 @@
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">DNI *</label>
                                     <input type="text" name="dni" value="{{ old('dni') }}" required maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm @error('dni') border-red-500 @enderror">
-                                    @error('dni') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
+                                    @error('dni') <p x-show="!showEditModal" class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Cód. Estudiante (SIAGIE)</label>
                                     <input type="text" name="codigo_estudiante" value="{{ old('codigo_estudiante') }}" maxlength="20" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm @error('codigo_estudiante') border-red-500 @enderror" placeholder="Opcional">
-                                    @error('codigo_estudiante') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
+                                    @error('codigo_estudiante') <p x-show="!showEditModal" class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Nombres *</label>
@@ -339,7 +359,7 @@
                                                 <option :value="gs.id" x-text="'Sección ' + gs.seccion_nombre" :selected="gs.id == {{ old('grado_seccion_id', 0) }}"></option>
                                             </template>
                                         </select>
-                                        @error('grado_seccion_id') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
+                                        @error('grado_seccion_id') <p x-show="!showEditModal" class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
                                     </div>
                                     <div class="md:col-span-2">
                                         <label class="block text-sm font-bold text-gray-700">Tipo de Matrícula (Para mensualidades) *</label>
@@ -459,9 +479,12 @@
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b">
                         <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4">Editar Estudiante</h3>
                         
-                        <form :action="editEstudiante ? '/admin/estudiantes/' + editEstudiante.id : '#'" method="POST" id="editarEstudianteForm">
+                        <form :action="editEstudiante && editEstudiante.id ? '/admin/estudiantes/' + editEstudiante.id : '#'" method="POST" id="editarEstudianteForm">
                             @csrf
                             @method('PUT')
+                            <input type="hidden" name="estudiante_id" :value="editEstudiante ? editEstudiante.id : ''">
+                            <input type="hidden" name="nivel" :value="editEstudiante ? editEstudiante.nivel : ''">
+                            <input type="hidden" name="original_tipo_matricula" :value="originalTipoMatricula">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="md:col-span-2 mb-2 pb-2 border-b">
                                     <h4 class="font-extrabold text-indigo-700 uppercase tracking-wide text-xs">Datos del Estudiante</h4>
@@ -469,12 +492,12 @@
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">DNI *</label>
                                     <input type="text" name="dni" x-model="editData.dni" required maxlength="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm @error('dni') border-red-500 @enderror font-mono">
-                                    @error('dni') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
+                                    @error('dni') <p x-show="editEstudiante && editEstudiante.id == '{{ old('estudiante_id') }}'" class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Cód. Estudiante (SIAGIE)</label>
                                     <input type="text" name="codigo_estudiante" x-model="editCodigoEstudiante" maxlength="20" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm @error('codigo_estudiante') border-red-500 @enderror" placeholder="Opcional">
-                                    @error('codigo_estudiante') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
+                                    @error('codigo_estudiante') <p x-show="editEstudiante && editEstudiante.id == '{{ old('estudiante_id') }}'" class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Nombres *</label>
