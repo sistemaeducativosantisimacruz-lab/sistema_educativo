@@ -15,6 +15,7 @@
         editPadre: null,
         editMadre: null,
         editSexo: 'M',
+        editCodigoEstudiante: '',
         editTipoMatricula: 'Normal',
         originalTipoMatricula: 'Normal'
     }">
@@ -183,6 +184,7 @@
                                                     editPadre = {{ json_encode($matricula->estudiante->padre) }};
                                                     editMadre = {{ json_encode($matricula->estudiante->madre) }};
                                                     editSexo = editEstudiante.sexo;
+                                                    editCodigoEstudiante = editEstudiante.codigo_estudiante || '';
                                                     editTipoMatricula = '{{ $matricula->tipo_matricula ?? 'Normal' }}';
                                                     originalTipoMatricula = '{{ $matricula->tipo_matricula ?? 'Normal' }}';" 
                                                     class="text-indigo-600 hover:text-indigo-900 font-bold">Editar</button>
@@ -449,7 +451,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Cód. Estudiante (SIAGIE)</label>
-                                    <input type="text" name="codigo_estudiante" :value="editEstudiante ? editEstudiante.codigo_estudiante : ''" maxlength="20" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Opcional">
+                                    <input type="text" name="codigo_estudiante" x-model="editCodigoEstudiante" maxlength="20" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Opcional">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700">Nombres *</label>
