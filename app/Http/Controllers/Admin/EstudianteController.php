@@ -222,6 +222,8 @@ class EstudianteController extends Controller
 
     public function update(Request $request, Estudiante $estudiante)
     {
+        dd($request->all());
+        
         $request->validate([
             'dni' => [
                 'required',
