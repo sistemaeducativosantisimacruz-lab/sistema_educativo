@@ -246,13 +246,27 @@
                                                     class="text-indigo-600 hover:text-indigo-900 font-bold">Editar</button>
                                                 
                                                 @if($matricula->estado === 'matriculado')
+                                                    <button type="button" @click="showMoverModal = true; selectedMatricula = {{ json_encode([
+                                                        'estudiante_id' => $matricula->estudiante->id,
+                                                        'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
+                                                        'grado_id' => $matricula->gradoSeccion->grado_id,
+                                                        'seccion_actual_id' => $matricula->grado_seccion_id,
+                                                    ]) }};" class="text-blue-600 hover:text-blue-900 font-bold">Mover</button>
                                                     |
-                                                    <button type="button" @click="selectedMatricula = { estudiante_id: {{ $matricula->estudiante->id }}, nombre: '{{ addslashes($matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno) }}', grado_id: {{ $matricula->gradoSeccion->grado_id }}, seccion_actual_id: {{ $matricula->grado_seccion_id }} }; showMoverModal = true;" class="text-blue-600 hover:text-blue-900 font-bold">Mover</button>
-                                                    |
-                                                    <button type="button" @click="showRetirarModal = true; selectedMatricula = { estudiante_id: {{ $matricula->estudiante->id }}, nombre: '{{ addslashes($matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno) }}', grado_id: null, seccion_actual_id: null };" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
+                                                    <button type="button" @click="showRetirarModal = true; selectedMatricula = {{ json_encode([
+                                                        'estudiante_id' => $matricula->estudiante->id,
+                                                        'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
+                                                        'grado_id' => null,
+                                                        'seccion_actual_id' => null,
+                                                    ]) }};" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
                                                 @elseif($matricula->estado === 'retirado')
                                                     |
-                                                    <button type="button" @click="detallesBaja = { nombre: '{{ addslashes($matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno) }}', motivo_baja: '{{ addslashes($matricula->motivo_baja) }}', fecha_baja: '{{ $matricula->fecha_baja ? \Carbon\Carbon::parse($matricula->fecha_baja)->format('d/m/Y') : '' }}', observaciones_baja: '{{ addslashes(str_replace(["\r", "\n"], ' ', $matricula->observaciones_baja ?? '')) }}' }; showDetallesBajaModal = true;" class="text-gray-600 hover:text-gray-900 font-bold">Detalles de Baja</button>
+                                                    <button type="button" @click="showDetallesBajaModal = true; detallesBaja = {{ json_encode([
+                                                        'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
+                                                        'motivo_baja' => $matricula->motivo_baja,
+                                                        'fecha_baja' => $matricula->fecha_baja ? \Carbon\Carbon::parse($matricula->fecha_baja)->format('d/m/Y') : '',
+                                                        'observaciones_baja' => $matricula->observaciones_baja,
+                                                    ]) }};" class="text-gray-600 hover:text-gray-900 font-bold">Detalles de Baja</button>
                                                 @endif
                                             </td>
                                         </tr>
