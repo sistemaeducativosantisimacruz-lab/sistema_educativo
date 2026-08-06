@@ -271,7 +271,7 @@
                                                     ]) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
                                                 @elseif($matricula->estado === 'retirado')
                                                     |
-                                                    <button type="button" @click="$dispatch('open-detalles-baja', {{ json_encode([
+                                                    <button type="button" onclick="openRawDetallesBajaModal({{ json_encode([
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'motivo_baja' => $matricula->motivo_baja,
                                                         'fecha_baja' => $matricula->fecha_baja ? \Carbon\Carbon::parse($matricula->fecha_baja)->format('d/m/Y') : '',
@@ -787,32 +787,34 @@
             </div>
         </div>
 
-        <!-- Ventana Modal para Detalles de Baja -->
-        <div x-show="showDetallesBajaModal" @open-detalles-baja.window="detallesBaja = $event.detail; showDetallesBajaModal = true" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-detalles" role="dialog" aria-modal="true" x-cloak>
+        <!-- Ventana Modal para Detalles de Baja (Raw JS version) -->
+        <div id="raw-detalles-baja-modal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-detalles" role="dialog" aria-modal="true" style="display: none; opacity: 1 !important; visibility: visible !important;">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div x-show="showDetallesBajaModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showDetallesBajaModal = false" aria-hidden="true"></div>
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeRawDetallesBajaModal()" aria-hidden="true" style="z-index: 10;"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div x-show="showDetallesBajaModal" class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 border-b">
-                        <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4 pb-3 border-b">Detalles de Baja: <span x-text="detallesBaja ? detallesBaja.nombre : ''" class="text-gray-600"></span></h3>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <h4 class="text-sm font-bold text-gray-500 uppercase">Motivo</h4>
-                                <p class="mt-1 text-base font-medium text-gray-900" x-text="detallesBaja ? detallesBaja.motivo_baja : '-'"></p>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-gray-500 uppercase">Fecha de Baja</h4>
-                                <p class="mt-1 text-base font-medium text-gray-900" x-text="detallesBaja ? detallesBaja.fecha_baja : '-'"></p>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-gray-500 uppercase">Observaciones</h4>
-                                <p class="mt-1 text-base text-gray-700 bg-gray-50 p-3 rounded-md border" x-text="(detallesBaja && detallesBaja.observaciones_baja) ? detallesBaja.observaciones_baja : 'Sin observaciones.'"></p>
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" style="position: relative; z-index: 9999999;">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4 pb-3 border-b">Detalles de Baja: <span id="raw-detalles-baja-nombre" class="text-gray-600"></span></h3>
+                                
+                                <div class="mb-4 text-left">
+                                    <label class="block text-sm font-bold text-gray-500 uppercase">Motivo de Baja</label>
+                                    <p class="mt-1 text-base font-medium text-gray-900" id="raw-detalles-baja-motivo">-</p>
+                                </div>
+                                <div class="mb-4 text-left">
+                                    <label class="block text-sm font-bold text-gray-500 uppercase">Fecha Efectiva</label>
+                                    <p class="mt-1 text-base font-medium text-gray-900" id="raw-detalles-baja-fecha">-</p>
+                                </div>
+                                <div class="mb-4 text-left">
+                                    <label class="block text-sm font-bold text-gray-500 uppercase">Observaciones Administrativas</label>
+                                    <p class="mt-1 text-base text-gray-700 bg-gray-50 p-3 rounded-md border" id="raw-detalles-baja-observaciones">Sin observaciones.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button type="button" @click="showDetallesBajaModal = false" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t">
+                        <button type="button" onclick="closeRawDetallesBajaModal()" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">
                             Cerrar
                         </button>
                     </div>
@@ -899,6 +901,32 @@
         
         function closeRawRetirarModal() {
             document.getElementById('raw-retirar-modal').style.setProperty('display', 'none', 'important');
+        }
+
+        function openRawDetallesBajaModal(data) {
+            var modal = document.getElementById('raw-detalles-baja-modal');
+            
+            if (!modal) {
+                console.error('El modal raw-detalles-baja-modal no existe en el DOM.');
+                return;
+            }
+            
+            // Move modal to body to bypass any stacking context issues
+            if (modal.parentNode !== document.body) {
+                document.body.appendChild(modal);
+            }
+            
+            modal.style.setProperty('display', 'block', 'important');
+            modal.style.setProperty('z-index', '999999', 'important');
+            
+            document.getElementById('raw-detalles-baja-nombre').innerText = data.nombre;
+            document.getElementById('raw-detalles-baja-motivo').innerText = data.motivo_baja || '-';
+            document.getElementById('raw-detalles-baja-fecha').innerText = data.fecha_baja || '-';
+            document.getElementById('raw-detalles-baja-observaciones').innerText = data.observaciones_baja || 'Sin observaciones.';
+        }
+
+        function closeRawDetallesBajaModal() {
+            document.getElementById('raw-detalles-baja-modal').style.setProperty('display', 'none', 'important');
         }
     </script>
 </x-app-layout>
