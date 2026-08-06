@@ -265,12 +265,10 @@
                                                         'seccion_actual_id' => $matricula->grado_seccion_id,
                                                     ]) }})" class="text-blue-600 hover:text-blue-900 font-bold">Mover</button>
                                                     |
-                                                    <button type="button" @click="$dispatch('open-retirar', {{ json_encode([
+                                                    <button type="button" onclick="openRawRetirarModal({{ htmlspecialchars(json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
-                                                        'grado_id' => null,
-                                                        'seccion_actual_id' => null,
-                                                    ]) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
+                                                    ])) }})" class="text-red-600 hover:text-red-900 font-bold">Retirar</button>
                                                 @elseif($matricula->estado === 'retirado')
                                                     |
                                                     <button type="button" @click="$dispatch('open-detalles-baja', {{ json_encode([
@@ -920,12 +918,12 @@
                 </div>
             </div>
         </div>
-        <!-- Ventana Modal para Retirar Estudiante -->
-        <div x-show="showRetirarModal" @open-retirar.window="selectedMatricula = $event.detail; showRetirarModal = true" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-retirar" role="dialog" aria-modal="true" x-cloak>
+        <!-- Ventana Modal para Retirar Estudiante (Raw JS version) -->
+        <div id="raw-retirar-modal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-retirar" role="dialog" aria-modal="true" style="display: {{ (count($errors) > 0 && old('motivo_baja')) ? 'block' : 'none' }};">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div x-show="showRetirarModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showRetirarModal = false" aria-hidden="true"></div>
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeRawRetirarModal()" aria-hidden="true"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div x-show="showRetirarModal" class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b">
                         <div class="sm:flex sm:items-start">
                             <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -935,39 +933,38 @@
                             </div>
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-2">Retirar Estudiante</h3>
-                                <p class="text-sm text-gray-500 mb-4">Está a punto de dar de baja a <span class="font-bold text-gray-900" x-text="selectedMatricula ? selectedMatricula.nombre : ''"></span>. Por favor complete la información requerida.</p>
+                                <p class="text-sm text-gray-500 mb-4">Está a punto de dar de baja a <span class="font-bold text-gray-900" id="raw-retirar-nombre">{{ old('estudiante_nombre', '') }}</span>. Por favor complete la información requerida.</p>
                                 
-                                <form :action="selectedMatricula ? '/admin/estudiantes/' + selectedMatricula.estudiante_id + '/retirar' : '#'" method="POST" id="retirarEstudianteForm">
+                                <form action="" method="POST" id="retirarEstudianteForm">
                                     @csrf
                                     
                                     <!-- Validación de Errores Específicos para este Modal -->
-                                    <template x-if="showRetirarModal && selectedMatricula && selectedMatricula.estudiante_id == '{{ old('estudiante_id') }}'">
-                                        <div>
-                                            @if($errors->has('fecha_baja')) <p class="text-red-500 text-xs italic mb-2">{{ $errors->first('fecha_baja') }}</p> @endif
-                                            @if($errors->has('motivo_baja')) <p class="text-red-500 text-xs italic mb-2">{{ $errors->first('motivo_baja') }}</p> @endif
-                                            @if($errors->has('observaciones_baja')) <p class="text-red-500 text-xs italic mb-2">{{ $errors->first('observaciones_baja') }}</p> @endif
-                                        </div>
-                                    </template>
+                                    <div id="raw-retirar-errors" style="display: {{ (count($errors) > 0 && old('motivo_baja')) ? 'block' : 'none' }};">
+                                        @if($errors->has('fecha_baja')) <p class="text-red-500 text-xs italic mb-2">{{ $errors->first('fecha_baja') }}</p> @endif
+                                        @if($errors->has('motivo_baja')) <p class="text-red-500 text-xs italic mb-2">{{ $errors->first('motivo_baja') }}</p> @endif
+                                        @if($errors->has('observaciones_baja')) <p class="text-red-500 text-xs italic mb-2">{{ $errors->first('observaciones_baja') }}</p> @endif
+                                    </div>
                                     
-                                    <input type="hidden" name="estudiante_id" :value="selectedMatricula ? selectedMatricula.estudiante_id : ''">
+                                    <input type="hidden" name="estudiante_id" id="raw-retirar-estudiante-id" value="{{ old('estudiante_id') }}">
+                                    <input type="hidden" name="estudiante_nombre" id="raw-retirar-estudiante-nombre" value="{{ old('estudiante_nombre') }}">
 
                                     <div class="mb-4">
                                         <label class="block text-sm font-bold text-gray-700">Motivo de Baja *</label>
-                                        <select name="motivo_baja" x-model="retirarData.motivo_baja" class="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm bg-gray-50" required>
+                                        <select name="motivo_baja" class="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm bg-gray-50" required>
                                             <option value="">-- Seleccione un Motivo --</option>
-                                            <option value="Traslado">Traslado</option>
-                                            <option value="Retiro Voluntario">Retiro Voluntario</option>
-                                            <option value="Deserción">Deserción</option>
-                                            <option value="Medida Disciplinaria">Medida Disciplinaria</option>
+                                            <option value="Traslado" {{ old('motivo_baja') === 'Traslado' ? 'selected' : '' }}>Traslado</option>
+                                            <option value="Retiro Voluntario" {{ old('motivo_baja') === 'Retiro Voluntario' ? 'selected' : '' }}>Retiro Voluntario</option>
+                                            <option value="Deserción" {{ old('motivo_baja') === 'Deserción' ? 'selected' : '' }}>Deserción</option>
+                                            <option value="Medida Disciplinaria" {{ old('motivo_baja') === 'Medida Disciplinaria' ? 'selected' : '' }}>Medida Disciplinaria</option>
                                         </select>
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-bold text-gray-700">Fecha Efectiva *</label>
-                                        <input type="date" name="fecha_baja" x-model="retirarData.fecha_baja" class="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm bg-gray-50" required>
+                                        <input type="date" name="fecha_baja" value="{{ old('fecha_baja', date('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm bg-gray-50" required>
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-bold text-gray-700">Observaciones Administrativas</label>
-                                        <textarea name="observaciones_baja" x-model="retirarData.observaciones_baja" rows="3" class="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm bg-gray-50 uppercase"></textarea>
+                                        <textarea name="observaciones_baja" rows="3" class="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm bg-gray-50 uppercase">{{ old('observaciones_baja') }}</textarea>
                                     </div>
                                 </form>
                             </div>
@@ -977,7 +974,7 @@
                         <button type="submit" form="retirarEstudianteForm" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 sm:ml-3 sm:w-auto sm:text-sm">
                             Confirmar Retiro
                         </button>
-                        <button type="button" @click="showRetirarModal = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        <button type="button" onclick="closeRawRetirarModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                             Cancelar
                         </button>
                     </div>
@@ -1070,5 +1067,19 @@
                 });
             });
         @endif
+    </script>
+    <script>
+        function openRawRetirarModal(data) {
+            document.getElementById('raw-retirar-modal').style.display = 'block';
+            document.getElementById('raw-retirar-estudiante-id').value = data.estudiante_id;
+            document.getElementById('raw-retirar-nombre').innerText = data.nombre;
+            
+            var form = document.getElementById('retirarEstudianteForm');
+            form.action = '/admin/estudiantes/' + data.estudiante_id + '/retirar';
+        }
+        
+        function closeRawRetirarModal() {
+            document.getElementById('raw-retirar-modal').style.display = 'none';
+        }
     </script>
 </x-app-layout>
