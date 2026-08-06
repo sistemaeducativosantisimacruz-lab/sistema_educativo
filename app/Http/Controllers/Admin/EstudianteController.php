@@ -426,13 +426,24 @@ class EstudianteController extends Controller
 
     public function retirar(Request $request, Estudiante $estudiante)
     {
+        $request->validate([
+            'motivo_baja'        => 'required|string|in:Traslado,Retiro Voluntario,Deserción,Medida Disciplinaria',
+            'fecha_baja'         => 'required|date',
+            'observaciones_baja' => 'nullable|string|max:1000',
+        ]);
+
         $anoActivo = AnoLectivo::where('activo', true)->firstOrFail();
 
         $matricula = Matricula::where('estudiante_id', $estudiante->id)
             ->where('ano_lectivo_id', $anoActivo->id)
             ->firstOrFail();
 
-        $matricula->update(['estado' => 'retirado']);
+        $matricula->update([
+            'estado'             => 'retirado',
+            'fecha_baja'         => $request->fecha_baja,
+            'motivo_baja'        => $request->motivo_baja,
+            'observaciones_baja' => $request->observaciones_baja,
+        ]);
         $estudiante->update(['estado' => 'retirado']);
 
         return back()->with('success', 'El estudiante ha sido retirado del año lectivo.');

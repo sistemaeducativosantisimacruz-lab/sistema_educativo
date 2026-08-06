@@ -18,6 +18,9 @@ class Matricula extends Model
         'ano_lectivo_id',
         'estado',
         'tipo_matricula',
+        'fecha_baja',
+        'motivo_baja',
+        'observaciones_baja',
     ];
 
     public function estudiante(): BelongsTo
