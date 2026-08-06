@@ -60,6 +60,7 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     // Importaciones
     Route::get('importaciones/create', [ImportController::class, 'create'])->name('importaciones.create');
     Route::post('importaciones/preview', [ImportController::class, 'preview'])->name('importaciones.preview');
+    Route::post('importaciones/check-notas', [ImportController::class, 'checkNotasExist'])->name('importaciones.check_notas');
     Route::post('importaciones/confirmar', [ImportController::class, 'confirmar'])->name('importaciones.confirmar');
     Route::delete('importaciones/{id}/revertir', [ImportController::class, 'revertir'])->name('importaciones.revertir');
     

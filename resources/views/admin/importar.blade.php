@@ -582,63 +582,111 @@ function importWizard() {
                 return;
             }
             
-            try {
+            const doImport = () => {
+                try {
+                    this.loading = true;
+                    const payload = new FormData();
+                    payload.append('nivel_id', this.form.nivel_id);
+                    payload.append('grado_id', this.form.grado_id);
+                    payload.append('seccion_id', this.form.seccion_id);
+                    payload.append('tipo', this.form.tipo);
+                    if (this.form.tipo === 'directorio' && this.form.nivel_id && this.form.nivel_id.toLowerCase() === 'primaria') {
+                        payload.append('apoderado_tipo', this.form.apoderado_tipo);
+                    }
+                    if (this.form.tipo === 'notas') {
+                        payload.append('bimestre_id', this.form.bimestre_id);
+                    }
+                    payload.append('file', this.file);
+                    payload.append('mapping', JSON.stringify(this.mapping));
+                    
+                    const unselectedIndices = this.excelPreviewRows
+                        .map((row, idx) => (!row._selected ? idx : -1))
+                        .filter(idx => idx !== -1);
+                    payload.append('unselected_indices', JSON.stringify(unselectedIndices));
+                    
+                    fetch('{{ route('admin.importaciones.confirmar') }}', {
+                        method: 'POST',
+                        headers: { 
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: payload,
+                    })
+                    .then(async response => {
+                        this.loading = false;
+                        const data = await response.json().catch(() => ({}));
+                        if (response.ok) {
+                            if (data.success) {
+                                Swal.fire('¡Éxito!', data.message || 'Importación procesada correctamente', 'success').then(() => {
+                                    window.location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error', data.message || 'Hubo un error al procesar la importación', 'error');
+                            }
+                        } else {
+                            let msg = data.message || 'Hubo un error al procesar la importación';
+                            if (response.status === 422 && data.errors) {
+                                msg = Object.values(data.errors).flat().join('\n');
+                            }
+                            Swal.fire('Error', msg, 'error');
+                        }
+                    })
+                    .catch(err => {
+                        this.loading = false;
+                        console.error(err);
+                        Swal.fire('Error de Red', 'Ocurrió un error al enviar los datos: ' + err.message, 'error');
+                    });
+                } catch (error) {
+                    this.loading = false;
+                    console.error(error);
+                    Swal.fire('Error Inesperado', 'Ocurrió un error inesperado al preparar los datos: ' + error.message, 'error');
+                }
+            };
+
+            if (this.form.tipo === 'notas') {
                 this.loading = true;
-                const payload = new FormData();
-                payload.append('nivel_id', this.form.nivel_id);
-                payload.append('grado_id', this.form.grado_id);
-                payload.append('seccion_id', this.form.seccion_id);
-                payload.append('tipo', this.form.tipo);
-                if (this.form.tipo === 'directorio' && this.form.nivel_id && this.form.nivel_id.toLowerCase() === 'primaria') {
-                    payload.append('apoderado_tipo', this.form.apoderado_tipo);
-                }
-                if (this.form.tipo === 'notas') {
-                    payload.append('bimestre_id', this.form.bimestre_id);
-                }
-                payload.append('file', this.file);
-                payload.append('mapping', JSON.stringify(this.mapping));
+                const checkPayload = new FormData();
+                checkPayload.append('grado_id', this.form.grado_id);
+                checkPayload.append('seccion_id', this.form.seccion_id);
+                checkPayload.append('bimestre_id', this.form.bimestre_id);
                 
-                const unselectedIndices = this.excelPreviewRows
-                    .map((row, idx) => (!row._selected ? idx : -1))
-                    .filter(idx => idx !== -1);
-                payload.append('unselected_indices', JSON.stringify(unselectedIndices));
-                
-                fetch('{{ route('admin.importaciones.confirmar') }}', {
+                fetch('{{ route('admin.importaciones.check_notas') }}', {
                     method: 'POST',
                     headers: { 
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json'
                     },
-                    body: payload,
+                    body: checkPayload,
                 })
-                .then(async response => {
+                .then(res => res.json())
+                .then(data => {
                     this.loading = false;
-                    const data = await response.json().catch(() => ({}));
-                    if (response.ok) {
-                        if (data.success) {
-                            Swal.fire('¡Éxito!', data.message || 'Importación procesada correctamente', 'success').then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            Swal.fire('Error', data.message || 'Hubo un error al procesar la importación', 'error');
-                        }
+                    if (data.success && data.exists) {
+                        Swal.fire({
+                            title: 'Atención',
+                            text: `Ya existen ${data.count} notas registradas para este grado, sección y bimestre. Si continúas, se sobrescribirán con las del archivo que estás importando. ¿Estás seguro de continuar?`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Sí, continuar e importar',
+                            cancelButtonText: 'Cancelar'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                doImport();
+                            }
+                        });
                     } else {
-                        let msg = data.message || 'Hubo un error al procesar la importación';
-                        if (response.status === 422 && data.errors) {
-                            msg = Object.values(data.errors).flat().join('\n');
-                        }
-                        Swal.fire('Error', msg, 'error');
+                        doImport();
                     }
                 })
                 .catch(err => {
                     this.loading = false;
-                    console.error(err);
-                    Swal.fire('Error de Red', 'Ocurrió un error al enviar los datos: ' + err.message, 'error');
+                    console.error('Error verificando notas', err);
+                    doImport(); // fallback
                 });
-            } catch (error) {
-                this.loading = false;
-                console.error(error);
-                Swal.fire('Error Inesperado', 'Ocurrió un error inesperado al preparar los datos: ' + error.message, 'error');
+            } else {
+                doImport();
             }
         },
 

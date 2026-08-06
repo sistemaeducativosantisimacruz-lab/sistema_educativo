@@ -743,4 +743,44 @@ class ImportController extends Controller
 
         return $creadoNuevo;
     }
+
+    public function checkNotasExist(Request $request)
+    {
+        $request->validate([
+            'grado_id' => 'required|integer',
+            'seccion_id' => 'required|integer',
+            'bimestre_id' => 'required|integer'
+        ]);
+
+        $anoActivo = AnoLectivo::where('activo', true)->first();
+        if (!$anoActivo) {
+            return response()->json(['success' => false, 'message' => 'No hay año lectivo activo.']);
+        }
+
+        $gradoSeccion = GradoSeccion::where('grado_id', $request->grado_id)
+            ->where('seccion_id', $request->seccion_id)
+            ->where('ano_lectivo_id', $anoActivo->id)
+            ->first();
+
+        if (!$gradoSeccion) {
+            return response()->json(['success' => true, 'exists' => false]);
+        }
+
+        // Check if there are any notes for students in this grado_seccion for the given bimestre
+        $estudiantesIds = \App\Models\Matricula::where('grado_seccion_id', $gradoSeccion->id)
+            ->where('ano_lectivo_id', $anoActivo->id)
+            ->where('estado', '!=', 'retirado')
+            ->pluck('estudiante_id');
+
+        $count = \App\Models\NotaBimestral::where('bimestre_id', $request->bimestre_id)
+            ->whereIn('estudiante_id', $estudiantesIds)
+            ->whereNotNull('nota')
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'exists' => $count > 0,
+            'count' => $count
+        ]);
+    }
 }
