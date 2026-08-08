@@ -27,6 +27,8 @@ class ConsolidadoNivelExport implements WithMultipleSheets
     {
         $sheets = [];
 
+        $sheets[] = new ConsolidadoResumenNivelSheetExport($this->nivel, $this->anoLectivoId, $this->anio, $this->bimestre);
+
         $cursos = Curso::where('activo', true)
             ->paraNivel($this->nivel)
             ->soloCursos()
