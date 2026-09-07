@@ -57,11 +57,21 @@ class AnalyticsController extends Controller
                     
                     $graficosData[] = [
                         'chart_id' => $chartId,
-                        'series' => [$compData['AD'], $compData['A'], $compData['B'], $compData['C']],
+                        'series' => [[
+                            'name' => 'Porcentaje',
+                            'data' => [
+                                $compData['porcentajes']['AD'], 
+                                $compData['porcentajes']['A'], 
+                                $compData['porcentajes']['B'], 
+                                $compData['porcentajes']['C']
+                            ]
+                        ]],
                         'labels' => ['Logro Destacado (AD)', 'Logro Esperado (A)', 'En Proceso (B)', 'En Inicio (C)']
                     ];
                 }
             }
+            unset($area);
+            unset($compData);
         } elseif ($tipoVista === 'comparativa') {
             $bComps = array_filter($request->input('bimestres_comp', []));
             if (count($bComps) < 2) {
@@ -100,6 +110,8 @@ class AnalyticsController extends Controller
                     ];
                 }
             }
+            unset($area);
+            unset($compData);
         }
 
         return view('admin.analytics.index', compact('anoActivo', 'bimestres', 'secciones', 'tipoVista', 'datos', 'graficosData'));

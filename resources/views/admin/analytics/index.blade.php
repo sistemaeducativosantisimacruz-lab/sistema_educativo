@@ -173,6 +173,7 @@
     // Inicializar gráficos
     document.addEventListener("DOMContentLoaded", function() {
         const graficosData = @json($graficosData ?? []);
+        console.log("Inicializando " + graficosData.length + " gráficos", graficosData);
         
         for (const config of graficosData) {
             let el = document.querySelector(`#${config.chart_id}`);
@@ -207,7 +208,14 @@
                     legend: { show: isComparativa }
                 };
 
-                new ApexCharts(el, options).render();
+                try {
+                    new ApexCharts(el, options).render();
+                } catch (e) {
+                    console.error("Error renderizando grafico", config.chart_id, e);
+                    el.innerHTML = '<div class="text-red-500 text-sm p-4">Error cargando gráfico. Consulte la consola.</div>';
+                }
+            } else {
+                console.warn("No se encontró el contenedor para", config.chart_id);
             }
         }
     });
