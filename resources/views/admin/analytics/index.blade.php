@@ -1,9 +1,12 @@
-@extends('layouts.admin')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Analítica e Interpretación de Resultados') }}
+        </h2>
+    </x-slot>
 
-@section('title', 'Analítica e Interpretación de Resultados')
-
-@section('content')
-<div class="container-fluid">
+    <div class="py-12 bg-gray-50 min-h-screen">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
             <i class="fas fa-chart-bar text-primary mr-2"></i> Analítica de Rendimiento
@@ -108,10 +111,9 @@
             Seleccione los filtros y haga clic en "Generar Reporte" para ver el análisis de resultados.
         </div>
     @endif
-</div>
-@endsection
+        </div>
+    </div>
 
-@push('styles')
 <style>
     @media print {
         @page { size: A4 portrait; margin: 1.5cm; }
@@ -126,7 +128,7 @@
         .apexcharts-toolbar { display: none !important; }
     }
 </style>
-@endpush
+</x-app-layout>
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
