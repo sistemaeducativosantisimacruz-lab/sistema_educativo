@@ -73,7 +73,7 @@
                                 <option value="">Toda la escuela / nivel</option>
                                 @foreach($secciones as $sec)
                                     <option value="{{ $sec->id }}" {{ request('grado_seccion_id') == $sec->id ? 'selected' : '' }}>
-                                        {{ ucfirst($sec->grado->nivel) }} - {{ $sec->grado->orden }}° "{{ $sec->seccion->nombre }}"
+                                        {{ $sec->grado->nombre }} - {{ $sec->seccion->nombre }}
                                     </option>
                                 @endforeach
                             </select>
