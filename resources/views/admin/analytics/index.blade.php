@@ -1,131 +1,161 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Analítica e Interpretación de Resultados') }}
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight flex justify-between items-center">
+            <span>
+                <svg class="inline-block w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                {{ __('Analítica e Interpretación de Resultados') }}
+            </span>
+            <button onclick="window.print()" class="d-print-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow-sm transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Imprimir Reporte
+            </button>
         </h2>
     </x-slot>
 
     <div class="py-12 bg-gray-50 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-chart-bar text-primary mr-2"></i> Analítica de Rendimiento
-        </h1>
-        <button onclick="window.print()" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-print fa-sm text-white-50 mr-2"></i> Imprimir Reporte
-        </button>
-    </div>
 
-    <!-- Panel de Filtros (Oculto en Impresión) -->
-    <div class="card shadow mb-4 d-print-none">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Configurar Reporte Analítico</h6>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('admin.analytics.index') }}" class="row g-3">
-                
-                <div class="col-md-3">
-                    <label class="form-label font-weight-bold">Modo de Análisis</label>
-                    <select name="tipo_vista" class="form-select" onchange="toggleFiltrosBimestre(this.value)">
-                        <option value="bimestral" {{ $tipoVista == 'bimestral' ? 'selected' : '' }}>Distribución de un Bimestre</option>
-                        <option value="comparativa" {{ $tipoVista == 'comparativa' ? 'selected' : '' }}>Comparativa Interbimestral (2 periodos)</option>
-                    </select>
+            <!-- Panel de Filtros (Oculto en Impresión) -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 d-print-none">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Configurar Reporte Analítico</h3>
+                    
+                    <form method="GET" action="{{ route('admin.analytics.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        
+                        <div class="w-full">
+                            <label class="block text-sm font-semibold text-gray-700">Modo de Análisis</label>
+                            <select name="tipo_vista" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 sm:text-sm" onchange="toggleFiltrosBimestre(this.value)">
+                                <option value="bimestral" {{ $tipoVista == 'bimestral' ? 'selected' : '' }}>Distribución de un Bimestre</option>
+                                <option value="comparativa" {{ $tipoVista == 'comparativa' ? 'selected' : '' }}>Comparativa Interbimestral</option>
+                            </select>
+                        </div>
+
+                        <div class="w-full" id="filtro-bimestre-unico" style="{{ $tipoVista == 'bimestral' ? '' : 'display: none;' }}">
+                            <label class="block text-sm font-semibold text-gray-700">Bimestre</label>
+                            <select name="bimestre_id" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 sm:text-sm">
+                                <option value="">Seleccione un bimestre...</option>
+                                @foreach($bimestres as $b)
+                                    <option value="{{ $b->id }}" {{ request('bimestre_id') == $b->id ? 'selected' : '' }}>
+                                        Bimestre {{ $b->numero }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="w-full md:col-span-2" id="filtro-bimestre-doble" style="{{ $tipoVista == 'comparativa' ? '' : 'display: none;' }}">
+                            <label class="block text-sm font-semibold text-gray-700">Bimestres a Comparar</label>
+                            <div class="flex items-center gap-2 mt-1">
+                                <select name="bimestres_comp[]" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 sm:text-sm">
+                                    <option value="">Bimestre A...</option>
+                                    @foreach($bimestres as $b)
+                                        <option value="{{ $b->id }}" {{ (request('bimestres_comp') && isset(request('bimestres_comp')[0]) && request('bimestres_comp')[0] == $b->id) ? 'selected' : '' }}>
+                                            Bimestre {{ $b->numero }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="font-bold text-gray-500">vs</span>
+                                <select name="bimestres_comp[]" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 sm:text-sm">
+                                    <option value="">Bimestre B...</option>
+                                    @foreach($bimestres as $b)
+                                        <option value="{{ $b->id }}" {{ (request('bimestres_comp') && isset(request('bimestres_comp')[1]) && request('bimestres_comp')[1] == $b->id) ? 'selected' : '' }}>
+                                            Bimestre {{ $b->numero }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="w-full" style="{{ $tipoVista == 'comparativa' ? 'display: none;' : '' }}" id="spacer-div"></div>
+
+                        <div class="w-full">
+                            <label class="block text-sm font-semibold text-gray-700">Nivel</label>
+                            <select name="nivel" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 sm:text-sm" onchange="this.form.submit()">
+                                <option value="">Todos los niveles</option>
+                                <option value="primaria" {{ request('nivel') == 'primaria' ? 'selected' : '' }}>Primaria</option>
+                                <option value="secundaria" {{ request('nivel') == 'secundaria' ? 'selected' : '' }}>Secundaria</option>
+                            </select>
+                        </div>
+
+                        <div class="w-full">
+                            <label class="block text-sm font-semibold text-gray-700">Grado y Sección (Opcional)</label>
+                            <select name="grado_seccion_id" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 sm:text-sm">
+                                <option value="">Toda la escuela / nivel</option>
+                                @foreach($secciones as $sec)
+                                    <option value="{{ $sec->id }}" {{ request('grado_seccion_id') == $sec->id ? 'selected' : '' }}>
+                                        {{ ucfirst($sec->grado->nivel) }} - {{ $sec->grado->orden }}° "{{ $sec->seccion->nombre }}"
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="w-full md:col-span-2 flex justify-end gap-2">
+                            <a href="{{ route('admin.analytics.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-md text-sm transition-colors border border-gray-300">
+                                Limpiar
+                            </a>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md text-sm transition-colors">
+                                Generar Reporte
+                            </button>
+                        </div>
+                    </form>
                 </div>
+            </div>
 
-                <div class="col-md-3" id="filtro-bimestre-unico" style="{{ $tipoVista == 'bimestral' ? '' : 'display: none;' }}">
-                    <label class="form-label font-weight-bold">Bimestre</label>
-                    <select name="bimestre_id" class="form-select">
-                        <option value="">Seleccione un bimestre...</option>
-                        @foreach($bimestres as $b)
-                            <option value="{{ $b->id }}" {{ request('bimestre_id') == $b->id ? 'selected' : '' }}>
-                                Bimestre {{ $b->numero }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-md-3" id="filtro-bimestre-doble" style="{{ $tipoVista == 'comparativa' ? '' : 'display: none;' }}">
-                    <label class="form-label font-weight-bold">Bimestres a Comparar</label>
-                    <div class="d-flex align-items-center">
-                        <select name="bimestres_comp[]" class="form-select me-2">
-                            <option value="">Bimestre A...</option>
-                            @foreach($bimestres as $b)
-                                <option value="{{ $b->id }}" {{ (request('bimestres_comp') && isset(request('bimestres_comp')[0]) && request('bimestres_comp')[0] == $b->id) ? 'selected' : '' }}>
-                                    Bimestre {{ $b->numero }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="mx-2">vs</span>
-                        <select name="bimestres_comp[]" class="form-select ms-2">
-                            <option value="">Bimestre B...</option>
-                            @foreach($bimestres as $b)
-                                <option value="{{ $b->id }}" {{ (request('bimestres_comp') && isset(request('bimestres_comp')[1]) && request('bimestres_comp')[1] == $b->id) ? 'selected' : '' }}>
-                                    Bimestre {{ $b->numero }}
-                                </option>
-                            @endforeach
-                        </select>
+            <!-- Resultados -->
+            @if(!empty($datos))
+                @if($tipoVista == 'bimestral')
+                    @include('admin.analytics.partials.bimestral')
+                @else
+                    @include('admin.analytics.partials.comparativa')
+                @endif
+            @else
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700 font-medium">
+                                Seleccione los filtros y haga clic en "Generar Reporte" para ver el análisis de resultados.
+                            </p>
+                        </div>
                     </div>
                 </div>
+            @endif
 
-                <div class="col-md-3">
-                    <label class="form-label font-weight-bold">Nivel</label>
-                    <select name="nivel" class="form-select" onchange="this.form.submit()">
-                        <option value="">Todos los niveles</option>
-                        <option value="primaria" {{ request('nivel') == 'primaria' ? 'selected' : '' }}>Primaria</option>
-                        <option value="secundaria" {{ request('nivel') == 'secundaria' ? 'selected' : '' }}>Secundaria</option>
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label font-weight-bold">Grado y Sección (Opcional)</label>
-                    <select name="grado_seccion_id" class="form-select">
-                        <option value="">Toda la escuela / nivel</option>
-                        @foreach($secciones as $sec)
-                            <option value="{{ $sec->id }}" {{ request('grado_seccion_id') == $sec->id ? 'selected' : '' }}>
-                                {{ ucfirst($sec->grado->nivel) }} - {{ $sec->grado->orden }}° "{{ $sec->seccion->nombre }}"
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-12 mt-3 text-end">
-                    <a href="{{ route('admin.analytics.index') }}" class="btn btn-secondary">Limpiar</a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> Generar Reporte
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Resultados -->
-    @if(!empty($datos))
-        @if($tipoVista == 'bimestral')
-            @include('admin.analytics.partials.bimestral')
-        @else
-            @include('admin.analytics.partials.comparativa')
-        @endif
-    @else
-        <div class="alert alert-info text-center">
-            <i class="fas fa-info-circle fa-2x mb-3 d-block"></i>
-            Seleccione los filtros y haga clic en "Generar Reporte" para ver el análisis de resultados.
-        </div>
-    @endif
         </div>
     </div>
 
 <style>
     @media print {
-        @page { size: A4 portrait; margin: 1.5cm; }
-        body { font-size: 12pt; background-color: white !important; }
+        @page { size: A4 portrait; margin: 1cm; }
+        body { background-color: white !important; }
         .d-print-none { display: none !important; }
-        .card { border: none !important; box-shadow: none !important; margin-bottom: 20px !important; }
-        .card-header { background-color: transparent !important; border-bottom: 2px solid #333 !important; }
-        .chart-container { page-break-inside: avoid; height: 350px !important; width: 100% !important; }
-        .interpretacion-box { border: 1px solid #ccc !important; background-color: #f8f9fa !important; color: black !important; }
-        table { page-break-inside: avoid; border-collapse: collapse !important; }
-        th, td { border: 1px solid #999 !important; padding: 4px !important; }
+        nav { display: none !important; }
+        header { display: none !important; }
+        .min-h-screen { min-height: auto !important; background-color: white !important; padding: 0 !important; }
+        .max-w-7xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+        .shadow-sm { box-shadow: none !important; }
+        .border { border: 1px solid #ccc !important; }
+        
+        .area-container { page-break-after: always; margin-bottom: 2cm; }
+        .chart-container { page-break-inside: avoid; height: 320px !important; width: 100% !important; margin-top: 15px; }
+        .interpretacion-box { border: 2px solid #555 !important; background-color: #f8f9fa !important; color: black !important; }
+        
+        table { page-break-inside: avoid; border-collapse: collapse !important; width: 100%; font-size: 11pt; }
+        th, td { border: 1px solid #999 !important; padding: 6px !important; }
+        th { background-color: #eee !important; font-weight: bold !important; -webkit-print-color-adjust: exact; }
+        
         .apexcharts-toolbar { display: none !important; }
+        
+        /* Forzar colores de fondo de las alertas al imprimir */
+        .bg-red-50 { background-color: #fee2e2 !important; -webkit-print-color-adjust: exact; }
+        .bg-yellow-50 { background-color: #fef3c7 !important; -webkit-print-color-adjust: exact; }
+        .bg-green-50 { background-color: #dcfce3 !important; -webkit-print-color-adjust: exact; }
+        .text-red-800 { color: #991b1b !important; }
+        .text-yellow-800 { color: #92400e !important; }
+        .text-green-800 { color: #166534 !important; }
     }
 </style>
 </x-app-layout>
@@ -134,16 +164,22 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     function toggleFiltrosBimestre(val) {
+        const unico = document.getElementById('filtro-bimestre-unico');
+        const doble = document.getElementById('filtro-bimestre-doble');
+        const spacer = document.getElementById('spacer-div');
+        
         if(val === 'bimestral') {
-            document.getElementById('filtro-bimestre-unico').style.display = 'block';
-            document.getElementById('filtro-bimestre-doble').style.display = 'none';
+            unico.style.display = 'block';
+            doble.style.display = 'none';
+            if(spacer) spacer.style.display = 'block';
         } else {
-            document.getElementById('filtro-bimestre-unico').style.display = 'none';
-            document.getElementById('filtro-bimestre-doble').style.display = 'block';
+            unico.style.display = 'none';
+            doble.style.display = 'block';
+            if(spacer) spacer.style.display = 'none';
         }
     }
 
-    // Inicializar gráficos si hay datos
+    // Inicializar gráficos
     document.addEventListener("DOMContentLoaded", function() {
         const graficosData = @json($graficosData ?? []);
         
@@ -158,11 +194,11 @@
                         series: config.series,
                         chart: {
                             type: 'bar',
-                            height: 350,
-                            animations: { enabled: false }, // Importante para impresión
+                            height: 320,
+                            animations: { enabled: false }, 
                             toolbar: { show: false }
                         },
-                        colors: isComparativa ? ['#4e73df', '#1cc88a'] : ['#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                        colors: isComparativa ? ['#3b82f6', '#10b981'] : ['#10b981', '#06b6d4', '#f59e0b', '#ef4444'],
                         plotOptions: {
                             bar: {
                                 borderRadius: 4,
@@ -174,7 +210,7 @@
                         dataLabels: {
                             enabled: true,
                             formatter: function (val) { return val + "%"; },
-                            style: { colors: ["#304758"] }
+                            style: { colors: ["#1f2937"] }
                         },
                         xaxis: {
                             categories: isComparativa ? config.categories : config.labels,
