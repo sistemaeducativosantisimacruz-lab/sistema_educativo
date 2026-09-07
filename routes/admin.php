@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\RendimientoController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MensualidadController;
 use App\Http\Controllers\Admin\AnoLectivoController;
+use App\Http\Controllers\Admin\AnalyticsController;
 
 Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->name('admin.')->group(function () {
 
@@ -47,6 +48,9 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     // Años Lectivos
     Route::resource('anos-lectivos', AnoLectivoController::class)->only(['index', 'store']);
     Route::post('anos-lectivos/{ano_lectivo}/activar', [AnoLectivoController::class, 'activar'])->name('anos-lectivos.activar');
+
+    // Analítica
+    Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
     // Rendimiento / Reportes
     Route::get('rendimiento', [RendimientoController::class, 'index'])->name('rendimiento.index');

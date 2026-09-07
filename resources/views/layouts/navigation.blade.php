@@ -52,7 +52,10 @@
                             {{ __('Años Lectivos') }}
                         </x-nav-link>
                         <x-nav-link :href="route('admin.rendimiento.index')" :active="request()->routeIs('admin.rendimiento.*')">
-                            {{ __('Reportes') }}
+                            {{ __('Rendimiento') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.analytics.index')" :active="request()->routeIs('admin.analytics.*')">
+                            {{ __('Analítica') }}
                         </x-nav-link>
                         <x-nav-link :href="route('admin.mensualidades.index')" :active="request()->routeIs('admin.mensualidades.*')">
                             {{ __('Mensualidades') }}
@@ -149,7 +152,10 @@
                     {{ __('Años Lectivos') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.rendimiento.index')" :active="request()->routeIs('admin.rendimiento.*')">
-                    {{ __('Reportes') }}
+                    {{ __('Rendimiento') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.analytics.index')" :active="request()->routeIs('admin.analytics.*')">
+                    {{ __('Analítica') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.mensualidades.index')" :active="request()->routeIs('admin.mensualidades.*')">
                     {{ __('Mensualidades') }}
