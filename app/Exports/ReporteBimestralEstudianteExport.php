@@ -51,17 +51,8 @@ class ReporteBimestralEstudianteExport implements FromView, ShouldAutoSize, With
             
         $bimestres = Bimestre::where('ano_lectivo_id', $this->anoLectivoId)->orderBy('numero')->get();
         
-        $notasRaw = NotaBimestral::where('estudiante_id', $this->estudianteId)
-            ->whereIn('bimestre_id', $bimestres->pluck('id'))
-            ->with('competencia')
-            ->get();
-            
-        $notasMap = [];
-        foreach ($notasRaw as $nota) {
-            if ($nota->competencia) {
-                $notasMap[$nota->curso_id][$nota->competencia->nombre][$nota->bimestre_id] = $nota;
-            }
-        }
+        $academicService = app(\App\Services\AcademicService::class);
+        $notasMap = $academicService->getNotasAgrupadas($this->estudianteId, $bimestres->pluck('id'));
 
         // Evitar competencias duplicadas por curso
         foreach ($cursos as $curso) {

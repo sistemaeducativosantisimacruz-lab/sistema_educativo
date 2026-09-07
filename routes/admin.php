@@ -17,9 +17,9 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Grados y Secciones
-    Route::resource('grado-secciones', GradoSeccionController::class);
-    Route::patch('grado-secciones/{grado_seccione}/tutores', [GradoSeccionController::class, 'updateTutores'])->name('grado-secciones.tutores');
-    Route::get('grado-secciones/{grado_seccione}/tutores', [GradoSeccionController::class, 'getTutores'])->name('grado-secciones.get-tutores');
+    Route::resource('grado-secciones', GradoSeccionController::class)->parameters(['grado-secciones' => 'gradoSeccion']);
+    Route::patch('grado-secciones/{gradoSeccion}/tutores', [GradoSeccionController::class, 'updateTutores'])->name('grado-secciones.tutores');
+    Route::get('grado-secciones/{gradoSeccion}/tutores', [GradoSeccionController::class, 'getTutores'])->name('grado-secciones.get-tutores');
     Route::get('grado-secciones/{gradoSeccion}/detalle', [GradoSeccionController::class, 'detalle'])->name('grado-secciones.detalle');
     Route::get('grado-secciones/{gradoSeccion}/exportar', [GradoSeccionController::class, 'exportar'])->name('grado-secciones.exportar');
     Route::patch('grado-secciones/{gradoSeccion}/docentes', [GradoSeccionController::class, 'updateDocentes'])->name('grado-secciones.update-docentes');

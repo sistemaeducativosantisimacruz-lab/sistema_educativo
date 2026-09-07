@@ -15,9 +15,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Admin\StoreDocenteRequest;
+use App\Http\Requests\Admin\UpdateDocenteRequest;
+use App\Services\DocenteService;
 
 class DocenteController extends Controller
 {
+    protected $docenteService;
+
+    public function __construct(DocenteService $docenteService)
+    {
+        $this->docenteService = $docenteService;
+    }
     public function index(Request $request)
     {
         $query = Docente::with(['user', 'cursos']);
@@ -61,104 +70,17 @@ class DocenteController extends Controller
         return view('admin.docentes.index', compact('docentes', 'cursos', 'grados'));
     }
 
-    public function store(Request $request)
+    public function store(StoreDocenteRequest $request)
     {
-        $esEspecialista = $request->tipo === 'especialista';
-
-        $request->validate([
-            'dni'              => 'required|string|size:8|unique:docentes,dni|unique:users,dni',
-            'nombres'          => 'required|string|max:255',
-            'apellido_paterno' => 'required|string|max:255',
-            'apellido_materno' => 'required|string|max:255',
-            'email'            => 'nullable|email|unique:users,email',
-            'celular'          => 'nullable|string|max:15',
-            'nivel'            => 'nullable|in:primaria,secundaria',
-            'tipo'             => 'nullable|in:especialista,polidocente',
-            'curso_ids'        => 'nullable|array',
-            'curso_ids.*'      => 'exists:cursos,id',
-        ], [
-            'dni.unique'         => 'El DNI ya está registrado en el sistema.',
-            'email.unique'       => 'El correo ya está registrado en el sistema.',
-        ]);
-
-        DB::transaction(function () use ($request) {
-            $user = User::create([
-                'name'                 => mb_strtoupper("{$request->nombres} {$request->apellido_paterno}"),
-                'email'                => $request->email,
-                'dni'                  => $request->dni,
-                'password'             => Hash::make($request->dni),
-                'role_id'              => Role::where('nombre', 'docente')->value('id'),
-                'must_change_password' => true,
-            ]);
-
-            $docente = Docente::create([
-                'user_id'          => $user->id,
-                'curso_id'         => null,
-                'nivel'            => $request->nivel,
-                'tipo'             => $request->tipo,
-                'dni'              => $request->dni,
-                'celular'          => $request->celular,
-                'nombres'          => $request->nombres,
-                'apellido_paterno' => $request->apellido_paterno,
-                'apellido_materno' => $request->apellido_materno,
-            ]);
-
-            if ($request->tipo === 'especialista' && $request->has('curso_ids')) {
-                $docente->cursos()->sync($request->curso_ids ?? []);
-            }
-        });
+        $this->docenteService->crearDocente($request->validated());
 
         return redirect()->route('admin.docentes.index')
             ->with('success', 'Docente registrado correctamente. La contraseña inicial es su DNI.');
     }
 
-    public function update(Request $request, Docente $docente)
+    public function update(UpdateDocenteRequest $request, Docente $docente)
     {
-        $esEspecialista = $request->tipo === 'especialista';
-
-        $request->validate([
-            'dni'              => 'required|string|size:8|unique:docentes,dni,' . $docente->id,
-            'nombres'          => 'required|string|max:255',
-            'apellido_paterno' => 'required|string|max:255',
-            'apellido_materno' => 'required|string|max:255',
-            'email'            => 'nullable|email|unique:users,email,' . $docente->user_id,
-            'celular'          => 'nullable|string|max:15',
-            'nivel'            => 'nullable|in:primaria,secundaria',
-            'tipo'             => 'nullable|in:especialista,polidocente',
-            'curso_ids'        => 'nullable|array',
-            'curso_ids.*'      => 'nullable|exists:cursos,id',
-        ]);
-
-        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $docente, $esEspecialista) {
-            $nombres = strtoupper(trim($request->nombres));
-            $apPaterno = strtoupper(trim($request->apellido_paterno));
-            $apMaterno = strtoupper(trim($request->apellido_materno));
-
-            $docente->update([
-                'dni'              => $request->dni,
-                'nombres'          => $nombres,
-                'apellido_paterno' => $apPaterno,
-                'apellido_materno' => $apMaterno,
-                'celular'          => $request->celular,
-                'nivel'            => $request->nivel,
-                'tipo'             => $request->tipo,
-            ]);
-
-            $nombreCompleto = "{$apPaterno} {$apMaterno} {$nombres}";
-            
-            $docente->user->update([
-                'name'  => $nombreCompleto,
-                'email' => $request->email,
-                'dni'   => $request->dni,
-                'password' => $docente->user->must_change_password ? \Illuminate\Support\Facades\Hash::make($request->dni) : $docente->user->password,
-            ]);
-
-            if ($esEspecialista) {
-                $docente->cursos()->sync($request->curso_ids ?? []);
-            } else {
-                $docente->cursos()->detach();
-            }
-        });
+        $this->docenteService->actualizarDocente($docente, $request->validated());
 
         return redirect()->route('admin.docentes.index')
             ->with('success', 'Datos del docente actualizados correctamente.');

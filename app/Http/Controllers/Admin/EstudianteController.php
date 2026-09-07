@@ -15,7 +15,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-
+use App\Http\Requests\Admin\StoreEstudianteRequest;
+use App\Services\EstudianteService;
 
 class EstudianteController extends Controller
 {
@@ -44,41 +45,9 @@ class EstudianteController extends Controller
                 ->orderBy('estudiantes.apellido_materno', 'asc')
                 ->orderBy('estudiantes.nombres', 'asc');
 
-            if ($request->filled('grado_seccion_id')) {
-                $query->where('matriculas.grado_seccion_id', $request->grado_seccion_id);
-            }
-
-            if ($request->filled('nivel')) {
-                $query->whereHas('gradoSeccion.grado', function ($q) use ($request) {
-                    $q->where('nivel', $request->nivel);
-                });
-            }
-
-            if ($request->filled('grado_id')) {
-                $query->whereHas('gradoSeccion', function ($q) use ($request) {
-                    $q->where('grado_id', $request->grado_id);
-                });
-            }
-
-            if ($request->filled('search')) {
-                $search = $request->search;
-                // Reemplazar comas por espacios para evitar problemas si copian y pegan "Apellido, Nombre"
-                $cleanSearch = str_replace(',', ' ', $search);
-                $words = array_filter(explode(' ', $cleanSearch));
-
-                $query->whereHas('estudiante', function ($q) use ($words) {
-                    foreach ($words as $word) {
-                        $q->where(function ($sub) use ($word) {
-                            $sub->where('nombres', 'ilike', "%{$word}%")
-                                ->orWhere('apellido_paterno', 'ilike', "%{$word}%")
-                                ->orWhere('apellido_materno', 'ilike', "%{$word}%")
-                                ->orWhere('dni', 'ilike', "%{$word}%");
-                        });
-                    }
-                });
-            }
-
-            $matriculas = $query->paginate(20)->withQueryString();
+            $matriculas = $query->filter($request->only(['grado_seccion_id', 'nivel', 'grado_id', 'search']))
+                ->paginate(20)
+                ->withQueryString();
         }
 
         $grados = Grado::orderBy('orden')->get();
@@ -88,133 +57,11 @@ class EstudianteController extends Controller
         ));
     }
 
-    public function store(Request $request)
+    public function store(StoreEstudianteRequest $request, EstudianteService $estudianteService)
     {
         $anoActivo = AnoLectivo::where('activo', true)->first();
-        if (!$anoActivo) {
-            return back()->with('error', 'No hay un año lectivo activo para matricular al estudiante.');
-        }
 
-        $request->validate([
-            'dni'               => 'required|string|size:8|unique:estudiantes,dni|unique:users,dni',
-            'codigo_estudiante' => 'nullable|string|max:20|unique:estudiantes,codigo_estudiante',
-            'apellido_paterno'  => 'required|string|max:255',
-            'apellido_materno'  => 'required|string|max:255',
-            'nombres'           => 'required|string|max:255',
-            'fecha_nacimiento'  => 'required|date',
-            'sexo'              => 'required|in:M,F',
-            'nivel'             => 'required|in:primaria,secundaria',
-            'grado_seccion_id'  => 'required|exists:grado_secciones,id',
-            'tipo_matricula'    => 'required|in:Normal,Beneficio,Exonerado',
-            'apoderado_nombres'          => 'nullable|string|max:255',
-            'apoderado_apellido_paterno' => 'nullable|string|max:255',
-            'apoderado_apellido_materno' => 'nullable|string|max:255',
-            'apoderado_dni'              => 'nullable|string|size:8',
-            'apoderado_direccion'        => 'nullable|string|max:255',
-            'apoderado_telefono'         => 'nullable|string|max:20',
-            'apoderado_parentesco'       => 'nullable|string|max:50',
-            'colegio_inicial'            => 'nullable|string|max:255',
-            'padre_dni'                  => 'nullable|string|size:8',
-            'padre_nombres'              => 'nullable|string|max:255',
-            'padre_telefono'             => 'nullable|string|max:20',
-            'madre_dni'                  => 'nullable|string|size:8',
-            'madre_nombres'              => 'nullable|string|max:255',
-            'madre_telefono'             => 'nullable|string|max:20',
-        ], [
-            'dni.unique'              => 'El DNI ya está registrado en el sistema.',
-            'grado_seccion_id.exists' => 'La seccion seleccionada no existe.',
-        ]);
-
-        $estudianteExistente = Estudiante::where('dni', $request->dni)->first();
-        if ($estudianteExistente) {
-            $yaMatriculado = Matricula::where('estudiante_id', $estudianteExistente->id)
-                ->where('ano_lectivo_id', $anoActivo->id)
-                ->exists();
-            if ($yaMatriculado) {
-                return back()->withInput()->with('error', 'El estudiante con DNI ' . $request->dni . ' ya se encuentra matriculado en el año lectivo activo.');
-            }
-        }
-
-        DB::transaction(function () use ($request, $anoActivo) {
-            $user = User::create([
-                'name'                => mb_strtoupper("{$request->nombres} {$request->apellido_paterno}"),
-                'email'               => $request->dni,
-                'dni'                 => $request->dni,
-                'password'            => Hash::make($request->dni),
-                'role_id'             => Role::where('nombre', 'estudiante')->value('id'),
-                'must_change_password' => true,
-            ]);
-
-            $estudiante = Estudiante::create([
-                'user_id'          => $user->id,
-                'dni'              => $request->dni,
-                'codigo_estudiante'=> $request->codigo_estudiante,
-                'apellido_paterno' => $request->apellido_paterno,
-                'apellido_materno' => $request->apellido_materno,
-                'nombres'          => $request->nombres,
-                'fecha_nacimiento' => $request->fecha_nacimiento,
-                'sexo'             => $request->sexo,
-                'nivel'            => $request->nivel,
-                'estado'           => 'activo',
-                'colegio_inicial'  => $request->colegio_inicial,
-            ]);
-
-            // Guardar familiares en tabla apoderados
-            if ($request->filled('padre_dni') || $request->filled('padre_nombres')) {
-                Apoderado::create([
-                    'estudiante_dni'   => $estudiante->dni,
-                    'dni'              => $request->padre_dni,
-                    'nombres'          => mb_strtoupper($request->padre_nombres ?? ''),
-                    'telefono'         => $request->padre_telefono,
-                    'parentesco'       => 'PADRE',
-                    'es_apoderado'     => false,
-                ]);
-            }
-
-            if ($request->filled('madre_dni') || $request->filled('madre_nombres')) {
-                Apoderado::create([
-                    'estudiante_dni'   => $estudiante->dni,
-                    'dni'              => $request->madre_dni,
-                    'nombres'          => mb_strtoupper($request->madre_nombres ?? ''),
-                    'telefono'         => $request->madre_telefono,
-                    'parentesco'       => 'MADRE',
-                    'es_apoderado'     => false,
-                ]);
-            }
-
-            Matricula::create([
-                'estudiante_id'    => $estudiante->id,
-                'grado_seccion_id' => $request->grado_seccion_id,
-                'ano_lectivo_id'   => $anoActivo->id,
-                'estado'           => 'matriculado',
-                'tipo_matricula'   => $request->tipo_matricula,
-            ]);
-
-            if ($request->filled('apoderado_dni') && $request->filled('apoderado_nombres')) {
-                $esPadre = ($request->padre_dni && $request->apoderado_dni === $request->padre_dni);
-                $esMadre = ($request->madre_dni && $request->apoderado_dni === $request->madre_dni);
-                
-                $parentesco = $request->apoderado_parentesco;
-                if ($esPadre) $parentesco = 'PADRE';
-                if ($esMadre) $parentesco = 'MADRE';
-
-                Apoderado::updateOrCreate(
-                    [
-                        'estudiante_dni' => $estudiante->dni,
-                        'dni'            => $request->apoderado_dni,
-                    ],
-                    [
-                        'nombres'           => $request->apoderado_nombres,
-                        'apellido_paterno'  => $request->apoderado_apellido_paterno,
-                        'apellido_materno'  => $request->apoderado_apellido_materno,
-                        'direccion'         => $request->apoderado_direccion,
-                        'telefono'          => $request->apoderado_telefono,
-                        'parentesco'        => mb_strtoupper($parentesco ?? 'OTRO'),
-                        'es_apoderado'      => true,
-                    ]
-                );
-            }
-        });
+        $estudianteService->crearEstudianteYMatricular($request->validated(), $anoActivo);
 
         return redirect()->route('admin.estudiantes.index')
             ->with('success', 'Estudiante registrado y matriculado correctamente.');

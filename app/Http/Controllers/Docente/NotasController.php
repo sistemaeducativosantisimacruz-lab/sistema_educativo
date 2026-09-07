@@ -26,17 +26,7 @@ class NotasController extends Controller
 
         $gradoSeccion = GradoSeccion::with('grado', 'seccion')->findOrFail($grado_seccion_id);
 
-        // Verify the teacher has access to this section
-        $esTutor = $gradoSeccion->tutor_id === $docente->id;
-        
-        $tieneAcceso = $docente->asignaciones()
-            ->where('ano_lectivo_id', $anoActivo->id)
-            ->where('grado_seccion_id', $gradoSeccion->id)
-            ->exists();
-
-        if (!$tieneAcceso && !$esTutor) {
-            return redirect()->route('docente.dashboard')->with('error', 'No tienes asignada esta sección.');
-        }
+        $this->authorize('view', $gradoSeccion);
 
         // Get students enrolled in this section for the active year
         $query = Matricula::with('estudiante')
@@ -73,17 +63,9 @@ class NotasController extends Controller
         $gradoSeccion = GradoSeccion::with('grado', 'seccion')->findOrFail($grado_seccion_id);
         $estudiante = Estudiante::findOrFail($estudiante_id);
 
-        // Verify access to the section
-        $esTutor = $gradoSeccion->tutor_id === $docente->id;
-        
-        $tieneAcceso = $docente->asignaciones()
-            ->where('ano_lectivo_id', $anoActivo->id)
-            ->where('grado_seccion_id', $gradoSeccion->id)
-            ->exists();
+        $this->authorize('view', $gradoSeccion);
 
-        if (!$tieneAcceso && !$esTutor) {
-            return redirect()->route('docente.dashboard')->with('error', 'No tienes acceso a esta sección.');
-        }
+        $esTutor = $gradoSeccion->tutor_id === $docente->id;
 
         // Determine which courses the teacher is assigned to for this specific section
         $cursosAsignadosIds = collect();
@@ -114,17 +96,8 @@ class NotasController extends Controller
 
         $bimestres = Bimestre::where('ano_lectivo_id', $anoActivo->id)->orderBy('numero')->get();
 
-        // Load all grades for this student and the active year
-        // Optimize by fetching them in one query
-        $notasRaw = NotaBimestral::where('estudiante_id', $estudiante->id)
-                                ->whereIn('bimestre_id', $bimestres->pluck('id'))
-                                ->get();
-
-        // Group grades for easy access: notas[$curso_id][$competencia_id][$bimestre_id]
-        $notas = [];
-        foreach ($notasRaw as $nota) {
-            $notas[$nota->curso_id][$nota->competencia_id][$nota->bimestre_id] = $nota;
-        }
+        $academicService = app(\App\Services\AcademicService::class);
+        $notas = $academicService->getNotasAgrupadas($estudiante->id, $bimestres->pluck('id'));
 
         return view('docente.notas_estudiante', compact('gradoSeccion', 'estudiante', 'cursos', 'bimestres', 'notas', 'anoActivo'));
     }

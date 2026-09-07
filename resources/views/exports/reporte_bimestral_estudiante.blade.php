@@ -34,8 +34,8 @@
                         <td>{{ $competencia->nombre }}</td>
                         @foreach($bimestres as $bimestre)
                             <td style="text-align: center;">
-                                @if(isset($notasMap[$curso->id][$competencia->nombre][$bimestre->id]))
-                                    {{ $notasMap[$curso->id][$competencia->nombre][$bimestre->id]->nota == '0' ? '-' : $notasMap[$curso->id][$competencia->nombre][$bimestre->id]->nota }}
+                                @if(isset($notasMap[$curso->id][$competencia->id][$bimestre->id]))
+                                    {{ $notasMap[$curso->id][$competencia->id][$bimestre->id]->nota == '0' ? '-' : $notasMap[$curso->id][$competencia->id][$bimestre->id]->nota }}
                                 @endif
                             </td>
                         @endforeach
