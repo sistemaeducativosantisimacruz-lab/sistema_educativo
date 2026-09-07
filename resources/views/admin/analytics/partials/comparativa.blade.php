@@ -14,8 +14,8 @@
             <div class="mb-10 last:mb-0">
                 <h5 class="text-gray-800 font-bold border-b pb-2 text-lg">{{ $compNombre }}</h5>
                 
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-center">
-                    <div class="lg:col-span-5">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mt-6 items-center">
+                    <div class="md:col-span-5">
                         <div class="overflow-x-auto rounded-lg border border-gray-200">
                             <table class="min-w-full divide-y divide-gray-200 text-center text-sm">
                                 <thead class="bg-gray-50">
@@ -59,7 +59,7 @@
                                 </div>
                                 <div class="ml-3">
                                     <h3 class="text-sm font-bold uppercase tracking-wide">Evolución Automática</h3>
-                                    <div class="mt-1 text-sm">
+                                    <div class="mt-1 text-sm leading-tight">
                                         {{ $compData['interpretacion_comparativa'] }}
                                     </div>
                                 </div>
@@ -68,7 +68,7 @@
 
                     </div>
                     
-                    <div class="lg:col-span-7">
+                    <div class="md:col-span-7">
                         <div id="{{ $chartId }}" class="chart-container"></div>
                     </div>
                 </div>
