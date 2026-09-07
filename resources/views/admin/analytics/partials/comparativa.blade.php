@@ -9,7 +9,7 @@
     <div class="p-6">
         @foreach($area['competencias'] as $compNombre => $compData)
             @php 
-                $chartId = 'chart_' . $cId . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $compNombre); 
+                $chartId = $compData['chart_id'] ?? ('chart_' . $cId . '_' . md5($compNombre)); 
             @endphp
             <div class="mb-10 last:mb-0">
                 <h5 class="text-gray-800 font-bold border-b pb-2 text-lg">{{ $compNombre }}</h5>

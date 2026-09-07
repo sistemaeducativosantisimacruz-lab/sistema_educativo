@@ -50,9 +50,11 @@ class AnalyticsController extends Controller
             $datos = $this->analyticsService->getDistribucionBimestral($anoActivo->id, $request->all());
             
             // Preparar JSON para ChartJS / ApexCharts
-            foreach ($datos as $cId => $area) {
-                foreach ($area['competencias'] as $compNombre => $compData) {
-                    $chartId = 'chart_' . $cId . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $compNombre);
+            foreach ($datos as $cId => &$area) {
+                foreach ($area['competencias'] as $compNombre => &$compData) {
+                    $chartId = 'chart_' . $cId . '_' . md5($compNombre);
+                    $compData['chart_id'] = $chartId;
+                    
                     $graficosData[] = [
                         'chart_id' => $chartId,
                         'series' => [$compData['AD'], $compData['A'], $compData['B'], $compData['C']],
@@ -72,8 +74,8 @@ class AnalyticsController extends Controller
             // Mapear números de bimestres para las etiquetas
             $bimestresModelos = Bimestre::whereIn('id', $bComps)->get()->keyBy('id');
 
-            foreach ($datos as $cId => $area) {
-                foreach ($area['competencias'] as $compNombre => $compData) {
+            foreach ($datos as $cId => &$area) {
+                foreach ($area['competencias'] as $compNombre => &$compData) {
                     $series = [];
                     foreach ($bComps as $bId) {
                         $num = $bimestresModelos->has($bId) ? $bimestresModelos[$bId]->numero : $bId;
@@ -88,7 +90,9 @@ class AnalyticsController extends Controller
                         ];
                     }
 
-                    $chartId = 'chart_' . $cId . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $compNombre);
+                    $chartId = 'chart_' . $cId . '_' . md5($compNombre);
+                    $compData['chart_id'] = $chartId;
+
                     $graficosData[] = [
                         'chart_id' => $chartId,
                         'series' => $series,
