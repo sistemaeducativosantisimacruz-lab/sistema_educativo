@@ -43,25 +43,16 @@
                         </div>
 
                         <div class="w-full md:col-span-2" id="filtro-bimestre-doble" style="{{ $tipoVista == 'comparativa' ? '' : 'display: none;' }}">
-                            <label class="block text-sm font-semibold text-gray-700">Bimestres a Comparar</label>
-                            <div class="flex items-center gap-2 mt-1">
-                                <select name="bimestres_comp[]" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 sm:text-sm">
-                                    <option value="">Bimestre A...</option>
-                                    @foreach($bimestres as $b)
-                                        <option value="{{ $b->id }}" {{ (request('bimestres_comp') && isset(request('bimestres_comp')[0]) && request('bimestres_comp')[0] == $b->id) ? 'selected' : '' }}>
-                                            Bimestre {{ $b->numero }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <span class="font-bold text-gray-500">vs</span>
-                                <select name="bimestres_comp[]" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 sm:text-sm">
-                                    <option value="">Bimestre B...</option>
-                                    @foreach($bimestres as $b)
-                                        <option value="{{ $b->id }}" {{ (request('bimestres_comp') && isset(request('bimestres_comp')[1]) && request('bimestres_comp')[1] == $b->id) ? 'selected' : '' }}>
-                                            Bimestre {{ $b->numero }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Bimestres a Comparar</label>
+                            <div class="flex flex-wrap items-center gap-4 bg-white p-2 rounded-lg border border-gray-300 shadow-sm">
+                                @foreach($bimestres as $b)
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="bimestres_comp[]" value="{{ $b->id }}" 
+                                            class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                            {{ in_array($b->id, (array)request('bimestres_comp', [])) ? 'checked' : '' }}>
+                                        <span class="ml-2 text-sm text-gray-700">Bim. {{ $b->numero }}</span>
+                                    </label>
+                                @endforeach
                             </div>
                         </div>
 

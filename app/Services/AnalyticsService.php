@@ -121,49 +121,71 @@ class AnalyticsService
     }
 
     /**
-     * Obtiene la comparativa entre 2 bimestres.
+     * Obtiene la comparativa entre N bimestres.
      */
     public function getComparativaInterbimestral(int $anoLectivoId, array $bimestresIds, array $filtros)
     {
-        if (count($bimestresIds) !== 2) {
-            throw new \Exception("La comparativa debe realizarse exactamente entre 2 bimestres.");
+        if (count($bimestresIds) < 2) {
+            throw new \Exception("La comparativa debe realizarse al menos entre 2 bimestres.");
         }
 
-        $b1 = $bimestresIds[0];
-        $b2 = $bimestresIds[1];
-
-        // Reutilizamos el método base para cada bimestre
-        $filtrosB1 = $filtros; $filtrosB1['bimestre_id'] = $b1;
-        $dataB1 = $this->getDistribucionBimestral($anoLectivoId, $filtrosB1);
-
-        $filtrosB2 = $filtros; $filtrosB2['bimestre_id'] = $b2;
-        $dataB2 = $this->getDistribucionBimestral($anoLectivoId, $filtrosB2);
+        $datosPorBimestre = [];
+        foreach ($bimestresIds as $bId) {
+            $filtrosBim = $filtros;
+            $filtrosBim['bimestre_id'] = $bId;
+            $datosPorBimestre[$bId] = $this->getDistribucionBimestral($anoLectivoId, $filtrosBim);
+        }
 
         $comparativa = [];
+        $primerBimestre = $bimestresIds[0];
+        $ultimoBimestre = end($bimestresIds);
+        
+        $dataPrimerBimestre = $datosPorBimestre[$primerBimestre];
+        $dataUltimoBimestre = $datosPorBimestre[$ultimoBimestre];
 
-        foreach ($dataB1 as $cId => $areaB1) {
-            if (!isset($dataB2[$cId])) continue; // Solo comparar áreas que existan en ambos
+        foreach ($dataPrimerBimestre as $cId => $areaInicial) {
+            // Verificar si el área existe en todos los bimestres seleccionados
+            $areaValida = true;
+            foreach ($bimestresIds as $bId) {
+                if (!isset($datosPorBimestre[$bId][$cId])) {
+                    $areaValida = false;
+                    break;
+                }
+            }
+            if (!$areaValida) continue;
 
-            $areaNombre = $areaB1['nombre'];
+            $areaNombre = $areaInicial['nombre'];
             $comparativa[$cId] = [
                 'nombre' => $areaNombre,
                 'competencias' => []
             ];
 
-            foreach ($areaB1['competencias'] as $compNombre => $compB1) {
-                if (!isset($dataB2[$cId]['competencias'][$compNombre])) continue;
+            foreach ($areaInicial['competencias'] as $compNombre => $compInicial) {
+                // Verificar si la competencia existe en todos los bimestres
+                $compValida = true;
+                foreach ($bimestresIds as $bId) {
+                    if (!isset($datosPorBimestre[$bId][$cId]['competencias'][$compNombre])) {
+                        $compValida = false;
+                        break;
+                    }
+                }
+                if (!$compValida) continue;
 
-                $compB2 = $dataB2[$cId]['competencias'][$compNombre];
+                $dataCompN = [];
+                foreach ($bimestresIds as $bId) {
+                    $dataCompN[$bId] = $datosPorBimestre[$bId][$cId]['competencias'][$compNombre];
+                }
 
-                // Calculamos variaciones
-                $variacionC = $compB2['porcentajes']['C'] - $compB1['porcentajes']['C'];
-                $variacionB = $compB2['porcentajes']['B'] - $compB1['porcentajes']['B'];
-                $variacionA = $compB2['porcentajes']['A'] - $compB1['porcentajes']['A'];
-                $variacionAD = $compB2['porcentajes']['AD'] - $compB1['porcentajes']['AD'];
+                $compFinal = $datosPorBimestre[$ultimoBimestre][$cId]['competencias'][$compNombre];
+
+                // Calculamos variaciones (Último - Primero)
+                $variacionC = $compFinal['porcentajes']['C'] - $compInicial['porcentajes']['C'];
+                $variacionB = $compFinal['porcentajes']['B'] - $compInicial['porcentajes']['B'];
+                $variacionA = $compFinal['porcentajes']['A'] - $compInicial['porcentajes']['A'];
+                $variacionAD = $compFinal['porcentajes']['AD'] - $compInicial['porcentajes']['AD'];
 
                 $comparativa[$cId]['competencias'][$compNombre] = [
-                    'b1' => $compB1,
-                    'b2' => $compB2,
+                    'bimestres_data' => $dataCompN,
                     'variaciones' => [
                         'C' => round($variacionC, 1),
                         'B' => round($variacionB, 1),

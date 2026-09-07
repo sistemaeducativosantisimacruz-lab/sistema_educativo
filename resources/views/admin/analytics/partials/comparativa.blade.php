@@ -21,9 +21,15 @@
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th scope="col" class="px-2 py-3 font-semibold text-gray-700">Nivel</th>
-                                        <th scope="col" class="px-2 py-3 font-semibold text-gray-700">Bim. {{ request('bimestres_comp')[0] ?? 'A' }}</th>
-                                        <th scope="col" class="px-2 py-3 font-semibold text-gray-700">Bim. {{ request('bimestres_comp')[1] ?? 'B' }}</th>
-                                        <th scope="col" class="px-2 py-3 font-semibold text-gray-700">Variación</th>
+                                        @php
+                                            $bIds = array_keys($compData['bimestres_data']);
+                                        @endphp
+                                        @foreach($bIds as $bId)
+                                            <th scope="col" class="px-2 py-3 font-semibold text-gray-700">
+                                                Bim. {{ \App\Models\Bimestre::find($bId)->numero ?? $bId }}
+                                            </th>
+                                        @endforeach
+                                        <th scope="col" class="px-2 py-3 font-semibold text-gray-700">Var. Neta</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -31,8 +37,11 @@
                                         @php $var = $compData['variaciones'][$nivel]; @endphp
                                         <tr>
                                             <td class="px-2 py-2 font-bold text-gray-800">{{ $nivel }}</td>
-                                            <td class="px-2 py-2 text-gray-600">{{ $compData['b1']['porcentajes'][$nivel] }}%</td>
-                                            <td class="px-2 py-2 text-gray-600">{{ $compData['b2']['porcentajes'][$nivel] }}%</td>
+                                            @foreach($bIds as $bId)
+                                                <td class="px-2 py-2 text-gray-600">
+                                                    {{ $compData['bimestres_data'][$bId]['porcentajes'][$nivel] }}%
+                                                </td>
+                                            @endforeach
                                             <td class="px-2 py-2 font-bold {{ $var > 0 ? 'text-green-600' : ($var < 0 ? 'text-red-600' : 'text-gray-400') }}">
                                                 {{ $var > 0 ? '+' : '' }}{{ $var }}%
                                             </td>

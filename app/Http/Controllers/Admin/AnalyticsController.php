@@ -58,27 +58,38 @@ class AnalyticsController extends Controller
                     ];
                 }
             }
-        } elseif ($tipoVista === 'comparativa' && $request->filled('bimestres_comp')) {
-            $bimestresComp = $request->bimestres_comp;
-            if (count($bimestresComp) === 2) {
-                $datos = $this->analyticsService->getComparativaInterbimestral($anoActivo->id, $bimestresComp, $request->all());
-                
-                foreach ($datos as $cId => $area) {
-                    foreach ($area['competencias'] as $compNombre => $compData) {
-                        $graficosData[$cId][$compNombre] = [
-                            'series' => [
-                                [
-                                    'name' => 'Bimestre ' . Bimestre::find($bimestresComp[0])->numero,
-                                    'data' => [$compData['b1']['porcentajes']['AD'], $compData['b1']['porcentajes']['A'], $compData['b1']['porcentajes']['B'], $compData['b1']['porcentajes']['C']]
-                                ],
-                                [
-                                    'name' => 'Bimestre ' . Bimestre::find($bimestresComp[1])->numero,
-                                    'data' => [$compData['b2']['porcentajes']['AD'], $compData['b2']['porcentajes']['A'], $compData['b2']['porcentajes']['B'], $compData['b2']['porcentajes']['C']]
-                                ]
-                            ],
-                            'categories' => ['AD', 'A', 'B', 'C']
+        } elseif ($tipoVista === 'comparativa') {
+            $bComps = array_filter($request->input('bimestres_comp', []));
+            if (count($bComps) < 2) {
+                return back()->with('error', 'Debe seleccionar al menos 2 bimestres para comparar.');
+            }
+            
+            sort($bComps);
+            $datos = $this->analyticsService->getComparativaInterbimestral($anoActivo->id, $bComps, $request->all());
+            
+            // Mapear números de bimestres para las etiquetas
+            $bimestresModelos = Bimestre::whereIn('id', $bComps)->get()->keyBy('id');
+
+            foreach ($datos as $cId => $area) {
+                foreach ($area['competencias'] as $compNombre => $compData) {
+                    $series = [];
+                    foreach ($bComps as $bId) {
+                        $num = $bimestresModelos->has($bId) ? $bimestresModelos[$bId]->numero : $bId;
+                        $series[] = [
+                            'name' => 'Bimestre ' . $num,
+                            'data' => [
+                                $compData['bimestres_data'][$bId]['porcentajes']['AD'],
+                                $compData['bimestres_data'][$bId]['porcentajes']['A'],
+                                $compData['bimestres_data'][$bId]['porcentajes']['B'],
+                                $compData['bimestres_data'][$bId]['porcentajes']['C']
+                            ]
                         ];
                     }
+
+                    $graficosData[$cId][$compNombre] = [
+                        'series' => $series,
+                        'categories' => ['AD', 'A', 'B', 'C']
+                    ];
                 }
             }
         }
