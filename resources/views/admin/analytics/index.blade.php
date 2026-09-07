@@ -174,43 +174,40 @@
     document.addEventListener("DOMContentLoaded", function() {
         const graficosData = @json($graficosData ?? []);
         
-        for (const [cId, competencias] of Object.entries(graficosData)) {
-            for (const [compNombre, config] of Object.entries(competencias)) {
-                let chartId = `chart_${cId}_${compNombre.replace(/[^a-zA-Z0-9]/g, '_')}`;
-                let el = document.querySelector(`#${chartId}`);
-                if (el) {
-                    let isComparativa = !!config.categories;
-                    
-                    let options = {
-                        series: config.series,
-                        chart: {
-                            type: 'bar',
-                            height: 320,
-                            animations: { enabled: false }, 
-                            toolbar: { show: false }
-                        },
-                        colors: isComparativa ? ['#3b82f6', '#10b981'] : ['#10b981', '#06b6d4', '#f59e0b', '#ef4444'],
-                        plotOptions: {
-                            bar: {
-                                borderRadius: 4,
-                                horizontal: false,
-                                dataLabels: { position: 'top' },
-                                distributed: !isComparativa
-                            }
-                        },
-                        dataLabels: {
-                            enabled: true,
-                            formatter: function (val) { return val + "%"; },
-                            style: { colors: ["#1f2937"] }
-                        },
-                        xaxis: {
-                            categories: isComparativa ? config.categories : config.labels,
-                        },
-                        legend: { show: isComparativa }
-                    };
+        for (const config of graficosData) {
+            let el = document.querySelector(`#${config.chart_id}`);
+            if (el) {
+                let isComparativa = !!config.categories;
+                
+                let options = {
+                    series: config.series,
+                    chart: {
+                        type: 'bar',
+                        height: 320,
+                        animations: { enabled: false }, 
+                        toolbar: { show: false }
+                    },
+                    colors: isComparativa ? ['#3b82f6', '#10b981', '#6366f1', '#f59e0b', '#ec4899'] : ['#10b981', '#06b6d4', '#f59e0b', '#ef4444'],
+                    plotOptions: {
+                        bar: {
+                            borderRadius: 4,
+                            horizontal: false,
+                            dataLabels: { position: 'top' },
+                            distributed: !isComparativa
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        formatter: function (val) { return val + "%"; },
+                        style: { colors: ["#1f2937"] }
+                    },
+                    xaxis: {
+                        categories: isComparativa ? config.categories : config.labels,
+                    },
+                    legend: { show: isComparativa }
+                };
 
-                    new ApexCharts(el, options).render();
-                }
+                new ApexCharts(el, options).render();
             }
         }
     });

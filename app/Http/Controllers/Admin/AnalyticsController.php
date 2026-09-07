@@ -52,7 +52,9 @@ class AnalyticsController extends Controller
             // Preparar JSON para ChartJS / ApexCharts
             foreach ($datos as $cId => $area) {
                 foreach ($area['competencias'] as $compNombre => $compData) {
-                    $graficosData[$cId][$compNombre] = [
+                    $chartId = 'chart_' . $cId . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $compNombre);
+                    $graficosData[] = [
+                        'chart_id' => $chartId,
                         'series' => [$compData['AD'], $compData['A'], $compData['B'], $compData['C']],
                         'labels' => ['Logro Destacado (AD)', 'Logro Esperado (A)', 'En Proceso (B)', 'En Inicio (C)']
                     ];
@@ -86,7 +88,9 @@ class AnalyticsController extends Controller
                         ];
                     }
 
-                    $graficosData[$cId][$compNombre] = [
+                    $chartId = 'chart_' . $cId . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $compNombre);
+                    $graficosData[] = [
+                        'chart_id' => $chartId,
                         'series' => $series,
                         'categories' => ['AD', 'A', 'B', 'C']
                     ];
