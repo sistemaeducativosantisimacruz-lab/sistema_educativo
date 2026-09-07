@@ -149,7 +149,6 @@
         .text-green-800 { color: #166534 !important; }
     }
 </style>
-</x-app-layout>
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -221,3 +220,4 @@
     });
 </script>
 @endpush
+</x-app-layout>
