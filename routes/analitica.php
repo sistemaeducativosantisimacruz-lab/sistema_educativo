@@ -10,4 +10,7 @@ Route::middleware(['auth'])->prefix('analitica')->name('analitica.')->group(func
         return view('analitica.index');
     })->name('index');
 
+    // Endpoint de Release 1: Agregación de notas bimestrales
+    Route::get('/distribucion', [\App\Http\Controllers\AnaliticaController::class, 'distribucion'])->name('distribucion');
+
 });
