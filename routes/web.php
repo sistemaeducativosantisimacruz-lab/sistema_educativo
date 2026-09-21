@@ -28,3 +28,4 @@ require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
 require __DIR__.'/docente.php';
 require __DIR__.'/estudiante.php';
+require __DIR__.'/analitica.php';
