@@ -6,19 +6,21 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class EstudiantesCriticosSeccionExport implements WithMultipleSheets
 {
-    protected $dataExport;
+    protected $seccionesData;
+    protected $notaActual;
 
-    public function __construct($dataExport)
+    public function __construct($seccionesData, $notaActual = 'C')
     {
-        $this->dataExport = $dataExport;
+        $this->seccionesData = $seccionesData;
+        $this->notaActual = $notaActual;
     }
 
     public function sheets(): array
     {
         $sheets = [];
 
-        foreach ($this->dataExport as $seccionData) {
-            $sheets[] = new EstudiantesCriticosSeccionSheetExport($seccionData);
+        foreach ($this->seccionesData as $seccionData) {
+            $sheets[] = new EstudiantesCriticosSeccionSheetExport($seccionData, $this->notaActual);
         }
 
         return $sheets;

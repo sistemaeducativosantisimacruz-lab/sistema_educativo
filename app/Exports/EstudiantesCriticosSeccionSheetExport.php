@@ -2,153 +2,186 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 
-class EstudiantesCriticosSeccionSheetExport implements FromCollection, WithHeadings, WithColumnWidths, WithStyles, WithTitle
+class EstudiantesCriticosSeccionSheetExport implements FromArray, WithTitle, WithEvents
 {
     protected $seccion;
+    protected $notaActual;
 
-    public function __construct($seccion)
+    public function __construct($seccion, $notaActual = 'C')
     {
         $this->seccion = $seccion;
+        $this->notaActual = $notaActual;
     }
 
     public function title(): string
     {
-        // Example: "1ro Secundaria - A"
-        $title = str_replace(['*', ':', '/', '\\', '?', '[', ']'], '', $this->seccion->seccion_nombre);
-        
-        // Shorten to fit within 31 chars and follow user request "número de grado seguido de la letra"
-        // Let's replace words with short versions
-        $title = str_ireplace(
-            [' Secundaria', ' Primaria', 'ro ', 'do ', 'ero ', 'to ', 'mo ', 'vo ', 'no ', ' '], 
-            [' Sec', ' Prim', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], 
-            $title
-        );
-        $title = trim(str_replace(' - ', ' ', $title)); // e.g. "1 Sec A"
-        
-        return substr($title, 0, 31);
+        $title = $this->seccion->sheet_title ?? 'Seccion';
+        $title = str_replace(['*', ':', '/', '\\', '?', '[', ']'], '', $title);
+        return substr(trim($title), 0, 31);
     }
 
-    public function collection()
+    public function array(): array
     {
-        $rows = collect();
+        return [];
+    }
 
-        foreach ($this->seccion->cursos as $curso) {
-            // Check if this course has any students with C in this section
-            $hasStudents = false;
-            foreach ($curso->competencias as $comp) {
-                if ($comp->estudiantes->isNotEmpty()) {
-                    $hasStudents = true;
-                    break;
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+
+                // Alturas de filas iniciales
+                $sheet->getRowDimension(1)->setRowHeight(18);
+                $sheet->getRowDimension(2)->setRowHeight(18);
+                $sheet->getRowDimension(3)->setRowHeight(165);
+                $sheet->getRowDimension(4)->setRowHeight(15);
+
+                // Anchos de columnas fijas
+                $sheet->getColumnDimension('A')->setWidth(8);
+                $sheet->getColumnDimension('B')->setWidth(8);
+                $sheet->getColumnDimension('C')->setWidth(42);
+
+                // Columna A: N
+                $sheet->setCellValue('A1', 'N');
+                $sheet->mergeCells('A1:A4');
+                $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                // Columna B: GRADO Y SECCIÓN
+                $sheet->setCellValue('B1', 'GRADO Y SECCIÓN');
+                $sheet->mergeCells('B1:B4');
+                $sheet->getStyle('B1')->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                $sheet->getStyle('B1')->getAlignment()->setTextRotation(90)->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                // Columna C: DATOS DEL ESTUDIANTE / NOMBRE Y APELLIDOS
+                $sheet->setCellValue('C1', 'DATOS DEL ESTUDIANTE');
+                $sheet->mergeCells('C1:C2');
+                $sheet->getStyle('C1')->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                $sheet->getStyle('C1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2EFD9');
+                $sheet->getStyle('C1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                $sheet->setCellValue('C3', 'NOMBRE Y APELLIDOS');
+                $sheet->mergeCells('C3:C4');
+                $sheet->getStyle('C3')->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                $sheet->getStyle('C3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2EFD9');
+                $sheet->getStyle('C3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                $currentCol = 4; // Columna D
+                $compColMap = [];
+
+                if (!empty($this->seccion->cursos)) {
+                    foreach ($this->seccion->cursos as $curso) {
+                        $compCount = count($curso->competencias);
+                        if ($compCount === 0) {
+                            continue;
+                        }
+
+                        $startCol = Coordinate::stringFromColumnIndex($currentCol);
+                        $endCol = Coordinate::stringFromColumnIndex($currentCol + $compCount - 1);
+
+                        // Cabecera del Curso (Filas 1-2)
+                        $sheet->setCellValue("{$startCol}1", $curso->nombre);
+                        $sheet->mergeCells("{$startCol}1:{$endCol}2");
+
+                        $cColor = $curso->color ?? 'D9D9D9';
+                        $cStyle = $sheet->getStyle("{$startCol}1:{$endCol}2");
+                        $cStyle->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                        $cStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF' . $cColor);
+                        $cStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
+
+                        // Cabeceras de Competencias (Filas 3-4)
+                        foreach ($curso->competencias as $comp) {
+                            $colLetter = Coordinate::stringFromColumnIndex($currentCol);
+                            $sheet->getColumnDimension($colLetter)->setWidth(7);
+
+                            $sheet->setCellValue("{$colLetter}3", $comp->nombre);
+                            $sheet->mergeCells("{$colLetter}3:{$colLetter}4");
+
+                            $compStyle = $sheet->getStyle("{$colLetter}3:{$colLetter}4");
+                            $compStyle->getFont()->setSize(10)->setName('Calibri');
+                            $compStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF' . $cColor);
+                            $compStyle->getAlignment()->setTextRotation(90)->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
+
+                            $compColMap[$comp->id] = $colLetter;
+                            $currentCol++;
+                        }
+                    }
                 }
-            }
 
-            // Optional: Skip course entirely if no students? The user said "lista de cursos con competencia con los estudiantes que tienen C"
-            // It's cleaner to only show courses that actually have students with C.
-            if (!$hasStudents) {
-                continue;
-            }
+                $hasCompetencies = ($currentCol > 4);
+                $firstCompCol = 'D';
+                $lastCompCol = $hasCompetencies ? Coordinate::stringFromColumnIndex($currentCol - 1) : 'D';
+                $totalCol = Coordinate::stringFromColumnIndex($currentCol);
 
-            // Fila de título de curso
-            $rows->push([
-                'Curso: ' . $curso->curso_nombre,
-                '', '', '', ''
-            ]);
+                // Columna Total: TOTAL DE COMPETENCIAS
+                $sheet->getColumnDimension($totalCol)->setWidth(10);
+                $sheet->setCellValue("{$totalCol}1", 'TOTAL DE COMPETENCIAS');
+                $sheet->mergeCells("{$totalCol}1:{$totalCol}4");
+                $totStyle = $sheet->getStyle("{$totalCol}1:{$totalCol}4");
+                $totStyle->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                $totStyle->getAlignment()->setTextRotation(90)->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
 
-            foreach ($curso->competencias as $comp) {
-                if ($comp->estudiantes->isEmpty()) {
-                    continue; // Skip competencies with no C students in this section
+                // Filas de estudiantes (a partir de la fila 5)
+                $r = 5;
+                if (!empty($this->seccion->estudiantes)) {
+                    foreach ($this->seccion->estudiantes as $st) {
+                        $sheet->getRowDimension($r)->setRowHeight(20);
+
+                        $sheet->setCellValue("A{$r}", $st->order_num);
+                        $sheet->setCellValue("B{$r}", $this->seccion->short_section ?? '');
+                        $sheet->setCellValue("C{$r}", $st->full_name);
+
+                        $sheet->getStyle("A{$r}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                        $sheet->getStyle("A{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                        $sheet->getStyle("B{$r}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                        $sheet->getStyle("B{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                        $sheet->getStyle("C{$r}")->getFont()->setSize(10)->setName('Calibri');
+                        $sheet->getStyle("C{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER);
+
+                        foreach ($compColMap as $compId => $colLetter) {
+                            if (isset($st->notas[$compId])) {
+                                $sheet->setCellValue("{$colLetter}{$r}", $st->notas[$compId]);
+                                $sheet->getStyle("{$colLetter}{$r}")->getFont()->setSize(10)->setName('Calibri');
+                                $sheet->getStyle("{$colLetter}{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+                            }
+                        }
+
+                        if ($hasCompetencies) {
+                            $sheet->setCellValue("{$totalCol}{$r}", "=COUNTA({$firstCompCol}{$r}:{$lastCompCol}{$r})");
+                        } else {
+                            $sheet->setCellValue("{$totalCol}{$r}", 0);
+                        }
+                        $sheet->getStyle("{$totalCol}{$r}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                        $sheet->getStyle("{$totalCol}{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                        $r++;
+                    }
                 }
 
-                // Fila de competencia
-                $rows->push([
-                    '  Competencia: ' . $comp->competencia_nombre,
-                    '', '', '', ''
+                $lastRow = max(4, $r - 1);
+
+                // Bordes en toda la cuadrícula de la tabla
+                $sheet->getStyle("A1:{$totalCol}{$lastRow}")->applyFromArray([
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color' => ['argb' => 'FF000000'],
+                        ],
+                    ],
                 ]);
-
-                foreach ($comp->estudiantes as $est) {
-                    $rows->push([
-                        '    ' . $est->dni,
-                        $est->apellido_paterno . ' ' . $est->apellido_materno . ', ' . $est->nombres,
-                        $est->grado_nombre . ' - ' . $est->seccion_nombre,
-                        $est->nota_logro ?? '', // Valor real dinámico
-                        $est->conclusion_descriptiva ?? ''
-                    ]);
-                }
-            }
-            
-            // Fila vacía separadora
-            $rows->push(['', '', '', '', '']);
-        }
-
-        if ($rows->isEmpty()) {
-            $rows->push([
-                'No hay estudiantes con la calificación solicitada en esta sección.',
-                '', '', '', ''
-            ]);
-        }
-
-        return $rows;
-    }
-
-    public function headings(): array
-    {
-        return [
-            'DNI / Información',
-            'Nombres y Apellidos',
-            'Grado y Sección',
-            'Calificación',
-            'Conclusión Descriptiva'
+            },
         ];
-    }
-
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 45, // Competencia / DNI
-            'B' => 40, // Nombres y Apellidos
-            'C' => 25, // Grado y Sección
-            'D' => 15, // Calificación
-            'E' => 50, // Conclusión Descriptiva
-        ];
-    }
-
-    public function styles(Worksheet $sheet)
-    {
-        // Aplicar estilos a la cabecera
-        $sheet->getStyle('A1:E1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:E1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-            ->getStartColor()->setARGB('FFD2D2');
-
-        // Estilos para las filas de Curso y Competencias
-        $highestRow = $sheet->getHighestRow();
-        $sheet->getStyle('A1:E' . $highestRow)->getAlignment()->setWrapText(true);
-        $sheet->getStyle('A1:E' . $highestRow)->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
-
-        for ($i = 2; $i <= $highestRow; $i++) {
-            $cellValue = $sheet->getCell('A' . $i)->getValue();
-            if (str_starts_with(trim((string)$cellValue), 'Curso:')) {
-                // Fila de curso
-                $sheet->getStyle('A' . $i . ':E' . $i)->getFont()->setBold(true)->setSize(12)->getColor()->setARGB('FFFFFF');
-                $sheet->getStyle('A' . $i . ':E' . $i)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                    ->getStartColor()->setARGB('4F46E5'); // Indigo-600
-            } elseif (str_starts_with(trim((string)$cellValue), 'Competencia:')) {
-                // Fila de competencia
-                $sheet->getStyle('A' . $i . ':E' . $i)->getFont()->setBold(true)->setItalic(true);
-                $sheet->getStyle('A' . $i . ':E' . $i)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                    ->getStartColor()->setARGB('F3F4F6'); // Gris claro
-            } elseif (trim((string)$cellValue) !== '' && !str_starts_with(trim((string)$cellValue), 'DNI') && !str_starts_with(trim((string)$cellValue), 'No hay')) {
-                // Fila de estudiante (DNI en Col A)
-                $sheet->getStyle('D' . $i)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-                $sheet->getStyle('D' . $i)->getFont()->setBold(true);
-            }
-        }
     }
 }
