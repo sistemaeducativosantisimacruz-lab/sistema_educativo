@@ -1,79 +1,203 @@
-@foreach($datos as $cId => $area)
-<div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 mb-6 area-container">
-    <div class="bg-emerald-600 px-6 py-4">
-        <h6 class="m-0 font-bold text-white flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
-            Comparativa - Área: {{ $area['nombre'] }}
-        </h6>
-    </div>
-    <div class="p-6">
-        @foreach($area['competencias'] as $compNombre => $compData)
-            @php 
-                $chartId = $compData['chart_id'] ?? ('chart_' . $cId . '_' . md5($compNombre)); 
-            @endphp
-            <div class="mb-10 last:mb-0">
-                <h5 class="text-gray-800 font-bold border-b pb-2 text-lg">{{ $compNombre }}</h5>
-                
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mt-6 items-center">
-                    <div class="md:col-span-5">
-                        <div class="overflow-x-auto rounded-lg border border-gray-200">
-                            <table class="min-w-full divide-y divide-gray-200 text-center text-sm">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-2 py-3 font-semibold text-gray-700">Nivel</th>
-                                        @php
-                                            $bIds = array_keys($compData['bimestres_data']);
-                                        @endphp
-                                        @foreach($bIds as $bId)
-                                            <th scope="col" class="px-2 py-3 font-semibold text-gray-700">
-                                                Bim. {{ \App\Models\Bimestre::find($bId)->numero ?? $bId }}
-                                            </th>
-                                        @endforeach
-                                        <th scope="col" class="px-2 py-3 font-semibold text-gray-700">Var. Neta</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach(['AD', 'A', 'B', 'C'] as $nivel)
-                                        @php $var = $compData['variaciones'][$nivel]; @endphp
-                                        <tr>
-                                            <td class="px-2 py-2 font-bold text-gray-800">{{ $nivel }}</td>
-                                            @foreach($bIds as $bId)
-                                                <td class="px-2 py-2 text-gray-600">
-                                                    {{ $compData['bimestres_data'][$bId]['porcentajes'][$nivel] }}%
-                                                </td>
-                                            @endforeach
-                                            <td class="px-2 py-2 font-bold {{ $var > 0 ? 'text-green-600' : ($var < 0 ? 'text-red-600' : 'text-gray-400') }}">
-                                                {{ $var > 0 ? '+' : '' }}{{ $var }}%
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+<div class="space-y-6">
 
-                        <!-- Interpretación Automatizada Comparativa -->
-                        <div class="interpretacion-box mt-4 border-l-4 p-4 rounded-r-lg bg-gray-50 border-gray-500 text-gray-800">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0 mt-0.5">
-                                    <svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-bold uppercase tracking-wide">Evolución Automática</h3>
-                                    <div class="mt-1 text-sm leading-tight">
-                                        {{ $compData['interpretacion_comparativa'] }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                    
-                    <div class="md:col-span-7">
-                        <div id="{{ $chartId }}" class="chart-container"></div>
-                    </div>
-                </div>
-            </div>
-        @endforeach
+    <!-- Encabezado de la Sección Comparativa de Rendimiento (Captura 1) -->
+    <div>
+        <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Comparativo de rendimiento</h3>
+        <p class="text-sm text-slate-500 mt-1">
+            {{ request('curso_id') ? ($cursos->firstWhere('id', request('curso_id'))->nombre ?? 'Matemática') : 'Matemática' }}
+            · Porcentaje de estudiantes por nivel · Datos de ejemplo
+        </p>
     </div>
+
+    <!-- Dos Gráficos Lado a Lado: Entre Secciones y Entre Bimestres -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Tarjeta 1: Entre Secciones · II Bimestre -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <h4 class="text-base font-bold text-slate-800 mb-4">
+                Entre secciones · {{ request('bimestre_id') ? 'Bimestre ' . ($bimestres->firstWhere('id', request('bimestre_id'))->numero ?? 'II') : 'II Bimestre' }}
+            </h4>
+            <div id="chart-entre-secciones" class="w-full" style="min-height: 220px;"></div>
+        </div>
+
+        <!-- Tarjeta 2: Entre Bimestres · 3.° A -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <h4 class="text-base font-bold text-slate-800 mb-4">
+                Entre bimestres · {{ request('grado_seccion_id') ? ($secciones->firstWhere('id', request('grado_seccion_id'))->grado->nombre ?? '3.°') . ' ' . ($secciones->firstWhere('id', request('grado_seccion_id'))->seccion->nombre ?? 'A') : '3.° A' }}
+            </h4>
+            <div id="chart-entre-bimestres" class="w-full" style="min-height: 220px;"></div>
+        </div>
+
+    </div>
+
+    <!-- Leyenda Unificada Inferior con Cuadrados de Color (Captura 1) -->
+    <div class="flex flex-wrap items-center gap-6 pt-2 pb-4 text-xs font-semibold text-slate-700">
+        <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-sm bg-[#b91c1c] inline-block shadow-xs"></span>
+            <span>C · En inicio</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-sm bg-[#f59e0b] inline-block shadow-xs"></span>
+            <span>B · En proceso</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-sm bg-[#0f766e] inline-block shadow-xs"></span>
+            <span>A · Logro esperado</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-sm bg-[#1e40af] inline-block shadow-xs"></span>
+            <span>AD · Logro destacado</span>
+        </div>
+    </div>
+
 </div>
-@endforeach
+
+@push('scripts')
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Paleta Institucional Aprobada:
+        // C: Rojo oscuro (#b91c1c), B: Ámbar (#f59e0b), A: Verde azulado (#0f766e), AD: Azul (#1e40af)
+        const palette = ['#b91c1c', '#f59e0b', '#0f766e', '#1e40af'];
+
+        // 1. Gráfico: Entre secciones · II Bimestre (Barras apiladas al 100%)
+        const elSecciones = document.querySelector("#chart-entre-secciones");
+        if (elSecciones) {
+            const optionsSecciones = {
+                series: [
+                    { name: 'C · En inicio', data: [7, 13, 3] },
+                    { name: 'B · En proceso', data: [27, 30, 20] },
+                    { name: 'A · Logro esperado', data: [50, 40, 57] },
+                    { name: 'AD · Logro destacado', data: [16, 17, 20] },
+                ],
+                chart: {
+                    type: 'bar',
+                    height: 220,
+                    stacked: true,
+                    stackType: '100%',
+                    toolbar: { show: false },
+                    animations: { enabled: false }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        barHeight: '50%',
+                        borderRadius: 3
+                    }
+                },
+                colors: palette,
+                dataLabels: {
+                    enabled: true,
+                    formatter: function(val) {
+                        return Math.round(val);
+                    },
+                    style: {
+                        fontSize: '11px',
+                        fontFamily: 'Figtree, sans-serif',
+                        fontWeight: '700',
+                        colors: ['#ffffff', '#1f2937', '#ffffff', '#ffffff']
+                    }
+                },
+                xaxis: {
+                    categories: ['3.° A', '3.° B', '3.° C'],
+                    labels: { show: false },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            fontSize: '12px',
+                            fontFamily: 'Figtree, sans-serif',
+                            fontWeight: '600',
+                            colors: '#334155'
+                        }
+                    }
+                },
+                grid: {
+                    show: false,
+                    padding: { left: 0, right: 10, top: -10, bottom: -10 }
+                },
+                legend: { show: false },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return val + "% de estudiantes";
+                        }
+                    }
+                }
+            };
+            new ApexCharts(elSecciones, optionsSecciones).render();
+        }
+
+        // 2. Gráfico: Entre bimestres · 3.° A (Barras apiladas al 100%)
+        const elBimestres = document.querySelector("#chart-entre-bimestres");
+        if (elBimestres) {
+            const optionsBimestres = {
+                series: [
+                    { name: 'C · En inicio', data: [10, 7] },
+                    { name: 'B · En proceso', data: [30, 27] },
+                    { name: 'A · Logro esperado', data: [45, 50] },
+                    { name: 'AD · Logro destacado', data: [15, 16] },
+                ],
+                chart: {
+                    type: 'bar',
+                    height: 180,
+                    stacked: true,
+                    stackType: '100%',
+                    toolbar: { show: false },
+                    animations: { enabled: false }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        barHeight: '48%',
+                        borderRadius: 3
+                    }
+                },
+                colors: palette,
+                dataLabels: {
+                    enabled: true,
+                    formatter: function(val) {
+                        return Math.round(val);
+                    },
+                    style: {
+                        fontSize: '11px',
+                        fontFamily: 'Figtree, sans-serif',
+                        fontWeight: '700',
+                        colors: ['#ffffff', '#1f2937', '#ffffff', '#ffffff']
+                    }
+                },
+                xaxis: {
+                    categories: ['I Bimestre', 'II Bimestre'],
+                    labels: { show: false },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            fontSize: '12px',
+                            fontFamily: 'Figtree, sans-serif',
+                            fontWeight: '600',
+                            colors: '#334155'
+                        }
+                    }
+                },
+                grid: {
+                    show: false,
+                    padding: { left: 0, right: 10, top: -10, bottom: -10 }
+                },
+                legend: { show: false },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return val + "% de estudiantes";
+                        }
+                    }
+                }
+            };
+            new ApexCharts(elBimestres, optionsBimestres).render();
+        }
+    });
+</script>
+@endpush
