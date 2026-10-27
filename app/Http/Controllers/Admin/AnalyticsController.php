@@ -3,22 +3,23 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Admin\AnalyticsFilterRequest;
 use App\Models\AnoLectivo;
 use App\Models\Bimestre;
+use App\Models\Curso;
 use App\Models\GradoSeccion;
-use App\Services\AnalyticsService;
+use App\Services\AnaliticaEvaluacionService;
 
 class AnalyticsController extends Controller
 {
-    protected $analyticsService;
+    protected AnaliticaEvaluacionService $analiticaService;
 
-    public function __construct(AnalyticsService $analyticsService)
+    public function __construct(AnaliticaEvaluacionService $analiticaService)
     {
-        $this->analyticsService = $analyticsService;
+        $this->analiticaService = $analiticaService;
     }
 
-    public function index(Request $request)
+    public function index(AnalyticsFilterRequest $request)
     {
         $anoActivo = AnoLectivo::where('activo', true)->first();
         if (!$anoActivo) {
@@ -42,12 +43,22 @@ class AnalyticsController extends Controller
 
         $secciones = $seccionesQuery->get();
 
+        // Cursos disponibles para el filtro (filtrables por nivel si se selecciona)
+        $cursosQuery = Curso::where('activo', true)->soloCursos()->orderBy('nombre');
+        if ($request->filled('nivel')) {
+            $cursosQuery->paraNivel($request->nivel);
+        }
+        $cursos = $cursosQuery->get();
+
         $tipoVista = $request->input('tipo_vista', 'bimestral');
         $datos = [];
+        $resumenGlobal = null;
         $graficosData = [];
+        $umbralAlerta = config('analitica.umbral_alerta_riesgo', 40.0);
 
         if ($tipoVista === 'bimestral' && $request->filled('bimestre_id')) {
-            $datos = $this->analyticsService->getDistribucionBimestral($anoActivo->id, $request->all());
+            $datos = $this->analiticaService->getDistribucionBimestral($anoActivo->id, $request->validated());
+            $resumenGlobal = $this->analiticaService->calcularResumenGlobal($datos);
             
             // Preparar JSON para ApexCharts
             foreach ($datos as $cId => &$area) {
@@ -79,7 +90,7 @@ class AnalyticsController extends Controller
             }
             
             sort($bComps);
-            $datos = $this->analyticsService->getComparativaInterbimestral($anoActivo->id, $bComps, $request->all());
+            $datos = $this->analiticaService->getComparativaInterbimestral($anoActivo->id, $bComps, $request->validated());
             
             // Mapear números de bimestres para las etiquetas
             $bimestresModelos = Bimestre::whereIn('id', $bComps)->get()->keyBy('id');
@@ -114,6 +125,16 @@ class AnalyticsController extends Controller
             unset($compData);
         }
 
-        return view('admin.analytics.index', compact('anoActivo', 'bimestres', 'secciones', 'tipoVista', 'datos', 'graficosData'));
+        return view('admin.analytics.index', compact(
+            'anoActivo',
+            'bimestres',
+            'secciones',
+            'cursos',
+            'tipoVista',
+            'datos',
+            'resumenGlobal',
+            'graficosData',
+            'umbralAlerta'
+        ));
     }
 }
