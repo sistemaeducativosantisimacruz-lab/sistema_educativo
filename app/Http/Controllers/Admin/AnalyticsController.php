@@ -49,7 +49,7 @@ class AnalyticsController extends Controller
         if ($tipoVista === 'bimestral' && $request->filled('bimestre_id')) {
             $datos = $this->analyticsService->getDistribucionBimestral($anoActivo->id, $request->all());
             
-            // Preparar JSON para ChartJS / ApexCharts
+            // Preparar JSON para ApexCharts
             foreach ($datos as $cId => &$area) {
                 foreach ($area['competencias'] as $compNombre => &$compData) {
                     $chartId = 'chart_' . $cId . '_' . md5($compNombre);

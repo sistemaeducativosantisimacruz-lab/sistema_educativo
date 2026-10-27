@@ -239,6 +239,15 @@
                 
                 try {
                     this.loading = true;
+                    Swal.fire({
+                        title: 'Importando calificaciones...',
+                        text: 'Procesando el archivo Excel del SIAGIE. Por favor espere...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     const payload = new FormData();
                     payload.append('grado_seccion_id', this.form.grado_seccion_id);
                     payload.append('bimestre_id', this.form.bimestre_id);

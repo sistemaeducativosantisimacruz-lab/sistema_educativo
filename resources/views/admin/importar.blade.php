@@ -585,6 +585,15 @@ function importWizard() {
             const doImport = () => {
                 try {
                     this.loading = true;
+                    Swal.fire({
+                        title: 'Importando calificaciones...',
+                        text: 'Procesando el archivo Excel del SIAGIE. Por favor espere...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     const payload = new FormData();
                     payload.append('nivel_id', this.form.nivel_id);
                     payload.append('grado_id', this.form.grado_id);

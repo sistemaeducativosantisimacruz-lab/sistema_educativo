@@ -18,23 +18,23 @@ class CursoNotasImport implements ToCollection, WithTitle
     protected $sheetName;
     protected $stats;
     protected $anoActivoId;
+    protected $estudiantesCache;
 
-    public function __construct($bimestreId, $gradoSeccionId, $sheetName, $stats = null, $anoActivoId = null)
+    public function __construct($bimestreId, $gradoSeccionId, $sheetName, $stats = null, $anoActivoId = null, $estudiantesCache = null)
     {
         $this->bimestreId = $bimestreId;
         $this->gradoSeccionId = $gradoSeccionId;
         $this->sheetName = $sheetName;
         $this->stats = $stats;
         $this->anoActivoId = $anoActivoId;
+        $this->estudiantesCache = $estudiantesCache;
     }
 
     public function collection(Collection $rows)
     {
-        // 1. Extract course code from sheet name, e.g. "0001-ART Y CULT" -> "0001" or "014-CCSS" -> "014"
-        // Wait, some codes are 4 digits, some are 3. We can just explode by "-" and take the first part.
+        // 1. Extraer código del curso del nombre de la hoja
         $parts = explode('-', $this->sheetName);
         if (count($parts) < 2) {
-            // Not a valid course sheet, ignore.
             return;
         }
 
@@ -46,46 +46,25 @@ class CursoNotasImport implements ToCollection, WithTitle
             return;
         }
 
-        // 2. Map competencies dynamically.
-        // Row 0 in the collection is Row 1 in Excel.
-        // Row 1 in the collection is Row 2 in Excel.
         if ($rows->count() < 3) {
-            return; // Not enough data
+            return;
         }
 
-        $row1 = $rows[0]; // Competencies codes (01, 02, etc.)
-        $row2 = $rows[1]; // "NL" and "conclusion_descriptiva"
+        $row1 = $rows[0];
+        $row2 = $rows[1];
 
-        $competenciaMap = []; // index => competencia_id
-        
-        // Find competencies mapping
-        foreach ($row1 as $index => $cellValue) {
-            $val = trim((string)$cellValue);
-            if (is_numeric($val) && strlen($val) === 2) { // "01", "02", etc.
-                // It's a competency header
-                $orden = (int)$val;
-                // Find this competency for this course
-                // Assuming `orden` matches the "01", "02" number
-                $competencia = Competencia::where('curso_id', $curso->id)->where('orden', $orden)->first();
-                if ($competencia) {
-                    // Check if row 2 has "NL" below it or slightly shifted. Usually it's in the same column or next.
-                    // The user said: "donde la columna diga 'NL' para saber el índice exacto de la nota, y el índice + 1 para la conclusión descriptiva"
-                    // Let's search row 2 around this index for "NL"
-                    // Actually, let's just find "NL" in row 2 and link it to the closest previous competence code in row 1.
-                }
-            }
-        }
+        // 2. Pre-cargar en memoria las competencias del curso (1 sola consulta en vez de repetitivas)
+        $todasCompetencias = Competencia::where('curso_id', $curso->id)->get();
+        $competenciasByOrden = $todasCompetencias->keyBy('orden');
 
-        // Better approach for mapping:
-        // Iterate through row 2, find "NL".
-        // When we find "NL" at index $i, we look up in row 1 for the competency code (it might be merged, so it might be at $i or earlier).
+        $competenciaMap = [];
         $currentCompetenciaId = null;
+
         for ($i = 0; $i < count($row2); $i++) {
             $colVal1 = trim((string)($row1[$i] ?? ''));
-            // SIAGIE headers are "01", "02". Excel might parse them as numbers (1, 2)
             if (is_numeric($colVal1) && (int)$colVal1 > 0 && (int)$colVal1 < 20) {
                 $orden = (int)$colVal1;
-                $comp = Competencia::where('curso_id', $curso->id)->where('orden', $orden)->first();
+                $comp = $competenciasByOrden->get($orden);
                 $currentCompetenciaId = $comp ? $comp->id : null;
             }
 
@@ -94,125 +73,203 @@ class CursoNotasImport implements ToCollection, WithTitle
                 $competenciaMap[] = [
                     'competencia_id' => $currentCompetenciaId,
                     'nota_index' => $i,
-                    'conclusion_index' => $i + 1 // as per user instruction
+                    'conclusion_index' => $i + 1
                 ];
             }
         }
 
-        // 3. Process students
-        // Start from row 2 (which is Excel Row 3)
-        Log::info("CursoNotasImport: Procesando hoja {$this->sheetName}. Competencias mapeadas: " . count($competenciaMap));
-        
-        $estudiantesProcesados = 0;
-        for ($r = 2; $r < $rows->count(); $r++) {
-            $row = $rows[$r];
-            
-            // Check for stop condition: "LEYENDA"
-            $colA = trim(strtoupper((string)($row[0] ?? '')));
-            $colB = trim(strtoupper((string)($row[1] ?? '')));
-            $colC = trim(strtoupper((string)($row[2] ?? '')));
+        if (empty($competenciaMap)) {
+            Log::warning("CursoNotasImport: No se encontraron columnas NL de competencias en la hoja {$this->sheetName}.");
+            return;
+        }
 
-            if (str_contains($colA, 'LEYENDA') || str_contains($colB, 'LEYENDA') || str_contains($colC, 'LEYENDA')) {
-                Log::info("CursoNotasImport: LEYENDA encontrada en la fila $r, deteniendo.");
-                break;
-            }
+        // 3. Obtener o cargar el mapa en memoria de los estudiantes de la sección
+        $byCodigo = $this->estudiantesCache['byCodigo'] ?? [];
+        $byDni = $this->estudiantesCache['byDni'] ?? [];
+        $matriculadosIds = $this->estudiantesCache['matriculadosIds'] ?? [];
 
-            // Student code is in column B (index 1)
-            // But wait, sometimes SIAGIE puts code in column A or column C depending on the format.
-            // Let's assume Column B (index 1) is "CÓDIGO DEL ESTUDIANTE", Column C (index 2) is "NOMBRES Y APELLIDOS".
-            $codigoEstudiante = trim((string)($row[1] ?? ''));
-            if (empty($codigoEstudiante)) {
-                continue;
-            }
+        if (empty($byCodigo) && empty($byDni) && $this->gradoSeccionId && $this->anoActivoId) {
+            $matriculas = \App\Models\Matricula::with('estudiante')
+                ->where('grado_seccion_id', $this->gradoSeccionId)
+                ->where('ano_lectivo_id', $this->anoActivoId)
+                ->get();
 
-            $estudiante = Estudiante::where('codigo_estudiante', $codigoEstudiante)->first();
-            
-            if (!$estudiante) {
-                // Fallback 1: Try to match by DNI
-                $estudiante = Estudiante::where('dni', $codigoEstudiante)->first();
-            }
-            
-            if (!$estudiante) {
-                // Fallback 2: Try to match by Name
-                $nombresApe = trim((string)($row[2] ?? ''));
-                if ($nombresApe) {
-                    $partes = $this->separarNombresCompletos($nombresApe);
-                    if ($partes['apellido_paterno']) {
-                        $estudiante = Estudiante::where('apellido_paterno', 'ilike', $partes['apellido_paterno'] . '%')
-                            ->where('nombres', 'ilike', '%' . $partes['nombres'] . '%')
-                            ->first();
+            foreach ($matriculas as $mat) {
+                if ($mat->estudiante) {
+                    $est = $mat->estudiante;
+                    $matriculadosIds[$est->id] = true;
+                    if (!empty($est->codigo_estudiante)) {
+                        $byCodigo[$est->codigo_estudiante] = $est;
+                    }
+                    if (!empty($est->dni)) {
+                        $byDni[$est->dni] = $est;
                     }
                 }
-            }
-
-            if (!$estudiante) {
-                if ($this->stats) {
-                    $this->stats->errores[] = "Hoja {$this->sheetName}, Fila " . ($r + 1) . ": Estudiante con código/DNI {$codigoEstudiante} no encontrado en BD.";
-                }
-                Log::warning("CursoNotasImport: Estudiante con código/DNI {$codigoEstudiante} no encontrado en BD.");
-                continue;
-            }
-
-            // Verify if student belongs to the destination section
-            if ($this->gradoSeccionId && $this->anoActivoId) {
-                $matricula = \App\Models\Matricula::where('estudiante_id', $estudiante->id)
-                    ->where('ano_lectivo_id', $this->anoActivoId)
-                    ->where('grado_seccion_id', $this->gradoSeccionId)
-                    ->first();
-                if (!$matricula) {
-                    if ($this->stats) {
-                        $this->stats->errores[] = "Hoja {$this->sheetName}, Fila " . ($r + 1) . ": El estudiante {$estudiante->nombres} {$estudiante->apellido_paterno} no pertenece a la sección seleccionada.";
-                    }
-                    continue; // Skip processing grades for this student
-                }
-            }
-
-            if ($this->stats && !in_array($estudiante->id, $this->stats->procesados)) {
-                $this->stats->procesados[] = $estudiante->id;
-            }
-
-            // Optional: If we matched by DNI or Name but it didn't have a code, let's update it to save future trouble
-            if (empty($estudiante->codigo_estudiante)) {
-                $estudiante->update(['codigo_estudiante' => $codigoEstudiante]);
-            }
-
-            $estudiantesProcesados++;
-            
-            // Save grades
-            $todasCompetencias = Competencia::where('curso_id', $curso->id)->get();
-            
-            foreach ($todasCompetencias as $comp) {
-                $mapped = collect($competenciaMap)->firstWhere('competencia_id', $comp->id);
-                
-                $nota = '0';
-                $conclusion = null;
-                
-                if ($mapped) {
-                    $valNota = trim((string)($row[$mapped['nota_index']] ?? ''));
-                    $valConc = trim((string)($row[$mapped['conclusion_index']] ?? ''));
-                    
-                    if ($valNota !== '') {
-                        $nota = $valNota;
-                    }
-                    if ($valConc !== '') {
-                        $conclusion = $valConc;
-                    }
-                }
-
-                NotaBimestral::updateOrCreate(
-                    [
-                        'estudiante_id' => $estudiante->id,
-                        'curso_id' => $curso->id,
-                        'competencia_id' => $comp->id,
-                        'bimestre_id' => $this->bimestreId,
-                    ],
-                    [
-                        'nota' => $nota,
-                        'conclusion_descriptiva' => $conclusion,
-                    ]
-                );
             }
         }
+
+        // 4. Pre-cargar todas las notas existentes en 1 sola consulta agrupada para evitar miles de SELECT individuales
+        $estudianteIdsInScope = array_keys($matriculadosIds);
+        $existingNotas = collect();
+        if (!empty($estudianteIdsInScope)) {
+            $existingNotas = NotaBimestral::where('curso_id', $curso->id)
+                ->where('bimestre_id', $this->bimestreId)
+                ->whereIn('estudiante_id', $estudianteIdsInScope)
+                ->get()
+                ->keyBy(fn($item) => $item->estudiante_id . '_' . $item->competencia_id);
+        }
+
+        $estudiantesProcesados = 0;
+        $newRecordsToInsert = [];
+
+        // Ejecutar todo el procesamiento dentro de una transacción para máxima velocidad
+        \Illuminate\Support\Facades\DB::transaction(function () use (
+            $rows,
+            &$byCodigo,
+            &$byDni,
+            &$matriculadosIds,
+            $competenciaMap,
+            $todasCompetencias,
+            $curso,
+            $existingNotas,
+            &$estudiantesProcesados,
+            &$newRecordsToInsert
+        ) {
+            for ($r = 2; $r < $rows->count(); $r++) {
+                $row = $rows[$r];
+
+                // Condición de fin: "LEYENDA"
+                $colA = trim(strtoupper((string)($row[0] ?? '')));
+                $colB = trim(strtoupper((string)($row[1] ?? '')));
+                $colC = trim(strtoupper((string)($row[2] ?? '')));
+
+                if (str_contains($colA, 'LEYENDA') || str_contains($colB, 'LEYENDA') || str_contains($colC, 'LEYENDA')) {
+                    break;
+                }
+
+                $codigoEstudiante = trim((string)($row[1] ?? ''));
+                if (empty($codigoEstudiante)) {
+                    continue;
+                }
+
+                // Búsqueda instantánea en memoria (0 consultas SQL)
+                $estudiante = $byCodigo[$codigoEstudiante] ?? ($byDni[$codigoEstudiante] ?? null);
+
+                if (!$estudiante) {
+                    $estudiante = Estudiante::where('codigo_estudiante', $codigoEstudiante)->first()
+                        ?: Estudiante::where('dni', $codigoEstudiante)->first();
+
+                    if (!$estudiante) {
+                        $nombresApe = trim((string)($row[2] ?? ''));
+                        if ($nombresApe) {
+                            $partes = $this->separarNombresCompletos($nombresApe);
+                            if ($partes['apellido_paterno']) {
+                                $estudiante = Estudiante::where('apellido_paterno', 'ilike', $partes['apellido_paterno'] . '%')
+                                    ->where('nombres', 'ilike', '%' . $partes['nombres'] . '%')
+                                    ->first();
+                            }
+                        }
+                    }
+
+                    if ($estudiante) {
+                        if (!empty($estudiante->codigo_estudiante)) {
+                            $byCodigo[$estudiante->codigo_estudiante] = $estudiante;
+                        }
+                        if (!empty($estudiante->dni)) {
+                            $byDni[$estudiante->dni] = $estudiante;
+                        }
+                    }
+                }
+
+                if (!$estudiante) {
+                    if ($this->stats) {
+                        $this->stats->errores[] = "Hoja {$this->sheetName}, Fila " . ($r + 1) . ": Estudiante con código/DNI {$codigoEstudiante} no encontrado en BD.";
+                    }
+                    continue;
+                }
+
+                // Verificación de pertenencia a la sección en memoria
+                if ($this->gradoSeccionId && $this->anoActivoId) {
+                    if (!isset($matriculadosIds[$estudiante->id])) {
+                        $matriculaExiste = \App\Models\Matricula::where('estudiante_id', $estudiante->id)
+                            ->where('ano_lectivo_id', $this->anoActivoId)
+                            ->where('grado_seccion_id', $this->gradoSeccionId)
+                            ->exists();
+
+                        if (!$matriculaExiste) {
+                            if ($this->stats) {
+                                $this->stats->errores[] = "Hoja {$this->sheetName}, Fila " . ($r + 1) . ": El estudiante {$estudiante->nombres} {$estudiante->apellido_paterno} no pertenece a la sección seleccionada.";
+                            }
+                            continue;
+                        }
+                        $matriculadosIds[$estudiante->id] = true;
+                    }
+                }
+
+                if ($this->stats && !in_array($estudiante->id, $this->stats->procesados)) {
+                    $this->stats->procesados[] = $estudiante->id;
+                }
+
+                if (empty($estudiante->codigo_estudiante)) {
+                    $estudiante->update(['codigo_estudiante' => $codigoEstudiante]);
+                }
+
+                $estudiantesProcesados++;
+
+                // Procesar calificaciones de las competencias
+                foreach ($todasCompetencias as $comp) {
+                    $mapped = collect($competenciaMap)->firstWhere('competencia_id', $comp->id);
+
+                    $nota = '0';
+                    $conclusion = null;
+
+                    if ($mapped) {
+                        $valNota = trim((string)($row[$mapped['nota_index']] ?? ''));
+                        $valConc = trim((string)($row[$mapped['conclusion_index']] ?? ''));
+
+                        if ($valNota !== '') {
+                            $nota = $valNota;
+                        }
+                        if ($valConc !== '') {
+                            $conclusion = $valConc;
+                        }
+                    }
+
+                    $key = $estudiante->id . '_' . $comp->id;
+                    $existing = $existingNotas->get($key);
+
+                    if ($existing) {
+                        // Actualizar solo si hay cambios reales para ahorrar queries de escritura
+                        if ($existing->nota !== $nota || $existing->conclusion_descriptiva !== $conclusion) {
+                            $existing->update([
+                                'nota' => $nota,
+                                'conclusion_descriptiva' => $conclusion,
+                            ]);
+                        }
+                    } else {
+                        // Agrupar en lote para inserción masiva (bulk insert)
+                        $newRecordsToInsert[] = [
+                            'estudiante_id' => $estudiante->id,
+                            'curso_id' => $curso->id,
+                            'competencia_id' => $comp->id,
+                            'bimestre_id' => $this->bimestreId,
+                            'nota' => $nota,
+                            'conclusion_descriptiva' => $conclusion,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
+                }
+            }
+
+            // Inserción en bloques (Bulk Insert) de notas nuevas
+            if (!empty($newRecordsToInsert)) {
+                foreach (array_chunk($newRecordsToInsert, 500) as $chunk) {
+                    NotaBimestral::insert($chunk);
+                }
+            }
+        });
+
         Log::info("CursoNotasImport: Hoja {$this->sheetName} finalizada. Estudiantes procesados: $estudiantesProcesados.");
     }
 

@@ -13,6 +13,7 @@ class NotasBimestralesImport implements WithMultipleSheets
     protected $filePath;
     protected $stats;
     protected $anoActivoId;
+    protected $estudiantesCache = null;
 
     public function __construct($bimestreId, $gradoSeccionId, $filePath, $stats, $anoActivoId)
     {
@@ -21,6 +22,37 @@ class NotasBimestralesImport implements WithMultipleSheets
         $this->filePath = $filePath;
         $this->stats = $stats;
         $this->anoActivoId = $anoActivoId;
+
+        // Pre-cargar todos los estudiantes de la sección en memoria una sola vez para todas las hojas
+        if ($this->gradoSeccionId && $this->anoActivoId) {
+            $matriculas = \App\Models\Matricula::with('estudiante')
+                ->where('grado_seccion_id', $this->gradoSeccionId)
+                ->where('ano_lectivo_id', $this->anoActivoId)
+                ->get();
+
+            $byCodigo = [];
+            $byDni = [];
+            $matriculadosIds = [];
+
+            foreach ($matriculas as $mat) {
+                if ($mat->estudiante) {
+                    $est = $mat->estudiante;
+                    $matriculadosIds[$est->id] = true;
+                    if (!empty($est->codigo_estudiante)) {
+                        $byCodigo[$est->codigo_estudiante] = $est;
+                    }
+                    if (!empty($est->dni)) {
+                        $byDni[$est->dni] = $est;
+                    }
+                }
+            }
+
+            $this->estudiantesCache = [
+                'byCodigo' => $byCodigo,
+                'byDni' => $byDni,
+                'matriculadosIds' => $matriculadosIds
+            ];
+        }
     }
 
     public function sheets(): array
@@ -34,7 +66,14 @@ class NotasBimestralesImport implements WithMultipleSheets
         foreach ($sheetNames as $sheetName) {
             // Only process sheets that start with 3 or 4 digits followed by a hyphen
             if (preg_match('/^\d{3,4}-/', trim($sheetName))) {
-                $sheets[$sheetName] = new CursoNotasImport($this->bimestreId, $this->gradoSeccionId, trim($sheetName), $this->stats, $this->anoActivoId);
+                $sheets[$sheetName] = new CursoNotasImport(
+                    $this->bimestreId, 
+                    $this->gradoSeccionId, 
+                    trim($sheetName), 
+                    $this->stats, 
+                    $this->anoActivoId, 
+                    $this->estudiantesCache
+                );
             }
         }
 
