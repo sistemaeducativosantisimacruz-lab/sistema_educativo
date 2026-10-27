@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AnalyticsFilterRequest;
+use App\Http\Requests\Admin\EstudianteDiagnosticoRequest;
 use App\Models\AnoLectivo;
 use App\Models\Bimestre;
 use App\Models\Curso;
@@ -125,6 +126,17 @@ class AnalyticsController extends Controller
             unset($compData);
         }
 
+        // Obtener lista de estudiantes con nivel global para la pestaña de diagnóstico
+        $estudiantes = [];
+        if ($request->filled('grado_seccion_id') && $request->filled('bimestre_id')) {
+            $estudiantes = $this->analiticaService->getEstudiantesSeccionConNivel(
+                $anoActivo->id,
+                (int) $request->grado_seccion_id,
+                (int) $request->bimestre_id,
+                $request->filled('curso_id') ? (int) $request->curso_id : null
+            );
+        }
+
         return view('admin.analytics.index', compact(
             'anoActivo',
             'bimestres',
@@ -134,7 +146,27 @@ class AnalyticsController extends Controller
             'datos',
             'resumenGlobal',
             'graficosData',
-            'umbralAlerta'
+            'umbralAlerta',
+            'estudiantes'
         ));
+    }
+
+    /**
+     * Endpoint JSON para obtener el detalle de diagnóstico de un estudiante seleccionado.
+     *
+     * @param int $id
+     * @param EstudianteDiagnosticoRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function diagnosticoEstudiante(int $id, EstudianteDiagnosticoRequest $request)
+    {
+        $resultado = $this->analiticaService->getDetalleDiagnosticoEstudiante(
+            $id,
+            (int) $request->validated('grado_seccion_id'),
+            (int) $request->validated('bimestre_id'),
+            $request->validated('curso_id') ? (int) $request->validated('curso_id') : null
+        );
+
+        return response()->json($resultado);
     }
 }

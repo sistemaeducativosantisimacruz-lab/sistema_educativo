@@ -29,43 +29,50 @@ return [
     'colores' => [
         'C' => [
             'nombre' => 'En Inicio',
-            'bg' => '#991b1b', // red-800
+            'bg' => '#b91c1c', // red-700
             'text' => '#ffffff',
-            'badge' => 'bg-red-800 text-white',
+            'badge' => 'bg-[#b91c1c] text-white',
         ],
         'B' => [
             'nombre' => 'En Proceso',
             'bg' => '#f59e0b', // amber-500
             'text' => '#1f2937',
-            'badge' => 'bg-amber-400 text-gray-900',
+            'badge' => 'bg-[#f59e0b] text-gray-900',
         ],
         'A' => [
             'nombre' => 'Logro Esperado',
-            'bg' => '#0d9488', // teal-600
+            'bg' => '#0f766e', // teal-700
             'text' => '#ffffff',
-            'badge' => 'bg-teal-600 text-white',
+            'badge' => 'bg-[#0f766e] text-white',
         ],
         'AD' => [
             'nombre' => 'Logro Destacado',
-            'bg' => '#2563eb', // blue-600
+            'bg' => '#1e40af', // blue-800
             'text' => '#ffffff',
-            'badge' => 'bg-blue-600 text-white',
+            'badge' => 'bg-[#1e40af] text-white',
         ],
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Reglas Base para Diagnóstico Cualitativo
+    | Reglas Base para Diagnóstico Cualitativo de Aula
     |--------------------------------------------------------------------------
-    |
-    | Umbrales y textos pedagógicos utilizados para la interpretación
-    | automática a nivel de competencia y de aula.
-    |
     */
     'diagnostico' => [
         'alerta_urgente' => 50.0,
         'atencion_focalizada' => 30.0,
         'logro_destacado' => 80.0,
         'logro_favorable' => 50.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reglas para Diagnóstico Individual por Estudiante
+    |--------------------------------------------------------------------------
+    */
+    'diagnostico_estudiante' => [
+        'umbral_mayoria' => 50.0,    // 50 % o más de competencias en A/AD
+        'umbral_mejora' => 1.0,      // Variación >= +1.0 en promedio numérico
+        'umbral_descenso' => -1.0,   // Variación <= -1.0 en promedio numérico
     ],
 ];

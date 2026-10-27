@@ -51,6 +51,7 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
 
     // Analítica
     Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('analytics/estudiantes/{id}/diagnostico', [AnalyticsController::class, 'diagnosticoEstudiante'])->name('analytics.estudiante.diagnostico');
 
     // Rendimiento / Reportes
     Route::get('rendimiento', [RendimientoController::class, 'index'])->name('rendimiento.index');

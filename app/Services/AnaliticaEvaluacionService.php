@@ -3,9 +3,16 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use App\Services\DiagnosticoService;
 
 class AnaliticaEvaluacionService
 {
+    protected DiagnosticoService $diagnosticoService;
+
+    public function __construct(?DiagnosticoService $diagnosticoService = null)
+    {
+        $this->diagnosticoService = $diagnosticoService ?? app(DiagnosticoService::class);
+    }
     /**
      * Procesa las escalas de evaluación (C, B, A, AD).
      *
@@ -378,5 +385,302 @@ class AnaliticaEvaluacionService
         }
 
         return round(($cantidad / $total) * 100, 1);
+    }
+
+    /**
+     * Obtiene la lista de estudiantes matriculados en una sección y año lectivo (excluyendo retirados),
+     * con su nombre formateado y su nivel global (AD/A/B/C) para el bimestre y curso especificado.
+     * Si no tiene notas, nivel_global es null.
+     * Consulta agregada en una sola llamada SQL (sin N+1, compatible con PostgreSQL y SQLite, sin CONCAT).
+     *
+     * @param int $anoLectivoId
+     * @param int $gradoSeccionId
+     * @param int $bimestreId
+     * @param int|null $cursoId
+     * @return array
+     */
+    public function getEstudiantesSeccionConNivel(int $anoLectivoId, int $gradoSeccionId, int $bimestreId, ?int $cursoId = null): array
+    {
+        $query = DB::table('matriculas as m')
+            ->join('estudiantes as e', 'm.estudiante_id', '=', 'e.id')
+            ->leftJoin('notas_bimestrales as nb', function ($join) use ($bimestreId, $cursoId) {
+                $join->on('nb.estudiante_id', '=', 'e.id')
+                     ->where('nb.bimestre_id', '=', $bimestreId)
+                     ->whereNotNull('nb.nota');
+                if ($cursoId) {
+                    $join->where('nb.curso_id', '=', $cursoId);
+                }
+            })
+            ->where('m.ano_lectivo_id', $anoLectivoId)
+            ->where('m.grado_seccion_id', $gradoSeccionId)
+            ->where('m.estado', '!=', 'retirado');
+
+        $rows = $query->select(
+                'e.id',
+                'e.apellido_paterno',
+                'e.apellido_materno',
+                'e.nombres',
+                DB::raw('COUNT(nb.nota) as total_notas'),
+                DB::raw("AVG(CASE nb.nota WHEN 'AD' THEN 20.0 WHEN 'A' THEN 17.0 WHEN 'B' THEN 13.0 WHEN 'C' THEN 10.0 ELSE NULL END) as promedio_num")
+            )
+            ->groupBy('e.id', 'e.apellido_paterno', 'e.apellido_materno', 'e.nombres')
+            ->orderBy('e.apellido_paterno')
+            ->orderBy('e.apellido_materno')
+            ->orderBy('e.nombres')
+            ->get();
+
+        $estudiantes = [];
+        foreach ($rows as $row) {
+            $nombre = trim("{$row->apellido_paterno} {$row->apellido_materno}, {$row->nombres}");
+            $nivelGlobal = null;
+            if ((int) $row->total_notas > 0 && $row->promedio_num !== null) {
+                $nivelGlobal = $this->diagnosticoService->convertirNumeroAEscala((float) $row->promedio_num);
+            }
+
+            $estudiantes[] = [
+                'id' => (int) $row->id,
+                'nombre' => $nombre,
+                'nivel_global' => $nivelGlobal,
+            ];
+        }
+
+        return $estudiantes;
+    }
+
+    /**
+     * NOTA METODOLÓGICA SOBRE EL CÁLCULO DEL NIVEL GLOBAL:
+     * PromedioService calcula los promedios al cierre formal del bimestre a nivel de competencia
+     * (almacenándolos en la tabla 'promedios_bimestrales'). Mientras dicha tabla no sea poblada
+     * formalmente, este servicio calcula el nivel global en vivo convirtiendo las calificaciones
+     * cualitativas a sus equivalentes numéricos oficiales (AD=20, A=17, B=13, C=10), obteniendo
+     * el promedio aritmético de las competencias del periodo y aplicando los puntos de corte
+     * oficiales (AD >= 17.5, A >= 13.5, B >= 10.5, C < 10.5).
+     * Dado que el promedio aritmético de calificaciones cualitativas convertidas a valores de
+     * intervalo es una estimación continua y no un cálculo oficial cerrado en SIAGIE/CNEB,
+     * este indicador tiene un carácter diagnóstico y pedagógico referencial.
+     *
+     * Obtiene el detalle de diagnóstico de un estudiante para el bimestre y curso especificado.
+     * Optimizado a un máximo de 3 consultas SQL (Contexto + Catálogo + Calificaciones agrupadas en PHP).
+     *
+     * @param int $estudianteId
+     * @param int $gradoSeccionId
+     * @param int $bimestreId
+     * @param int|null $cursoId
+     * @param int|null $anoLectivoId
+     * @return array
+     */
+    public function getDetalleDiagnosticoEstudiante(
+        int $estudianteId,
+        int $gradoSeccionId,
+        int $bimestreId,
+        ?int $cursoId = null,
+        ?int $anoLectivoId = null
+    ): array {
+        // Consulta 1: Contexto integrado y verificación de seguridad/matrícula
+        // Resuelve en una sola consulta con joins: año lectivo, bimestre actual, bimestre anterior y matrícula.
+        $contexto = DB::table('matriculas as m')
+            ->join('estudiantes as e', 'm.estudiante_id', '=', 'e.id')
+            ->join('anos_lectivos as al', function ($j) use ($anoLectivoId) {
+                $j->on('m.ano_lectivo_id', '=', 'al.id');
+                if ($anoLectivoId) {
+                    $j->where('al.id', '=', $anoLectivoId);
+                } else {
+                    $j->where('al.activo', '=', true);
+                }
+            })
+            ->join('grado_secciones as gs', function ($j) {
+                $j->on('m.grado_seccion_id', '=', 'gs.id')->on('gs.ano_lectivo_id', '=', 'al.id');
+            })
+            ->join('grados as g', 'gs.grado_id', '=', 'g.id')
+            ->join('bimestres as b_act', function ($j) use ($bimestreId) {
+                $j->on('b_act.ano_lectivo_id', '=', 'al.id')->where('b_act.id', '=', $bimestreId);
+            })
+            ->where('m.estudiante_id', $estudianteId)
+            ->where('m.grado_seccion_id', $gradoSeccionId)
+            ->where('m.estado', '!=', 'retirado')
+            ->select(
+                'e.id as estudiante_id',
+                'e.apellido_paterno',
+                'e.apellido_materno',
+                'e.nombres',
+                'al.id as ano_lectivo_id',
+                'g.nivel as nivel_seccion',
+                'b_act.id as b_act_id',
+                'b_act.numero as b_act_numero',
+                DB::raw('(SELECT b_ant.id FROM bimestres b_ant WHERE b_ant.ano_lectivo_id = al.id AND b_ant.numero < b_act.numero ORDER BY b_ant.numero DESC LIMIT 1) as b_ant_id'),
+                DB::raw('(SELECT b_ant.numero FROM bimestres b_ant WHERE b_ant.ano_lectivo_id = al.id AND b_ant.numero < b_act.numero ORDER BY b_ant.numero DESC LIMIT 1) as b_ant_numero')
+            )
+            ->first();
+
+        if (!$contexto) {
+            abort(404, 'Estudiante no encontrado o no matriculado en esta sección y año lectivo.');
+        }
+
+        $nombreCompleto = trim("{$contexto->apellido_paterno} {$contexto->apellido_materno}, {$contexto->nombres}");
+        $columnaActual = "Bimestre {$contexto->b_act_numero}";
+        $columnaAnterior = $contexto->b_ant_numero ? "Bimestre {$contexto->b_ant_numero}" : null;
+
+        $itemsTabla = [];
+        $itemsParaDiagnostico = [];
+        $sumNumAct = 0.0; $cntNumAct = 0;
+        $sumNumAnt = 0.0; $cntNumAnt = 0;
+
+        $bimestresIds = array_values(array_filter([(int) $contexto->b_act_id, (int) $contexto->b_ant_id]));
+
+        if ($cursoId) {
+            // Consulta 2: Catálogo de competencias del curso
+            $competencias = DB::table('competencias')
+                ->where('curso_id', $cursoId)
+                ->orderBy('orden')
+                ->select('id', 'nombre')
+                ->get();
+
+            // Consulta 3: Calificaciones del bimestre actual y anterior en una sola consulta
+            $notasRaw = DB::table('notas_bimestrales')
+                ->where('estudiante_id', $estudianteId)
+                ->whereIn('bimestre_id', $bimestresIds)
+                ->where('curso_id', $cursoId)
+                ->whereNotNull('nota')
+                ->select('bimestre_id', 'competencia_id', 'nota')
+                ->get();
+
+            // Agrupación en PHP
+            $notasPorBimYComp = [];
+            foreach ($notasRaw as $nr) {
+                $notasPorBimYComp[$nr->bimestre_id][$nr->competencia_id] = $nr->nota;
+            }
+
+            foreach ($competencias as $comp) {
+                $act = $notasPorBimYComp[$contexto->b_act_id][$comp->id] ?? null;
+                $ant = $contexto->b_ant_id ? ($notasPorBimYComp[$contexto->b_ant_id][$comp->id] ?? null) : null;
+
+                $itemsTabla[] = [
+                    'nombre' => $comp->nombre,
+                    'anterior' => $ant,
+                    'actual' => $act,
+                ];
+
+                if ($act) {
+                    $nVal = $this->diagnosticoService->convertirLetraANumero($act);
+                    if ($nVal !== null) {
+                        $sumNumAct += $nVal;
+                        $cntNumAct++;
+                    }
+                }
+                if ($ant) {
+                    $nVal = $this->diagnosticoService->convertirLetraANumero($ant);
+                    if ($nVal !== null) {
+                        $sumNumAnt += $nVal;
+                        $cntNumAnt++;
+                    }
+                }
+
+                $itemsParaDiagnostico[] = [
+                    'nombre' => $comp->nombre,
+                    'nivel' => $act,
+                ];
+            }
+        } else {
+            // Consulta 2: Catálogo de áreas/cursos
+            $cursosQuery = DB::table('cursos')
+                ->where('activo', true)
+                ->whereNotIn('codigo', ['TIC', 'AUT', 'CAS', '0002', '0006', '0007'])
+                ->whereNotIn('nombre', ['CASTELLANO COMO SEGUNDA LENGUA', 'GESTIONA SU APRENDIZAJE', 'DESENVOLVIMIENTO EN TIC']);
+
+            if ($contexto->nivel_seccion) {
+                $cursosQuery->where(function ($q) use ($contexto) {
+                    $q->where('nivel', $contexto->nivel_seccion)->orWhere('nivel', 'ambos');
+                });
+            }
+
+            $cursos = $cursosQuery->orderBy('nombre')->select('id', 'nombre')->get();
+
+            // Consulta 3: Calificaciones de todos los cursos para bimestre actual y anterior en una sola consulta
+            $notasRaw = DB::table('notas_bimestrales')
+                ->where('estudiante_id', $estudianteId)
+                ->whereIn('bimestre_id', $bimestresIds)
+                ->whereNotNull('nota')
+                ->select('bimestre_id', 'curso_id', 'nota')
+                ->get();
+
+            // Agrupación y cálculo numérico en PHP
+            $valoresPorBimYCurso = [];
+            foreach ($notasRaw as $nr) {
+                $num = $this->diagnosticoService->convertirLetraANumero($nr->nota);
+                if ($num !== null) {
+                    $valoresPorBimYCurso[$nr->bimestre_id][$nr->curso_id][] = $num;
+                }
+            }
+
+            $mapNombres = [
+                'COMU' => 'COMUNICACIÓN',
+                'PPSS' => 'PERSONAL SOCIAL',
+                'INGLES EXT' => 'INGLÉS',
+            ];
+
+            foreach ($cursos as $c) {
+                $nomUpper = strtoupper(trim($c->nombre));
+                $nombreMostrado = $mapNombres[$nomUpper] ?? $c->nombre;
+
+                $valsAct = $valoresPorBimYCurso[$contexto->b_act_id][$c->id] ?? [];
+                $promAct = !empty($valsAct) ? (array_sum($valsAct) / count($valsAct)) : null;
+
+                $promAnt = null;
+                if ($contexto->b_ant_id && !empty($valoresPorBimYCurso[$contexto->b_ant_id][$c->id])) {
+                    $valsAnt = $valoresPorBimYCurso[$contexto->b_ant_id][$c->id];
+                    $promAnt = array_sum($valsAnt) / count($valsAnt);
+                }
+
+                $nivelAct = $this->diagnosticoService->convertirNumeroAEscala($promAct);
+                $nivelAnt = $this->diagnosticoService->convertirNumeroAEscala($promAnt);
+
+                $itemsTabla[] = [
+                    'nombre' => $nombreMostrado,
+                    'anterior' => $nivelAnt,
+                    'actual' => $nivelAct,
+                ];
+
+                if ($promAct !== null) {
+                    $sumNumAct += (float) $promAct;
+                    $cntNumAct++;
+                }
+                if ($promAnt !== null) {
+                    $sumNumAnt += (float) $promAnt;
+                    $cntNumAnt++;
+                }
+
+                $itemsParaDiagnostico[] = [
+                    'nombre' => $nombreMostrado,
+                    'nivel' => $nivelAct,
+                ];
+            }
+        }
+
+        // 4. Calcular promedio global y nivel global
+        $promedioGlobalActual = $cntNumAct > 0 ? ($sumNumAct / $cntNumAct) : null;
+        $promedioGlobalAnterior = $cntNumAnt > 0 ? ($sumNumAnt / $cntNumAnt) : null;
+        $nivelGlobal = $this->diagnosticoService->convertirNumeroAEscala($promedioGlobalActual);
+
+        // 5. Generar diagnóstico cualitativo
+        $diagnosticoTexto = $this->diagnosticoService->generarDiagnosticoEstudiante(
+            $itemsParaDiagnostico,
+            $contexto->b_ant_id !== null,
+            $promedioGlobalActual,
+            $promedioGlobalAnterior
+        );
+
+        return [
+            'estudiante' => [
+                'id' => (int) $contexto->estudiante_id,
+                'nombre' => $nombreCompleto,
+                'nivel_global' => $nivelGlobal,
+            ],
+            'columnas' => [
+                'anterior' => $columnaAnterior,
+                'actual' => $columnaActual,
+            ],
+            'competencias' => $itemsTabla,
+            'diagnostico' => $diagnosticoTexto,
+        ];
     }
 }
