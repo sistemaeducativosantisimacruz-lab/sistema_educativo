@@ -27,6 +27,8 @@
         "APP_ENV": "production",
         "APP_DEBUG": "false",
         "APP_URL": "https://TU_DOMINIO.vercel.app",
+        "APP_TIMEZONE": "America/Lima",
+        "DB_TIMEZONE": "America/Lima",
         "LOG_CHANNEL": "stderr",
         "SESSION_DRIVER": "database",
         "CACHE_STORE": "database",
