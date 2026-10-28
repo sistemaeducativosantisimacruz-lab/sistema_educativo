@@ -15,6 +15,13 @@ if (!is_dir($appStorage)) {
     mkdir($appStorage . '/logs', 0777, true);
 }
 
+// Configurar zona horaria oficial (Perú UTC-5)
+date_default_timezone_set('America/Lima');
+$_ENV['APP_TIMEZONE'] = 'America/Lima';
+$_ENV['DB_TIMEZONE'] = 'America/Lima';
+putenv('APP_TIMEZONE=America/Lima');
+putenv('DB_TIMEZONE=America/Lima');
+
 // Configurar variables de entorno por seguridad
 $_ENV['VIEW_COMPILED_PATH'] = $appStorage . '/framework/views';
 putenv('VIEW_COMPILED_PATH=' . $appStorage . '/framework/views');
