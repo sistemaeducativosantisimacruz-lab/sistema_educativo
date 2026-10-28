@@ -2,12 +2,7 @@
     <div x-data="{ 
         tab: new URLSearchParams(window.location.search).get('tab') || '{{ $tipoVista === 'comparativa' ? 'comparativo' : 'frecuencias' }}',
         modalComparativo: false,
-        compBimestres: {{ json_encode($bimestres->take(2)->pluck('id')->values()->toArray()) }},
         compTodosCursos: true,
-        compCursos: {{ json_encode($cursos->pluck('id')->values()->toArray()) }},
-        compSeccionId: {{ (int) request('grado_seccion_id', $secciones->first()?->id ?? 0) }},
-        bimestresList: {{ json_encode($bimestres) }},
-        cursosList: {{ json_encode($cursos) }},
 
         imprimirReporte() {
             if (this.tab === 'diagnostico') {
@@ -15,43 +10,6 @@
             } else {
                 this.modalComparativo = true;
             }
-        },
-
-        toggleCompTodosCursos() {
-            if (this.compTodosCursos) {
-                this.compCursos = this.cursosList.map(c => c.id);
-            } else {
-                this.compCursos = [];
-            }
-        },
-
-        ejecutarExportacionComparativa() {
-            if (!this.compSeccionId) {
-                alert('Por favor seleccione una sección en los filtros superiores.');
-                return;
-            }
-            if (!this.compBimestres || this.compBimestres.length < 2) {
-                alert('Debe seleccionar al menos dos bimestres para la comparativa.');
-                return;
-            }
-            if (!this.compTodosCursos && (!this.compCursos || this.compCursos.length === 0)) {
-                alert('Debe seleccionar al menos un curso o marcar \'Todos los cursos\'.');
-                return;
-            }
-
-            const params = new URLSearchParams({
-                grado_seccion_id: this.compSeccionId,
-            });
-
-            this.compBimestres.forEach(bId => params.append('bimestres[]', bId));
-
-            if (!this.compTodosCursos) {
-                this.compCursos.forEach(cId => params.append('cursos[]', cId));
-            }
-
-            const url = '{{ route('admin.analytics.reporte_comparativo_pdf') }}?' + params.toString();
-            window.open(url, '_blank');
-            this.modalComparativo = false;
         }
     }" class="py-8 bg-[#f8fafc] min-h-screen">
         
@@ -189,125 +147,136 @@
             x-show="modalComparativo" 
             x-cloak 
             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 d-print-none"
-            style="display: none;"
         >
             <div 
                 @click.away="modalComparativo = false" 
                 class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full p-6 space-y-5 transform transition-all"
             >
-                <!-- Cabecera del Modal -->
-                <div class="flex items-start justify-between border-b border-slate-100 pb-3">
-                    <div>
-                        <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-[#1e40af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                <form method="GET" action="{{ route('admin.analytics.reporte_comparativo_pdf') }}" target="_blank" @submit="modalComparativo = false">
+                    <input type="hidden" name="grado_seccion_id" value="{{ request('grado_seccion_id', $secciones->first()?->id ?? 1) }}">
+
+                    <!-- Cabecera del Modal -->
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-[#1e40af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                                Exportar reporte comparativo (A4)
+                            </h4>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Sección: <strong class="text-slate-800">{{ request('grado_seccion_id') && $secciones->firstWhere('id', request('grado_seccion_id')) ? ($secciones->firstWhere('id', request('grado_seccion_id'))->grado->nombre . ' ' . $secciones->firstWhere('id', request('grado_seccion_id'))->seccion->nombre) : ($secciones->first() ? ($secciones->first()->grado->nombre . ' ' . $secciones->first()->seccion->nombre) : 'Sección activa') }}</strong>
+                            </p>
+                        </div>
+                        <button type="button" @click="modalComparativo = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Cuerpo del Modal -->
+                    <div class="space-y-4 text-xs mt-4">
+                        
+                        <!-- 1. Bimestres a comparar -->
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                                1. Bimestres a comparar (mínimo 2)
+                            </label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                @foreach($bimestres as $b)
+                                    <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer transition-colors hover:bg-slate-50">
+                                        <input 
+                                            type="checkbox" 
+                                            name="bimestres[]" 
+                                            value="{{ $b->id }}" 
+                                            {{ $loop->iteration <= 2 ? 'checked' : '' }}
+                                            class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
+                                        >
+                                        <span>{{ $b->numero }}° Bimestre</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- 2. Cursos a exportar -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block font-bold text-slate-700 uppercase text-[11px] tracking-wider">
+                                    2. Cursos a incluir en la comparativa
+                                </label>
+                                <label class="flex items-center gap-1.5 text-xs text-[#1e40af] font-semibold cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        x-model="compTodosCursos" 
+                                        @change="document.querySelectorAll('.chk-comp-curso').forEach(c => c.checked = compTodosCursos)"
+                                        class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
+                                    >
+                                    <span>Todos los cursos</span>
+                                </label>
+                            </div>
+
+                            <div x-show="!compTodosCursos" class="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1 bg-slate-50/50">
+                                @foreach($cursos as $c)
+                                    <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white text-slate-700 cursor-pointer transition-colors text-xs">
+                                        <input 
+                                            type="checkbox" 
+                                            name="cursos[]" 
+                                            value="{{ $c->id }}" 
+                                            checked 
+                                            class="chk-comp-curso rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
+                                        >
+                                        <span>{{ $c->nombre }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <p x-show="compTodosCursos" class="text-[11px] text-slate-500 italic mt-1">
+                                Se incluirán todos los cursos del nivel con sus competencias, gráficos de distribución 100% y análisis de evolución.
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="flex items-center justify-end gap-2.5 pt-4 mt-5 border-t border-slate-100">
+                        <button 
+                            type="button" 
+                            @click="modalComparativo = false" 
+                            class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-xs transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit" 
+                            class="bg-[#1e40af] hover:bg-blue-900 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-colors flex items-center gap-2"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
-                            Exportar reporte comparativo (A4)
-                        </h4>
-                        <p class="text-xs text-slate-500 mt-0.5">
-                            Sección: <strong class="text-slate-800">{{ request('grado_seccion_id') && $secciones->firstWhere('id', request('grado_seccion_id')) ? ($secciones->firstWhere('id', request('grado_seccion_id'))->grado->nombre . ' ' . $secciones->firstWhere('id', request('grado_seccion_id'))->seccion->nombre) : ($secciones->first() ? ($secciones->first()->grado->nombre . ' ' . $secciones->first()->seccion->nombre) : 'Sección activa') }}</strong>
-                        </p>
+                            Generar Reporte Comparativo (A4)
+                        </button>
                     </div>
-                    <button type="button" @click="modalComparativo = false" class="text-slate-400 hover:text-slate-600 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-
-                <!-- Cuerpo del Modal -->
-                <div class="space-y-4 text-xs">
-                    
-                    <!-- 1. Bimestres a comparar -->
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
-                            1. Bimestres a comparar (mínimo 2)
-                        </label>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <template x-for="b in bimestresList" :key="b.id">
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-colors"
-                                    :class="compBimestres.includes(b.id) ? 'bg-blue-50/70 border-blue-300 text-blue-900 font-semibold' : 'border-slate-200 text-slate-700 hover:bg-slate-50'">
-                                    <input 
-                                        type="checkbox" 
-                                        :value="b.id" 
-                                        x-model="compBimestres" 
-                                        class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
-                                    >
-                                    <span x-text="b.numero + '° Bimestre'"></span>
-                                </label>
-                            </template>
-                        </div>
-                    </div>
-
-                    <!-- 2. Cursos a exportar -->
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <label class="block font-bold text-slate-700 uppercase text-[11px] tracking-wider">
-                                2. Cursos a incluir en la comparativa
-                            </label>
-                            <label class="flex items-center gap-1.5 text-xs text-[#1e40af] font-semibold cursor-pointer">
-                                <input 
-                                    type="checkbox" 
-                                    x-model="compTodosCursos" 
-                                    @change="toggleCompTodosCursos()" 
-                                    class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
-                                >
-                                <span>Todos los cursos</span>
-                            </label>
-                        </div>
-
-                        <div x-show="!compTodosCursos" class="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1 bg-slate-50/50">
-                            <template x-for="c in cursosList" :key="c.id">
-                                <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white text-slate-700 cursor-pointer transition-colors text-xs">
-                                    <input 
-                                        type="checkbox" 
-                                        :value="c.id" 
-                                        x-model="compCursos" 
-                                        class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
-                                    >
-                                    <span x-text="c.nombre"></span>
-                                </label>
-                            </template>
-                        </div>
-                        <p x-show="compTodosCursos" class="text-[11px] text-slate-500 italic mt-1">
-                            Se incluirán todos los cursos del nivel con sus competencias, gráficos de distribución 100% y análisis de evolución.
-                        </p>
-                    </div>
-
-                </div>
-
-                <!-- Botones -->
-                <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-                    <button 
-                        type="button" 
-                        @click="modalComparativo = false" 
-                        class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-xs transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button 
-                        type="button" 
-                        @click="ejecutarExportacionComparativa()" 
-                        class="bg-[#1e40af] hover:bg-blue-900 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-colors flex items-center gap-2"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Generar Reporte Comparativo (A4)
-                    </button>
-                </div>
+                </form>
             </div>
         </div>
     </div>
 
 <style>
+    [x-cloak] { display: none !important; }
+
     @media print {
-        @page { size: A4 portrait; margin: 1cm; }
-        body { background-color: white !important; font-size: 10pt; }
-        .d-print-none { display: none !important; }
-        nav, header { display: none !important; }
+        @page { size: A4 portrait; margin: 1.5cm; }
+        body { background-color: white !important; font-size: 10pt; color: #0f172a !important; }
+        .d-print-none, .print-hidden, nav, header, aside, form, .flex.items-center.justify-between.border-b {
+            display: none !important;
+        }
         .min-h-screen { min-height: auto !important; background-color: white !important; padding: 0 !important; }
         .max-w-7xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
-        .shadow-sm, .shadow { box-shadow: none !important; }
-        .border { border: 1px solid #e2e8f0 !important; }
+        .shadow-sm, .shadow, .shadow-xl { box-shadow: none !important; }
+        
+        /* Layout de impresion: ocultar barra lateral de estudiantes */
+        .grid { display: block !important; }
+        .md\:col-span-4, .lg\:col-span-3 { display: none !important; }
+        .md\:col-span-8, .lg\:col-span-9 { width: 100% !important; max-width: 100% !important; display: block !important; padding: 0 !important; }
+        
         table { page-break-inside: avoid; border-collapse: collapse !important; width: 100%; font-size: 9pt; }
         th, td { border: 1px solid #cbd5e1 !important; padding: 6px !important; }
         th { background-color: #f1f5f9 !important; font-weight: bold !important; -webkit-print-color-adjust: exact; }
