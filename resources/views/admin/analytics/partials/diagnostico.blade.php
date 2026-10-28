@@ -13,8 +13,8 @@
     <!-- Layout de Dos Columnas: Lista de Estudiantes (Izq) y Detalle de Diagnóstico (Der) -->
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
         
-        <!-- Columna Izquierda: Lista de Estudiantes con Búsqueda -->
-        <div class="md:col-span-4 lg:col-span-3 space-y-2.5">
+        <!-- Columna Izquierda: Lista de Estudiantes con Búsqueda (Oculta al imprimir) -->
+        <div class="md:col-span-4 lg:col-span-3 space-y-2.5 d-print-none">
             
             <!-- Barra de Búsqueda de Estudiante -->
             <div class="relative">
@@ -158,7 +158,7 @@
                     <div class="mt-8 flex justify-start">
                         <button 
                             type="button" 
-                            @click="exportarPdfEstudiante()"
+                            @click="abrirModalExportar()"
                             class="bg-[#1e40af] hover:bg-blue-900 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-xs transition-colors flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -172,6 +172,136 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Modal de Selección de Exportación PDF A4 (Diagnóstico de Estudiante) -->
+    <div 
+        x-show="modalExportar" 
+        x-cloak 
+        class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 d-print-none"
+        style="display: none;"
+    >
+        <div 
+            @click.away="modalExportar = false" 
+            class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full p-6 space-y-5 transform transition-all"
+        >
+            <!-- Cabecera del Modal -->
+            <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-[#1e40af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Exportar informe PDF (A4)
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Estudiante: <strong class="text-slate-800" x-text="estudianteSeleccionado ? estudianteSeleccionado.nombre : ''"></strong>
+                    </p>
+                </div>
+                <button type="button" @click="modalExportar = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Opciones del Modal -->
+            <div class="space-y-4 text-xs">
+                
+                <!-- 1. Bimestres a incluir -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5 uppercase text-[11px] tracking-wider">
+                        1. Bimestre(s) a incluir
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <template x-for="b in bimestresList" :key="b.id">
+                            <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-colors"
+                                :class="exportBimestres.includes(b.id) ? 'bg-blue-50/70 border-blue-300 text-blue-900 font-semibold' : 'border-slate-200 text-slate-700 hover:bg-slate-50'">
+                                <input 
+                                    type="checkbox" 
+                                    :value="b.id" 
+                                    x-model="exportBimestres" 
+                                    class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
+                                >
+                                <span x-text="b.numero + '° Bimestre'"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 2. Cursos a incluir -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block font-bold text-slate-700 uppercase text-[11px] tracking-wider">
+                            2. Cursos / Áreas a exportar
+                        </label>
+                        <label class="flex items-center gap-1.5 text-xs text-[#1e40af] font-semibold cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                x-model="exportTodosCursos" 
+                                @change="toggleTodosCursos()" 
+                                class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
+                            >
+                            <span>Todos los cursos</span>
+                        </label>
+                    </div>
+
+                    <div x-show="!exportTodosCursos" class="max-h-36 overflow-y-auto border border-slate-200 rounded-xl p-2 space-y-1 bg-slate-50/50">
+                        <template x-for="c in cursosList" :key="c.id">
+                            <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white text-slate-700 cursor-pointer transition-colors text-xs">
+                                <input 
+                                    type="checkbox" 
+                                    :value="c.id" 
+                                    x-model="exportCursos" 
+                                    class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af]"
+                                >
+                                <span x-text="c.nombre"></span>
+                            </label>
+                        </template>
+                    </div>
+                    <p x-show="exportTodosCursos" class="text-[11px] text-slate-500 italic mt-1">
+                        Se generará el reporte oficial con todos los cursos y competencias del estudiante.
+                    </p>
+                </div>
+
+                <!-- 3. Comparativa de Rendimiento y Evolución por Curso -->
+                <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                    <label class="flex items-start gap-2.5 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            x-model="exportComparativa" 
+                            class="rounded border-slate-300 text-[#1e40af] focus:ring-[#1e40af] mt-0.5"
+                        >
+                        <div>
+                            <span class="font-bold text-slate-800">Incluir comparativa y gráficos de evolución por curso</span>
+                            <p class="text-[11px] text-slate-500 mt-0.5 leading-normal">
+                                Genera la tabla comparativa con los bimestres seleccionados y la visualización de la evolución de logro por cada competencia evaluada.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+            </div>
+
+            <!-- Botones del Modal -->
+            <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button 
+                    type="button" 
+                    @click="modalExportar = false" 
+                    class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-xs transition-colors"
+                >
+                    Cancelar
+                </button>
+                <button 
+                    type="button" 
+                    @click="ejecutarExportacionPdf()" 
+                    class="bg-[#1e40af] hover:bg-blue-900 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-colors flex items-center gap-2"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Generar e Imprimir (A4)
+                </button>
+            </div>
+        </div>
     </div>
 
 </div>
@@ -191,10 +321,24 @@
             cargando: false,
             error: null,
 
+            // Estado del modal de exportación
+            modalExportar: false,
+            exportBimestres: [],
+            exportTodosCursos: true,
+            exportCursos: [],
+            exportComparativa: true,
+            bimestresList: @json($bimestres ?? []),
+            cursosList: @json($cursos ?? []),
+
             init() {
                 if (Array.isArray(this.estudiantes) && this.estudiantes.length > 0) {
                     this.seleccionarEstudiante(this.estudiantes[0]);
                 }
+
+                // Escuchar evento desde el botón superior de la barra de navegación
+                window.addEventListener('abrir-modal-diagnostico-event', () => {
+                    this.abrirModalExportar();
+                });
             },
 
             get estudiantesFiltrados() {
@@ -260,8 +404,72 @@
                 }
             },
 
-            exportarPdfEstudiante() {
-                window.print();
+            abrirModalExportar() {
+                if (!this.estudianteSeleccionado) {
+                    alert('Por favor seleccione un estudiante de la lista antes de exportar su informe.');
+                    return;
+                }
+
+                // Preseleccionar bimestres
+                if (this.filtroBimestreId > 0) {
+                    this.exportBimestres = [this.filtroBimestreId];
+                } else if (this.bimestresList.length > 0) {
+                    this.exportBimestres = [this.bimestresList[0].id];
+                }
+
+                // Preseleccionar cursos
+                if (this.filtroCursoId > 0) {
+                    this.exportTodosCursos = false;
+                    this.exportCursos = [this.filtroCursoId];
+                } else {
+                    this.exportTodosCursos = true;
+                    this.exportCursos = this.cursosList.map(c => c.id);
+                }
+
+                this.exportComparativa = true;
+                this.modalExportar = true;
+            },
+
+            toggleTodosCursos() {
+                if (this.exportTodosCursos) {
+                    this.exportCursos = this.cursosList.map(c => c.id);
+                } else {
+                    this.exportCursos = [];
+                }
+            },
+
+            ejecutarExportacionPdf() {
+                if (!this.estudianteSeleccionado) return;
+
+                if (!this.exportBimestres || this.exportBimestres.length === 0) {
+                    alert('Debe seleccionar al menos un bimestre para el informe.');
+                    return;
+                }
+
+                if (!this.exportTodosCursos && (!this.exportCursos || this.exportCursos.length === 0)) {
+                    alert('Debe seleccionar al menos un curso o marcar "Todos los cursos".');
+                    return;
+                }
+
+                const params = new URLSearchParams({
+                    estudiante_id: this.estudianteSeleccionado.id,
+                    grado_seccion_id: this.filtroGradoSeccionId || 0,
+                    incluir_comparativa: this.exportComparativa ? '1' : '0',
+                });
+
+                this.exportBimestres.forEach(bId => {
+                    params.append('bimestres[]', bId);
+                });
+
+                if (!this.exportTodosCursos) {
+                    this.exportCursos.forEach(cId => {
+                        params.append('cursos[]', cId);
+                    });
+                }
+
+                const url = `{{ route('admin.analytics.reporte_estudiante_pdf') }}?${params.toString()}`;
+                window.open(url, '_blank');
+                this.modalExportar = false;
             }
         };
     }

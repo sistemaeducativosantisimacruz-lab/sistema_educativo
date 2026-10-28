@@ -7,7 +7,7 @@
             {{ request('grado_seccion_id') ? ($secciones->firstWhere('id', request('grado_seccion_id'))->grado->nombre ?? '3.°') . ' ' . ($secciones->firstWhere('id', request('grado_seccion_id'))->seccion->nombre ?? 'A') : '3.° A' }} 
             · {{ request('curso_id') ? ($cursos->firstWhere('id', request('curso_id'))->nombre ?? 'Matemática') : 'Matemática' }} 
             · {{ request('bimestre_id') ? 'Bimestre ' . ($bimestres->firstWhere('id', request('bimestre_id'))->numero ?? 'II') : 'II Bimestre' }} 
-            · Datos de ejemplo
+            · Niveles oficiales de logro CNEB
         </p>
     </div>
 

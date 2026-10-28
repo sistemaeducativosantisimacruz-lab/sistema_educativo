@@ -52,6 +52,8 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     // Analítica
     Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
     Route::get('analytics/estudiantes/{id}/diagnostico', [AnalyticsController::class, 'diagnosticoEstudiante'])->name('analytics.estudiante.diagnostico');
+    Route::get('analytics/reporte-estudiante-pdf', [AnalyticsController::class, 'reporteEstudiantePdf'])->name('analytics.reporte_estudiante_pdf');
+    Route::get('analytics/reporte-comparativo-pdf', [AnalyticsController::class, 'reporteComparativoPdf'])->name('analytics.reporte_comparativo_pdf');
 
     // Rendimiento / Reportes
     Route::get('rendimiento', [RendimientoController::class, 'index'])->name('rendimiento.index');
