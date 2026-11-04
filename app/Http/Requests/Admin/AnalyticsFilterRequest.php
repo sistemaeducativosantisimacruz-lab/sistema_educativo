@@ -22,6 +22,7 @@ class AnalyticsFilterRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'tab' => 'nullable|string|in:frecuencias,comparativo,diagnostico',
             'tipo_vista' => 'nullable|string|in:bimestral,comparativa',
             'bimestre_id' => 'nullable|integer|exists:bimestres,id',
             'bimestres_comp' => 'nullable|array',

@@ -448,6 +448,150 @@ class AnaliticaEvaluacionService
     }
 
     /**
+     * Obtiene la comparativa de rendimiento entre secciones de un mismo grado para un curso y bimestre.
+     * Genera la estructura de categorías y series en porcentaje apilado al 100%.
+     *
+     * @param int $anoLectivoId
+     * @param int|null $gradoId
+     * @param int $bimestreId
+     * @param int|null $cursoId
+     * @return array
+     */
+    public function getComparativaEntreSecciones(int $anoLectivoId, ?int $gradoId, int $bimestreId, ?int $cursoId = null): array
+    {
+        if (!$gradoId) {
+            return [
+                'grado_id' => null,
+                'grado_nombre' => '',
+                'bimestre_id' => $bimestreId,
+                'categories' => [],
+                'series' => []
+            ];
+        }
+
+        $secciones = DB::table('grado_secciones as gs')
+            ->join('grados as g', 'gs.grado_id', '=', 'g.id')
+            ->join('secciones as s', 'gs.seccion_id', '=', 's.id')
+            ->where('gs.ano_lectivo_id', $anoLectivoId)
+            ->where('gs.grado_id', $gradoId)
+            ->orderBy('s.nombre')
+            ->select('gs.id', 'g.nombre as grado_nombre', 's.nombre as seccion_nombre')
+            ->get();
+
+        $gradoNombre = $secciones->first()?->grado_nombre ?? 'Grado';
+        $numGrado = (int) filter_var($gradoNombre, FILTER_SANITIZE_NUMBER_INT);
+
+        $categories = [];
+        $dataC = [];
+        $dataB = [];
+        $dataA = [];
+        $dataAD = [];
+
+        foreach ($secciones as $sec) {
+            $label = $numGrado ? "{$numGrado}.° {$sec->seccion_nombre}" : "{$sec->grado_nombre} {$sec->seccion_nombre}";
+            $categories[] = $label;
+
+            $dist = $this->getDistribucionBimestral($anoLectivoId, [
+                'bimestre_id' => $bimestreId,
+                'grado_seccion_id' => $sec->id,
+                'curso_id' => $cursoId,
+            ]);
+
+            $res = $this->calcularResumenGlobal($dist);
+
+            $dataC[] = $res['C']['porcentaje'] ?? 0.0;
+            $dataB[] = $res['B']['porcentaje'] ?? 0.0;
+            $dataA[] = $res['A']['porcentaje'] ?? 0.0;
+            $dataAD[] = $res['AD']['porcentaje'] ?? 0.0;
+        }
+
+        return [
+            'grado_id' => $gradoId,
+            'grado_nombre' => $gradoNombre,
+            'bimestre_id' => $bimestreId,
+            'categories' => $categories,
+            'series' => [
+                ['name' => 'C · En inicio', 'data' => $dataC],
+                ['name' => 'B · En proceso', 'data' => $dataB],
+                ['name' => 'A · Logro esperado', 'data' => $dataA],
+                ['name' => 'AD · Logro destacado', 'data' => $dataAD],
+            ]
+        ];
+    }
+
+    /**
+     * Obtiene la comparativa de rendimiento entre bimestres para una sección y curso específico.
+     *
+     * @param int $anoLectivoId
+     * @param int|null $gradoSeccionId
+     * @param int|null $cursoId
+     * @return array
+     */
+    public function getComparativaEntreBimestres(int $anoLectivoId, ?int $gradoSeccionId, ?int $cursoId = null): array
+    {
+        if (!$gradoSeccionId) {
+            return [
+                'grado_seccion_id' => null,
+                'seccion_nombre' => '',
+                'categories' => [],
+                'series' => []
+            ];
+        }
+
+        $secInfo = DB::table('grado_secciones as gs')
+            ->join('grados as g', 'gs.grado_id', '=', 'g.id')
+            ->join('secciones as s', 'gs.seccion_id', '=', 's.id')
+            ->where('gs.id', $gradoSeccionId)
+            ->select('g.nombre as grado_nombre', 's.nombre as seccion_nombre')
+            ->first();
+
+        $numGrado = $secInfo ? (int) filter_var($secInfo->grado_nombre, FILTER_SANITIZE_NUMBER_INT) : 0;
+        $seccionNombre = $secInfo ? ($numGrado ? "{$numGrado}.° {$secInfo->seccion_nombre}" : "{$secInfo->grado_nombre} {$secInfo->seccion_nombre}") : 'Sección';
+
+        $bimestres = DB::table('bimestres')
+            ->where('ano_lectivo_id', $anoLectivoId)
+            ->orderBy('numero')
+            ->get();
+
+        $romanos = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV'];
+        $categories = [];
+        $dataC = [];
+        $dataB = [];
+        $dataA = [];
+        $dataAD = [];
+
+        foreach ($bimestres as $b) {
+            $numRomano = $romanos[$b->numero] ?? $b->numero;
+            $categories[] = "{$numRomano} Bimestre";
+
+            $dist = $this->getDistribucionBimestral($anoLectivoId, [
+                'bimestre_id' => $b->id,
+                'grado_seccion_id' => $gradoSeccionId,
+                'curso_id' => $cursoId,
+            ]);
+
+            $res = $this->calcularResumenGlobal($dist);
+
+            $dataC[] = $res['C']['porcentaje'] ?? 0.0;
+            $dataB[] = $res['B']['porcentaje'] ?? 0.0;
+            $dataA[] = $res['A']['porcentaje'] ?? 0.0;
+            $dataAD[] = $res['AD']['porcentaje'] ?? 0.0;
+        }
+
+        return [
+            'grado_seccion_id' => $gradoSeccionId,
+            'seccion_nombre' => $seccionNombre,
+            'categories' => $categories,
+            'series' => [
+                ['name' => 'C · En inicio', 'data' => $dataC],
+                ['name' => 'B · En proceso', 'data' => $dataB],
+                ['name' => 'A · Logro esperado', 'data' => $dataA],
+                ['name' => 'AD · Logro destacado', 'data' => $dataAD],
+            ]
+        ];
+    }
+
+    /**
      * NOTA METODOLÓGICA SOBRE EL CÁLCULO DEL NIVEL GLOBAL:
      * PromedioService calcula los promedios al cierre formal del bimestre a nivel de competencia
      * (almacenándolos en la tabla 'promedios_bimestrales'). Mientras dicha tabla no sea poblada

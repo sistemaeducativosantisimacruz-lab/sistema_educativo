@@ -1,8 +1,15 @@
 <x-app-layout>
     <div x-data="{ 
-        tab: new URLSearchParams(window.location.search).get('tab') || '{{ $tipoVista === 'comparativa' ? 'comparativo' : 'frecuencias' }}',
+        tab: new URLSearchParams(window.location.search).get('tab') || 'frecuencias',
         modalComparativo: false,
         compTodosCursos: true,
+
+        setTab(newTab) {
+            this.tab = newTab;
+            const url = new URL(window.location);
+            url.searchParams.set('tab', newTab);
+            window.history.replaceState({}, '', url);
+        },
 
         imprimirReporte() {
             if (this.tab === 'diagnostico') {
@@ -20,21 +27,21 @@
                 <div class="flex items-center gap-2">
                     <button 
                         type="button" 
-                        @click="tab = 'frecuencias'" 
+                        @click="setTab('frecuencias')" 
                         :class="tab === 'frecuencias' ? 'bg-[#1e40af] text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
                         class="px-4 py-2 rounded-lg text-xs font-semibold transition-all">
                         Frecuencias de logro
                     </button>
                     <button 
                         type="button" 
-                        @click="tab = 'comparativo'" 
+                        @click="setTab('comparativo')" 
                         :class="tab === 'comparativo' ? 'bg-[#1e40af] text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
                         class="px-4 py-2 rounded-lg text-xs font-semibold transition-all">
                         Comparativo de rendimiento
                     </button>
                     <button 
                         type="button" 
-                        @click="tab = 'diagnostico'" 
+                        @click="setTab('diagnostico')" 
                         :class="tab === 'diagnostico' ? 'bg-[#1e40af] text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
                         class="px-4 py-2 rounded-lg text-xs font-semibold transition-all">
                         Diagnóstico por estudiante
@@ -60,10 +67,9 @@
                     <!-- Nivel -->
                     <div class="w-full">
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nivel</label>
-                        <select name="nivel" class="block w-full rounded-xl border-slate-200 shadow-xs focus:border-[#1e40af] focus:ring focus:ring-blue-100 text-xs py-2.5 px-3 text-slate-700 font-medium" onchange="this.form.submit()">
-                            <option value="">Todos los niveles</option>
-                            <option value="primaria" {{ request('nivel') == 'primaria' ? 'selected' : '' }}>Primaria</option>
-                            <option value="secundaria" {{ request('nivel', 'secundaria') == 'secundaria' ? 'selected' : '' }}>Secundaria</option>
+                        <select name="nivel" class="block w-full rounded-xl border-slate-200 shadow-xs focus:border-[#1e40af] focus:ring focus:ring-blue-100 text-xs py-2.5 px-3 text-slate-700 font-medium" onchange="cambiarNivel(this.form)">
+                            <option value="secundaria" {{ ($nivel ?? 'secundaria') == 'secundaria' ? 'selected' : '' }}>Secundaria</option>
+                            <option value="primaria" {{ ($nivel ?? '') == 'primaria' ? 'selected' : '' }}>Primaria</option>
                         </select>
                     </div>
 
@@ -72,13 +78,11 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Grado-sección</label>
                         <select name="grado_seccion_id" class="block w-full rounded-xl border-slate-200 shadow-xs focus:border-[#1e40af] focus:ring focus:ring-blue-100 text-xs py-2.5 px-3 text-slate-700 font-medium">
                             @forelse($secciones as $sec)
-                                <option value="{{ $sec->id }}" {{ request('grado_seccion_id') == $sec->id ? 'selected' : '' }}>
+                                <option value="{{ $sec->id }}" {{ ($gradoSeccionId ?? 0) == $sec->id ? 'selected' : '' }}>
                                     {{ $sec->grado->nombre }} {{ $sec->seccion->nombre }}
                                 </option>
                             @empty
-                                <option value="">3.° A</option>
-                                <option value="">3.° B</option>
-                                <option value="">3.° C</option>
+                                <option value="">Sin secciones</option>
                             @endforelse
                         </select>
                     </div>
@@ -88,12 +92,11 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Curso</label>
                         <select name="curso_id" class="block w-full rounded-xl border-slate-200 shadow-xs focus:border-[#1e40af] focus:ring focus:ring-blue-100 text-xs py-2.5 px-3 text-slate-700 font-medium">
                             @forelse($cursos as $c)
-                                <option value="{{ $c->id }}" {{ request('curso_id') == $c->id ? 'selected' : '' }}>
+                                <option value="{{ $c->id }}" {{ ($cursoId ?? 0) == $c->id ? 'selected' : '' }}>
                                     {{ $c->nombre }}
                                 </option>
                             @empty
-                                <option value="">Matemática</option>
-                                <option value="">Comunicación</option>
+                                <option value="">Sin cursos</option>
                             @endforelse
                         </select>
                     </div>
@@ -103,14 +106,11 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Bimestre</label>
                         <select name="bimestre_id" class="block w-full rounded-xl border-slate-200 shadow-xs focus:border-[#1e40af] focus:ring focus:ring-blue-100 text-xs py-2.5 px-3 text-slate-700 font-medium">
                             @forelse($bimestres as $b)
-                                <option value="{{ $b->id }}" {{ request('bimestre_id') == $b->id ? 'selected' : '' }}>
+                                <option value="{{ $b->id }}" {{ ($bimestreId ?? 0) == $b->id ? 'selected' : '' }}>
                                     {{ $b->numero }}° Bimestre
                                 </option>
                             @empty
-                                <option value="1">I Bimestre</option>
-                                <option value="2" selected>II Bimestre</option>
-                                <option value="3">III Bimestre</option>
-                                <option value="4">IV Bimestre</option>
+                                <option value="1">1° Bimestre</option>
                             @endforelse
                         </select>
                     </div>
@@ -124,6 +124,16 @@
 
                 </form>
             </div>
+
+            <script>
+                function cambiarNivel(form) {
+                    const inputSec = form.querySelector('[name=grado_seccion_id]');
+                    if (inputSec) inputSec.value = '';
+                    const inputCur = form.querySelector('[name=curso_id]');
+                    if (inputCur) inputCur.value = '';
+                    form.submit();
+                }
+            </script>
 
             <!-- Sección 1: Frecuencias de Logro por Competencia (Captura 4) -->
             <div x-show="tab === 'frecuencias'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
@@ -153,7 +163,7 @@
                 class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full p-6 space-y-5 transform transition-all"
             >
                 <form method="GET" action="{{ route('admin.analytics.reporte_comparativo_pdf') }}" target="_blank" @submit="modalComparativo = false">
-                    <input type="hidden" name="grado_seccion_id" value="{{ request('grado_seccion_id', $secciones->first()?->id ?? 1) }}">
+                    <input type="hidden" name="grado_seccion_id" value="{{ $gradoSeccionId }}">
 
                     <!-- Cabecera del Modal -->
                     <div class="flex items-start justify-between border-b border-slate-100 pb-3">
@@ -165,7 +175,7 @@
                                 Exportar reporte comparativo (A4)
                             </h4>
                             <p class="text-xs text-slate-500 mt-0.5">
-                                Sección: <strong class="text-slate-800">{{ request('grado_seccion_id') && $secciones->firstWhere('id', request('grado_seccion_id')) ? ($secciones->firstWhere('id', request('grado_seccion_id'))->grado->nombre . ' ' . $secciones->firstWhere('id', request('grado_seccion_id'))->seccion->nombre) : ($secciones->first() ? ($secciones->first()->grado->nombre . ' ' . $secciones->first()->seccion->nombre) : 'Sección activa') }}</strong>
+                                Sección: <strong class="text-slate-800">{{ $secciones->firstWhere('id', $gradoSeccionId) ? ($secciones->firstWhere('id', $gradoSeccionId)->grado->nombre . ' ' . $secciones->firstWhere('id', $gradoSeccionId)->seccion->nombre) : 'Sección activa' }}</strong>
                             </p>
                         </div>
                         <button type="button" @click="modalComparativo = false" class="text-slate-400 hover:text-slate-600 transition-colors">

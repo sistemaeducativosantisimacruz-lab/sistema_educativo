@@ -64,6 +64,14 @@ class AnaliticaDatabaseAggregationTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('bimestres', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('ano_lectivo_id');
+            $table->integer('numero');
+            $table->string('nombre')->nullable();
+            $table->timestamps();
+        });
+
         Schema::create('notas_bimestrales', function (Blueprint $table) {
             $table->id();
             $table->foreignId('estudiante_id');
@@ -78,6 +86,7 @@ class AnaliticaDatabaseAggregationTest extends TestCase
     protected function tearDown(): void
     {
         Schema::dropIfExists('notas_bimestrales');
+        Schema::dropIfExists('bimestres');
         Schema::dropIfExists('matriculas');
         Schema::dropIfExists('competencias');
         Schema::dropIfExists('cursos');
@@ -179,5 +188,104 @@ class AnaliticaDatabaseAggregationTest extends TestCase
         $this->assertEquals(0, $comp['C']);
         $this->assertEquals(50.0, $comp['porcentajes']['AD']);
         $this->assertEquals(50.0, $comp['porcentajes']['A']);
+    }
+
+    public function test_get_comparativa_entre_secciones_retorna_categorias_dinamicas_segun_grado(): void
+    {
+        $anoId = 2026;
+        $grado1Id = DB::table('grados')->insertGetId([
+            'nombre' => '1ro Secundaria',
+            'nivel' => 'secundaria',
+            'orden' => 1
+        ]);
+        $secAId = DB::table('secciones')->insertGetId(['nombre' => 'A']);
+        $secBId = DB::table('secciones')->insertGetId(['nombre' => 'B']);
+
+        $gsAId = DB::table('grado_secciones')->insertGetId([
+            'grado_id' => $grado1Id,
+            'seccion_id' => $secAId,
+            'ano_lectivo_id' => $anoId
+        ]);
+        $gsBId = DB::table('grado_secciones')->insertGetId([
+            'grado_id' => $grado1Id,
+            'seccion_id' => $secBId,
+            'ano_lectivo_id' => $anoId
+        ]);
+
+        $bimestreId = DB::table('bimestres')->insertGetId([
+            'ano_lectivo_id' => $anoId,
+            'numero' => 1,
+            'nombre' => 'Bimestre 1'
+        ]);
+
+        $cursoId = DB::table('cursos')->insertGetId(['nombre' => 'Matemática']);
+        $compId = DB::table('competencias')->insertGetId([
+            'curso_id' => $cursoId,
+            'nombre' => 'C1',
+            'orden' => 1
+        ]);
+
+        // Nota en Sección A: AD
+        DB::table('matriculas')->insert([
+            'estudiante_id' => 201,
+            'grado_seccion_id' => $gsAId,
+            'ano_lectivo_id' => $anoId,
+            'estado' => 'activo'
+        ]);
+        DB::table('notas_bimestrales')->insert([
+            'estudiante_id' => 201,
+            'curso_id' => $cursoId,
+            'competencia_id' => $compId,
+            'bimestre_id' => $bimestreId,
+            'nota' => 'AD'
+        ]);
+
+        // Nota en Sección B: C
+        DB::table('matriculas')->insert([
+            'estudiante_id' => 202,
+            'grado_seccion_id' => $gsBId,
+            'ano_lectivo_id' => $anoId,
+            'estado' => 'activo'
+        ]);
+        DB::table('notas_bimestrales')->insert([
+            'estudiante_id' => 202,
+            'curso_id' => $cursoId,
+            'competencia_id' => $compId,
+            'bimestre_id' => $bimestreId,
+            'nota' => 'C'
+        ]);
+
+        $res = $this->service->getComparativaEntreSecciones($anoId, $grado1Id, $bimestreId, $cursoId);
+
+        $this->assertEquals($grado1Id, $res['grado_id']);
+        $this->assertContains('1.° A', $res['categories']);
+        $this->assertContains('1.° B', $res['categories']);
+        $this->assertCount(4, $res['series']);
+    }
+
+    public function test_get_comparativa_entre_bimestres_retorna_bimestres_del_ano(): void
+    {
+        $anoId = 2026;
+        $gradoId = DB::table('grados')->insertGetId([
+            'nombre' => '4to Secundaria',
+            'nivel' => 'secundaria',
+            'orden' => 4
+        ]);
+        $secAId = DB::table('secciones')->insertGetId(['nombre' => 'A']);
+        $gsId = DB::table('grado_secciones')->insertGetId([
+            'grado_id' => $gradoId,
+            'seccion_id' => $secAId,
+            'ano_lectivo_id' => $anoId
+        ]);
+
+        $b1Id = DB::table('bimestres')->insertGetId(['ano_lectivo_id' => $anoId, 'numero' => 1, 'nombre' => 'B1']);
+        $b2Id = DB::table('bimestres')->insertGetId(['ano_lectivo_id' => $anoId, 'numero' => 2, 'nombre' => 'B2']);
+
+        $res = $this->service->getComparativaEntreBimestres($anoId, $gsId, null);
+
+        $this->assertEquals($gsId, $res['grado_seccion_id']);
+        $this->assertEquals('4.° A', $res['seccion_nombre']);
+        $this->assertContains('I Bimestre', $res['categories']);
+        $this->assertContains('II Bimestre', $res['categories']);
     }
 }

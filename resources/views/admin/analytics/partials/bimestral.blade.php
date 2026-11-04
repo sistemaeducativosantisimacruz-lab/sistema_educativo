@@ -4,9 +4,9 @@
     <div>
         <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Frecuencias de logro por competencia</h3>
         <p class="text-sm text-slate-500 mt-1">
-            {{ request('grado_seccion_id') ? ($secciones->firstWhere('id', request('grado_seccion_id'))->grado->nombre ?? '3.°') . ' ' . ($secciones->firstWhere('id', request('grado_seccion_id'))->seccion->nombre ?? 'A') : '3.° A' }} 
-            · {{ request('curso_id') ? ($cursos->firstWhere('id', request('curso_id'))->nombre ?? 'Matemática') : 'Matemática' }} 
-            · {{ request('bimestre_id') ? 'Bimestre ' . ($bimestres->firstWhere('id', request('bimestre_id'))->numero ?? 'II') : 'II Bimestre' }} 
+            {{ $secciones->firstWhere('id', $gradoSeccionId)?->grado?->nombre ?? '' }} {{ $secciones->firstWhere('id', $gradoSeccionId)?->seccion?->nombre ?? '' }} 
+            · {{ $cursos->firstWhere('id', $cursoId)?->nombre ?? 'Matemática' }} 
+            · Bimestre {{ $bimestres->firstWhere('id', $bimestreId)?->numero ?? 1 }} 
             · Niveles oficiales de logro CNEB
         </p>
     </div>

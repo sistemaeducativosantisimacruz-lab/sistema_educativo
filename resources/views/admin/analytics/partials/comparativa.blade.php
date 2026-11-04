@@ -5,7 +5,7 @@
         <div>
             <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Comparativo de rendimiento</h3>
             <p class="text-sm text-slate-500 mt-1">
-                {{ request('curso_id') ? ($cursos->firstWhere('id', request('curso_id'))->nombre ?? 'Matemática') : 'Matemática' }}
+                {{ $cursos->firstWhere('id', $cursoId)?->nombre ?? 'Matemática' }}
                 · Porcentaje de estudiantes por nivel · Análisis oficial
             </p>
         </div>
@@ -23,18 +23,18 @@
     <!-- Dos Gráficos Lado a Lado: Entre Secciones y Entre Bimestres -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        <!-- Tarjeta 1: Entre Secciones · II Bimestre -->
+        <!-- Tarjeta 1: Entre Secciones · Bimestre X -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
             <h4 class="text-base font-bold text-slate-800 mb-4">
-                Entre secciones · {{ request('bimestre_id') ? 'Bimestre ' . ($bimestres->firstWhere('id', request('bimestre_id'))->numero ?? 'II') : 'II Bimestre' }}
+                Entre secciones · Bimestre {{ $comparativaSecciones['bimestre_numero'] ?? ($bimestres->firstWhere('id', $bimestreId)?->numero ?? 1) }} ({{ $comparativaSecciones['grado_nombre'] ?? 'Grado' }})
             </h4>
             <div id="chart-entre-secciones" class="w-full" style="min-height: 220px;"></div>
         </div>
 
-        <!-- Tarjeta 2: Entre Bimestres · 3.° A -->
+        <!-- Tarjeta 2: Entre Bimestres · Grado y Sección -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
             <h4 class="text-base font-bold text-slate-800 mb-4">
-                Entre bimestres · {{ request('grado_seccion_id') ? ($secciones->firstWhere('id', request('grado_seccion_id'))->grado->nombre ?? '3.°') . ' ' . ($secciones->firstWhere('id', request('grado_seccion_id'))->seccion->nombre ?? 'A') : '3.° A' }}
+                Entre bimestres · {{ $comparativaBimestres['seccion_nombre'] ?? '' }}
             </h4>
             <div id="chart-entre-bimestres" class="w-full" style="min-height: 220px;"></div>
         </div>
@@ -66,23 +66,19 @@
 @push('scripts')
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Paleta Institucional Aprobada:
-        // C: Rojo oscuro (#b91c1c), B: Ámbar (#f59e0b), A: Verde azulado (#0f766e), AD: Azul (#1e40af)
         const palette = ['#b91c1c', '#f59e0b', '#0f766e', '#1e40af'];
 
-        // 1. Gráfico: Entre secciones · II Bimestre (Barras apiladas al 100%)
+        // 1. Gráfico: Entre secciones (Barras apiladas al 100%)
         const elSecciones = document.querySelector("#chart-entre-secciones");
-        if (elSecciones) {
+        const categoriasSecciones = @json($comparativaSecciones['categories'] ?? []);
+        const seriesSecciones = @json($comparativaSecciones['series'] ?? []);
+
+        if (elSecciones && categoriasSecciones.length > 0) {
             const optionsSecciones = {
-                series: [
-                    { name: 'C · En inicio', data: [7, 13, 3] },
-                    { name: 'B · En proceso', data: [27, 30, 20] },
-                    { name: 'A · Logro esperado', data: [50, 40, 57] },
-                    { name: 'AD · Logro destacado', data: [16, 17, 20] },
-                ],
+                series: seriesSecciones,
                 chart: {
                     type: 'bar',
-                    height: 220,
+                    height: Math.max(200, categoriasSecciones.length * 55),
                     stacked: true,
                     stackType: '100%',
                     toolbar: { show: false },
@@ -99,7 +95,7 @@
                 dataLabels: {
                     enabled: true,
                     formatter: function(val) {
-                        return Math.round(val);
+                        return val > 0 ? Math.round(val) : '';
                     },
                     style: {
                         fontSize: '11px',
@@ -109,7 +105,7 @@
                     }
                 },
                 xaxis: {
-                    categories: ['3.° A', '3.° B', '3.° C'],
+                    categories: categoriasSecciones,
                     labels: { show: false },
                     axisBorder: { show: false },
                     axisTicks: { show: false }
@@ -132,27 +128,27 @@
                 tooltip: {
                     y: {
                         formatter: function(val) {
-                            return val + "% de estudiantes";
+                            return (val || 0) + "% de estudiantes";
                         }
                     }
                 }
             };
             new ApexCharts(elSecciones, optionsSecciones).render();
+        } else if (elSecciones) {
+            elSecciones.innerHTML = '<div class="py-12 text-center text-xs text-slate-400">Sin calificaciones registradas para este grado y curso.</div>';
         }
 
-        // 2. Gráfico: Entre bimestres · 3.° A (Barras apiladas al 100%)
+        // 2. Gráfico: Entre bimestres (Barras apiladas al 100%)
         const elBimestres = document.querySelector("#chart-entre-bimestres");
-        if (elBimestres) {
+        const categoriasBimestres = @json($comparativaBimestres['categories'] ?? []);
+        const seriesBimestres = @json($comparativaBimestres['series'] ?? []);
+
+        if (elBimestres && categoriasBimestres.length > 0) {
             const optionsBimestres = {
-                series: [
-                    { name: 'C · En inicio', data: [10, 7] },
-                    { name: 'B · En proceso', data: [30, 27] },
-                    { name: 'A · Logro esperado', data: [45, 50] },
-                    { name: 'AD · Logro destacado', data: [15, 16] },
-                ],
+                series: seriesBimestres,
                 chart: {
                     type: 'bar',
-                    height: 180,
+                    height: Math.max(180, categoriasBimestres.length * 45),
                     stacked: true,
                     stackType: '100%',
                     toolbar: { show: false },
@@ -169,7 +165,7 @@
                 dataLabels: {
                     enabled: true,
                     formatter: function(val) {
-                        return Math.round(val);
+                        return val > 0 ? Math.round(val) : '';
                     },
                     style: {
                         fontSize: '11px',
@@ -179,7 +175,7 @@
                     }
                 },
                 xaxis: {
-                    categories: ['I Bimestre', 'II Bimestre'],
+                    categories: categoriasBimestres,
                     labels: { show: false },
                     axisBorder: { show: false },
                     axisTicks: { show: false }
@@ -202,12 +198,14 @@
                 tooltip: {
                     y: {
                         formatter: function(val) {
-                            return val + "% de estudiantes";
+                            return (val || 0) + "% de estudiantes";
                         }
                     }
                 }
             };
             new ApexCharts(elBimestres, optionsBimestres).render();
+        } else if (elBimestres) {
+            elBimestres.innerHTML = '<div class="py-12 text-center text-xs text-slate-400">Sin calificaciones registradas para esta sección.</div>';
         }
     });
 </script>

@@ -4,8 +4,8 @@
     <div class="d-print-none print:hidden">
         <h3 class="text-2xl font-bold text-slate-900 tracking-tight">Diagnóstico por estudiante</h3>
         <p class="text-sm text-slate-500 mt-1">
-            {{ request('grado_seccion_id') && $secciones->firstWhere('id', request('grado_seccion_id')) ? ($secciones->firstWhere('id', request('grado_seccion_id'))->grado->nombre ?? '') . ' ' . ($secciones->firstWhere('id', request('grado_seccion_id'))->seccion->nombre ?? '') : 'Seleccione grado y sección' }} 
-            · {{ request('bimestre_id') && $bimestres->firstWhere('id', request('bimestre_id')) ? 'Bimestre ' . ($bimestres->firstWhere('id', request('bimestre_id'))->numero ?? '') : 'Seleccione bimestre' }} 
+            {{ $secciones->firstWhere('id', $gradoSeccionId) ? ($secciones->firstWhere('id', $gradoSeccionId)->grado->nombre . ' ' . $secciones->firstWhere('id', $gradoSeccionId)->seccion->nombre) : 'Seleccione grado y sección' }} 
+            · Bimestre {{ $bimestres->firstWhere('id', $bimestreId)?->numero ?? 1 }} 
             · Generado automáticamente a partir de los niveles de logro
         </p>
     </div>
@@ -350,9 +350,9 @@
             estudiantes: @json($estudiantes ?? []),
             searchQuery: '',
             estudianteSeleccionado: null,
-            filtroBimestreId: {{ (int) request('bimestre_id', 0) }},
-            filtroGradoSeccionId: {{ (int) request('grado_seccion_id', 0) }},
-            filtroCursoId: {{ (int) request('curso_id', 0) }},
+            filtroBimestreId: {{ (int) ($bimestreId ?? 0) }},
+            filtroGradoSeccionId: {{ (int) ($gradoSeccionId ?? 0) }},
+            filtroCursoId: {{ (int) ($cursoId ?? 0) }},
             columnas: { anterior: null, actual: null },
             competencias: [],
             diagnosticoTexto: '',

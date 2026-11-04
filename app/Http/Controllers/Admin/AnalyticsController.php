@@ -33,6 +33,20 @@ class AnalyticsController extends Controller
 
         $bimestres = Bimestre::where('ano_lectivo_id', $anoActivo->id)->orderBy('numero')->get();
         
+        // Resolver bimestre predeterminado
+        $bimestreId = $request->input('bimestre_id');
+        if (!$bimestreId || !$bimestres->contains('id', (int) $bimestreId)) {
+            $bimestreId = $bimestres->first()?->id ?? 1;
+        } else {
+            $bimestreId = (int) $bimestreId;
+        }
+
+        // Resolver nivel predeterminado ('secundaria' por defecto)
+        $nivel = $request->input('nivel', 'secundaria');
+        if (!in_array($nivel, ['primaria', 'secundaria', ''])) {
+            $nivel = 'secundaria';
+        }
+
         $seccionesQuery = GradoSeccion::with('grado', 'seccion')
             ->where('ano_lectivo_id', $anoActivo->id)
             ->join('grados', 'grado_secciones.grado_id', '=', 'grados.id')
@@ -42,102 +56,137 @@ class AnalyticsController extends Controller
             ->orderBy('secciones.nombre')
             ->select('grado_secciones.*');
 
-        if ($request->filled('nivel')) {
-            $seccionesQuery->where('grados.nivel', $request->nivel);
+        if ($nivel !== '') {
+            $seccionesQuery->where('grados.nivel', $nivel);
         }
 
         $secciones = $seccionesQuery->get();
 
-        // Cursos disponibles para el filtro (filtrables por nivel si se selecciona)
+        // Validar que el grado_seccion_id pertenezca al nivel seleccionado; si no, tomar la primera sección válida
+        $gradoSeccionId = $request->input('grado_seccion_id');
+        if (!$gradoSeccionId || !$secciones->contains('id', (int) $gradoSeccionId)) {
+            $gradoSeccionId = $secciones->first()?->id;
+        } else {
+            $gradoSeccionId = (int) $gradoSeccionId;
+        }
+
+        // Cursos disponibles para el nivel
         $cursosQuery = Curso::where('activo', true)->soloCursos()->orderBy('nombre');
-        if ($request->filled('nivel')) {
-            $cursosQuery->paraNivel($request->nivel);
+        if ($nivel !== '') {
+            $cursosQuery->paraNivel($nivel);
         }
         $cursos = $cursosQuery->get();
 
-        $tipoVista = $request->input('tipo_vista', 'bimestral');
-        $datos = [];
-        $resumenGlobal = null;
-        $graficosData = [];
-        $umbralAlerta = config('analitica.umbral_alerta_riesgo', 40.0);
-
-        if ($tipoVista === 'bimestral' && $request->filled('bimestre_id')) {
-            $datos = $this->analiticaService->getDistribucionBimestral($anoActivo->id, $request->validated());
-            $resumenGlobal = $this->analiticaService->calcularResumenGlobal($datos);
-            
-            // Preparar JSON para ApexCharts
-            foreach ($datos as $cId => &$area) {
-                foreach ($area['competencias'] as $compNombre => &$compData) {
-                    $chartId = 'chart_' . $cId . '_' . md5($compNombre);
-                    $compData['chart_id'] = $chartId;
-                    
-                    $graficosData[] = [
-                        'chart_id' => $chartId,
-                        'series' => [[
-                            'name' => 'Porcentaje',
-                            'data' => [
-                                $compData['porcentajes']['AD'], 
-                                $compData['porcentajes']['A'], 
-                                $compData['porcentajes']['B'], 
-                                $compData['porcentajes']['C']
-                            ]
-                        ]],
-                        'labels' => ['Logro Destacado (AD)', 'Logro Esperado (A)', 'En Proceso (B)', 'En Inicio (C)']
-                    ];
-                }
-            }
-            unset($area);
-            unset($compData);
-        } elseif ($tipoVista === 'comparativa') {
-            $bComps = array_filter($request->input('bimestres_comp', []));
-            if (count($bComps) < 2) {
-                return back()->with('error', 'Debe seleccionar al menos 2 bimestres para comparar.');
-            }
-            
-            sort($bComps);
-            $datos = $this->analiticaService->getComparativaInterbimestral($anoActivo->id, $bComps, $request->validated());
-            
-            // Mapear números de bimestres para las etiquetas
-            $bimestresModelos = Bimestre::whereIn('id', $bComps)->get()->keyBy('id');
-
-            foreach ($datos as $cId => &$area) {
-                foreach ($area['competencias'] as $compNombre => &$compData) {
-                    $series = [];
-                    foreach ($bComps as $bId) {
-                        $num = $bimestresModelos->has($bId) ? $bimestresModelos[$bId]->numero : $bId;
-                        $series[] = [
-                            'name' => 'Bimestre ' . $num,
-                            'data' => [
-                                $compData['bimestres_data'][$bId]['porcentajes']['AD'],
-                                $compData['bimestres_data'][$bId]['porcentajes']['A'],
-                                $compData['bimestres_data'][$bId]['porcentajes']['B'],
-                                $compData['bimestres_data'][$bId]['porcentajes']['C']
-                            ]
-                        ];
-                    }
-
-                    $chartId = 'chart_' . $cId . '_' . md5($compNombre);
-                    $compData['chart_id'] = $chartId;
-
-                    $graficosData[] = [
-                        'chart_id' => $chartId,
-                        'series' => $series,
-                        'categories' => ['AD', 'A', 'B', 'C']
-                    ];
-                }
-            }
-            unset($area);
-            unset($compData);
+        // Validar que curso_id pertenezca a los cursos del nivel; si no, priorizar Matemática o el primero
+        $cursoId = $request->input('curso_id');
+        if (!$cursoId || !$cursos->contains('id', (int) $cursoId)) {
+            $matematica = $cursos->first(fn($c) => stripos($c->nombre, 'matem') !== false);
+            $cursoId = $matematica ? $matematica->id : ($cursos->first()?->id);
+        } else {
+            $cursoId = (int) $cursoId;
         }
 
-        // Obtener lista de estudiantes con nivel global para la pestaña de diagnóstico
+        $tipoVista = $request->input('tipo_vista', 'bimestral');
+        $umbralAlerta = config('analitica.umbral_alerta_riesgo', 40.0);
+
+        // Filtros consolidados garantizados con valores reales
+        $filtrosActivos = [
+            'bimestre_id' => $bimestreId,
+            'grado_seccion_id' => $gradoSeccionId,
+            'curso_id' => $cursoId,
+            'nivel' => $nivel,
+        ];
+
+        // 1. Datos para Frecuencias de logro
+        $datos = $this->analiticaService->getDistribucionBimestral($anoActivo->id, $filtrosActivos);
+        $resumenGlobal = $this->analiticaService->calcularResumenGlobal($datos);
+        
+        $graficosData = [];
+        foreach ($datos as $cId => &$area) {
+            foreach ($area['competencias'] as $compNombre => &$compData) {
+                $chartId = 'chart_' . $cId . '_' . md5($compNombre);
+                $compData['chart_id'] = $chartId;
+                
+                $graficosData[] = [
+                    'chart_id' => $chartId,
+                    'series' => [[
+                        'name' => 'Porcentaje',
+                        'data' => [
+                            $compData['porcentajes']['AD'], 
+                            $compData['porcentajes']['A'], 
+                            $compData['porcentajes']['B'], 
+                            $compData['porcentajes']['C']
+                        ]
+                    ]],
+                    'labels' => ['Logro Destacado (AD)', 'Logro Esperado (A)', 'En Proceso (B)', 'En Inicio (C)']
+                ];
+            }
+        }
+        unset($area, $compData);
+
+        // 2. Comparativo de rendimiento con datos reales
+        $seccionActual = $secciones->firstWhere('id', $gradoSeccionId);
+        $gradoId = $seccionActual?->grado_id;
+
+        $comparativaSecciones = $this->analiticaService->getComparativaEntreSecciones(
+            $anoActivo->id,
+            $gradoId,
+            $bimestreId,
+            $cursoId
+        );
+
+        $comparativaBimestres = $this->analiticaService->getComparativaEntreBimestres(
+            $anoActivo->id,
+            $gradoSeccionId,
+            $cursoId
+        );
+
+        // Soporte retrocompatible para comparativa N-bimestres con checkboxes si se solicita expresamente
+        if ($tipoVista === 'comparativa' && $request->filled('bimestres_comp')) {
+            $bComps = array_filter($request->input('bimestres_comp', []));
+            if (count($bComps) >= 2) {
+                sort($bComps);
+                $datos = $this->analiticaService->getComparativaInterbimestral($anoActivo->id, $bComps, $filtrosActivos);
+                $bimestresModelos = Bimestre::whereIn('id', $bComps)->get()->keyBy('id');
+
+                foreach ($datos as $cId => &$area) {
+                    foreach ($area['competencias'] as $compNombre => &$compData) {
+                        $series = [];
+                        foreach ($bComps as $bId) {
+                            $num = $bimestresModelos->has($bId) ? $bimestresModelos[$bId]->numero : $bId;
+                            $series[] = [
+                                'name' => 'Bimestre ' . $num,
+                                'data' => [
+                                    $compData['bimestres_data'][$bId]['porcentajes']['AD'],
+                                    $compData['bimestres_data'][$bId]['porcentajes']['A'],
+                                    $compData['bimestres_data'][$bId]['porcentajes']['B'],
+                                    $compData['bimestres_data'][$bId]['porcentajes']['C']
+                                ]
+                            ];
+                        }
+
+                        $chartId = 'chart_' . $cId . '_' . md5($compNombre);
+                        $compData['chart_id'] = $chartId;
+
+                        $graficosData[] = [
+                            'chart_id' => $chartId,
+                            'series' => $series,
+                            'categories' => ['AD', 'A', 'B', 'C']
+                        ];
+                    }
+                }
+                unset($area, $compData);
+            }
+        }
+
+        // 3. Estudiantes para Diagnóstico por estudiante
         $estudiantes = [];
-        if ($request->filled('grado_seccion_id') && $request->filled('bimestre_id')) {
+        if ($gradoSeccionId && $bimestreId) {
             $estudiantes = $this->analiticaService->getEstudiantesSeccionConNivel(
                 $anoActivo->id,
-                (int) $request->grado_seccion_id,
-                (int) $request->bimestre_id,
-                $request->filled('curso_id') ? (int) $request->curso_id : null
+                $gradoSeccionId,
+                $bimestreId,
+                $cursoId
             );
         }
 
@@ -151,7 +200,13 @@ class AnalyticsController extends Controller
             'resumenGlobal',
             'graficosData',
             'umbralAlerta',
-            'estudiantes'
+            'estudiantes',
+            'nivel',
+            'gradoSeccionId',
+            'cursoId',
+            'bimestreId',
+            'comparativaSecciones',
+            'comparativaBimestres'
         ));
     }
 
