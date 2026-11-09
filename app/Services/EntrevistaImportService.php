@@ -380,13 +380,36 @@ class EntrevistaImportService
     }
 
     /**
-     * Genera dinámicamente el archivo Excel oficial (Formato 1) listo para ser descargado y llenado.
+     * Genera o entrega el archivo Excel oficial (Formato 1) listo para ser descargado y llenado.
+     * Entrega directamente la plantilla fiel con validaciones de listas desplegables,
+     * fórmulas de estado, hojas de exportación y estilos optimizados.
      *
      * @param string $nivel 'primaria' o 'secundaria'
      * @return StreamedResponse
      */
     public function descargarPlantilla(string $nivel = 'primaria'): StreamedResponse
     {
+        $nivelNorm = strtolower(trim($nivel)) === 'secundaria' ? 'secundaria' : 'primaria';
+        $nombreNivel = ucfirst($nivelNorm);
+        $fileName = "Ficha_Entrevista_Admision_2027_{$nombreNivel}.xlsx";
+
+        // Buscar plantilla maestra en resources/templates o storage/app/templates
+        $templatePath = resource_path("templates/plantilla_entrevista_{$nivelNorm}_2027.xlsx");
+        if (!file_exists($templatePath)) {
+            $templatePath = storage_path("app/templates/plantilla_entrevista_{$nivelNorm}_2027.xlsx");
+        }
+
+        if (file_exists($templatePath)) {
+            return response()->streamDownload(function () use ($templatePath) {
+                $stream = fopen($templatePath, 'rb');
+                fpassthru($stream);
+                fclose($stream);
+            }, $fileName, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'max-age=0, no-cache, must-revalidate, proxy-revalidate',
+            ]);
+        }
+
         $spreadsheet = new Spreadsheet();
 
         // HOJA 1: FICHA DE ENTREVISTA
