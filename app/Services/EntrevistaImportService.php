@@ -134,14 +134,105 @@ class EntrevistaImportService
     }
 
     /**
+     * Mapeo oficial de fila de la hoja Ficha a código de campo (sin depender de columna Código).
+     */
+    public static array $mapaFilasFicha = [
+        7 => 'grado',
+        9 => 'est_nombres',
+        10 => 'est_fecha_nacimiento',
+        11 => 'est_dni',
+        12 => 'padre_nombres',
+        13 => 'padre_dni',
+        14 => 'padre_grado_estudios',
+        15 => 'padre_ocupacion',
+        16 => 'padre_domicilio',
+        17 => 'padre_telefono',
+        18 => 'madre_nombres',
+        19 => 'madre_dni',
+        20 => 'madre_grado_estudios',
+        21 => 'madre_ocupacion',
+        22 => 'madre_domicilio',
+        23 => 'madre_telefono',
+        24 => 'apoderado_nombres',
+        25 => 'apoderado_dni',
+        26 => 'apoderado_grado_estudios',
+        27 => 'apoderado_ocupacion',
+        28 => 'apoderado_domicilio',
+        29 => 'apoderado_telefono',
+        31 => 'num_hermanos',
+        32 => 'vive_con',
+        33 => 'hermanos_en_ie',
+        34 => 'hermanos_en_ie_cantidad',
+        35 => 'hermanos_en_ie_nombres',
+        36 => 'acuerdo_comunion',
+        38 => 'parroquia',
+        39 => 'comunidad_zonal',
+        40 => 'sacramento_bautizo',
+        41 => 'sacramento_eucaristia',
+        42 => 'eucaristia_importante',
+        43 => 'eucaristia_por_que',
+        44 => 'eucaristia_dia',
+        46 => 'padres_casados',
+        47 => 'estado_conyugal',
+        48 => 'enfermedad',
+        49 => 'conoce_diagnostico',
+        50 => 'diagnostico_cual',
+        52 => 'patria_potestad',
+        53 => 'persona_dispuesta',
+        56 => 'oblig_reuniones_aula',
+        57 => 'oblig_atencion_padres',
+        58 => 'oblig_escuela_padres',
+        59 => 'oblig_eucaristia',
+        60 => 'oblig_conservacion',
+        61 => 'oblig_multa_apafa',
+        63 => 'norma_horario',
+        64 => 'norma_corte_cabello',
+        65 => 'norma_cabello_trenzado',
+        66 => 'norma_uniforme',
+        67 => 'norma_asistencia',
+        69 => 'compromiso_pago',
+        71 => 'autoriza_comunicacion',
+        72 => 'autoriza_fotos_videos',
+        73 => 'autoriza_actividades',
+        74 => 'autoriza_atencion_medica',
+        75 => 'autoriza_regresa_solo',
+        76 => 'recoge_nombre',
+        77 => 'recoge_dni',
+        78 => 'acuerdo_integracion_aulas',
+        80 => 'conformidad',
+        81 => 'fecha_entrevista',
+    ];
+
+    /**
      * Extrae el diccionario [codigo => respuesta] del libro de Excel.
-     * Busca primero la hoja de exportación horizontal, y si no existe, lee la columna de códigos de la hoja vertical.
+     * Soporta lectura directa por número de fila de la hoja «Ficha» (sin columna Código),
+     * hoja de exportación horizontal, y columna F de archivos anteriores.
      */
     protected function extraerDiccionarioDeFicha(Spreadsheet $spreadsheet): array
     {
         $diccionario = [];
 
-        // Estrategia 1: Hoja "Exportar_Ficha" o segunda hoja horizontal
+        // Estrategia 1: Lectura directa de la hoja «Ficha» por número de fila oficial
+        $sheetFicha = $spreadsheet->getSheetByName('Ficha') ?? $spreadsheet->getActiveSheet();
+        if ($sheetFicha) {
+            $posibleDni = preg_replace('/\D/', '', (string)$sheetFicha->getCell('C11')->getValue());
+            $posibleNombre = trim((string)$sheetFicha->getCell('C9')->getValue());
+
+            if (strlen($posibleDni) >= 8 || !empty($posibleNombre)) {
+                foreach (self::$mapaFilasFicha as $fila => $codigo) {
+                    $val = $sheetFicha->getCell("C{$fila}")->getValue();
+                    if (is_string($val) && str_starts_with($val, '=')) {
+                        $val = $sheetFicha->getCell("C{$fila}")->getOldCalculatedValue() ?? '';
+                    }
+                    $diccionario[$codigo] = is_string($val) ? trim($val) : $val;
+                }
+                if (!empty($diccionario['est_dni']) || !empty($diccionario['est_nombres'])) {
+                    return $diccionario;
+                }
+            }
+        }
+
+        // Estrategia 2: Hoja "Exportar_Ficha" o segunda hoja horizontal
         foreach ($spreadsheet->getAllSheets() as $sheet) {
             $sheetName = strtolower(trim($sheet->getTitle()));
             if (str_contains($sheetName, 'export') || str_contains($sheetName, 'respuest')) {
@@ -161,7 +252,7 @@ class EntrevistaImportService
             }
         }
 
-        // Estrategia 2: Hoja principal vertical buscando columna "Código" (generalmente Columna F / 6)
+        // Estrategia 3: Columna F si el archivo proviene de una versión anterior con códigos visibles
         $sheet = $spreadsheet->getActiveSheet();
         $highestRow = $sheet->getHighestRow();
 
@@ -169,7 +260,6 @@ class EntrevistaImportService
             $codigo = trim((string) $sheet->getCell("F{$r}")->getValue());
             $respuesta = $sheet->getCell("C{$r}")->getValue();
 
-            // Si la celda es una fórmula, obtener el valor calculado
             if (is_string($respuesta) && str_starts_with($respuesta, '=')) {
                 $respuesta = $sheet->getCell("C{$r}")->getOldCalculatedValue() ?? '';
             }
