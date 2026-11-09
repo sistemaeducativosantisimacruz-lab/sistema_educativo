@@ -23,6 +23,9 @@
                         <x-nav-link :href="route('docente.secciones')" :active="request()->routeIs('docente.secciones')">
                             {{ __('Secciones a cargo') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('docente.admision.index')" :active="request()->routeIs('docente.admision.*')">
+                            {{ __('Admisión') }}
+                        </x-nav-link>
                         @if(auth()->user()->docente && auth()->user()->docente->tutoriaSecciones()->count() > 0)
                             <x-nav-link :href="route('docente.importar')" :active="request()->routeIs('docente.importar')">
                                 {{ __('Importar Notas') }}
@@ -39,6 +42,9 @@
                         </x-nav-link>
                         <x-nav-link :href="route('admin.estudiantes.index')" :active="request()->routeIs('admin.estudiantes.*')">
                             {{ __('Estudiantes') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.admision.index')" :active="request()->routeIs('admin.admision.*')">
+                            {{ __('Admisión') }}
                         </x-nav-link>
                         <x-nav-link :href="route('admin.importar')" :active="request()->routeIs('admin.importar')">
                             {{ __('Importar') }}
@@ -123,6 +129,9 @@
                 <x-responsive-nav-link :href="route('docente.secciones')" :active="request()->routeIs('docente.secciones')">
                     {{ __('Secciones a cargo') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('docente.admision.index')" :active="request()->routeIs('docente.admision.*')">
+                    {{ __('Admisión') }}
+                </x-responsive-nav-link>
                 @if(auth()->user()->docente && auth()->user()->docente->tutoriaSecciones()->count() > 0)
                     <x-responsive-nav-link :href="route('docente.importar')" :active="request()->routeIs('docente.importar')">
                         {{ __('Importar Notas') }}
@@ -139,6 +148,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.estudiantes.index')" :active="request()->routeIs('admin.estudiantes.*')">
                     {{ __('Estudiantes') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.admision.index')" :active="request()->routeIs('admin.admision.*')">
+                    {{ __('Admisión') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.importar')" :active="request()->routeIs('admin.importar')">
                     {{ __('Importar') }}

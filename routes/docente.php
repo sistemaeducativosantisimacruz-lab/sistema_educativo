@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Docente\DashboardController;
 use App\Http\Controllers\Docente\NotasController;
+use App\Http\Controllers\Docente\AdmisionController;
 
 Route::middleware(['auth', 'role:docente', 'password.change'])->prefix('docente')->name('docente.')->group(function () {
 
@@ -21,5 +22,13 @@ Route::middleware(['auth', 'role:docente', 'password.change'])->prefix('docente'
     Route::post('/importar/preview', [\App\Http\Controllers\Docente\ImportController::class, 'preview'])->name('importar.preview');
     Route::post('/importar/confirmar', [\App\Http\Controllers\Docente\ImportController::class, 'confirmar'])->name('importar.confirmar');
     Route::delete('/importar/{id}', [\App\Http\Controllers\Docente\ImportController::class, 'revertir'])->name('importar.revertir');
+
+    // Entrevistas de Admisión
+    Route::prefix('admision')->name('admision.')->group(function () {
+        Route::get('/', [AdmisionController::class, 'index'])->name('index');
+        Route::get('/plantilla', [AdmisionController::class, 'descargarPlantilla'])->name('plantilla');
+        Route::post('/importar', [AdmisionController::class, 'importar'])->name('importar');
+        Route::get('/{entrevista}', [AdmisionController::class, 'show'])->name('show');
+    });
 
 });

@@ -1,0 +1,535 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Apoderado;
+use App\Models\EntrevistaAdmision;
+use App\Models\Estudiante;
+use App\Models\GradoSeccion;
+use App\Models\Matricula;
+use App\Models\Role;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class EntrevistaImportService
+{
+    /**
+     * Procesa y extrae la información de una ficha de entrevista en Excel.
+     *
+     * @param UploadedFile $file
+     * @param int $docenteId
+     * @param int $anoPostula
+     * @return array
+     * @throws \Exception
+     */
+    public function importarFicha(UploadedFile $file, int $docenteId, int $anoPostula = 2027): array
+    {
+        $spreadsheet = IOFactory::load($file->getRealPath());
+        $datos = $this->extraerDiccionarioDeFicha($spreadsheet);
+
+        // Validar campo mínimo requerido: DNI del estudiante
+        $dniEstudiante = preg_replace('/\D/', '', $datos['est_dni'] ?? '');
+        if (strlen($dniEstudiante) < 8) {
+            throw new \Exception("La ficha no contiene un D.N.I. de estudiante válido (se encontraron menos de 8 dígitos).");
+        }
+
+        $nombreCompleto = trim($datos['est_nombres'] ?? '');
+        if (empty($nombreCompleto)) {
+            throw new \Exception("El nombre y apellidos del estudiante es obligatorio en la ficha.");
+        }
+
+        // Separar nombres y apellidos
+        [$nombres, $paterno, $materno] = $this->separarNombresApellidos($nombreCompleto);
+
+        // Normalizar fecha de nacimiento
+        $fechaNacimiento = $this->parsearFecha($datos['est_fecha_nacimiento'] ?? null);
+
+        // Normalizar fecha de entrevista
+        $fechaEntrevista = $this->parsearFecha($datos['fecha_entrevista'] ?? null) ?? now()->toDateString();
+
+        // Determinar grado y nivel
+        $gradoPostula = trim($datos['grado'] ?? '1° Primaria');
+        $nivel = (stripos($gradoPostula, 'secundaria') !== false) ? 'secundaria' : 'primaria';
+
+        // Conformidad
+        $conformidadRaw = strtoupper(trim($datos['conformidad'] ?? 'CONFORME'));
+        $resultadoConformidad = (str_contains($conformidadRaw, 'NO')) ? 'NO CONFORME' : 'CONFORME';
+
+        // Recopilar respuestas completas del cuestionario (excluyendo datos básicos de personas)
+        $excluidos = [
+            'grado', 'est_nombres', 'est_fecha_nacimiento', 'est_dni',
+            'padre_nombres', 'padre_dni', 'padre_grado_estudios', 'padre_ocupacion', 'padre_domicilio', 'padre_telefono',
+            'madre_nombres', 'madre_dni', 'madre_grado_estudios', 'madre_ocupacion', 'madre_domicilio', 'madre_telefono',
+            'apoderado_nombres', 'apoderado_dni', 'apoderado_grado_estudios', 'apoderado_ocupacion', 'apoderado_domicilio', 'apoderado_telefono',
+            'conformidad', 'fecha_entrevista'
+        ];
+        $cuestionario = array_diff_key($datos, array_flip($excluidos));
+
+        // Guardar o actualizar registro de entrevista
+        $entrevista = EntrevistaAdmision::updateOrCreate(
+            [
+                'estudiante_dni' => $dniEstudiante,
+                'ano_lectivo_postula' => $anoPostula,
+            ],
+            [
+                'nivel' => $nivel,
+                'grado_postula' => $gradoPostula,
+                'estudiante_nombres' => mb_strtoupper($nombres),
+                'estudiante_apellido_paterno' => mb_strtoupper($paterno),
+                'estudiante_apellido_materno' => mb_strtoupper($materno),
+                'estudiante_fecha_nacimiento' => $fechaNacimiento,
+                'colegio_procedencia' => $datos['colegio_inicial'] ?? ($datos['vive_con'] ?? null),
+                
+                // Padre
+                'padre_dni' => preg_replace('/\D/', '', $datos['padre_dni'] ?? '') ?: null,
+                'padre_nombres' => mb_strtoupper(trim($datos['padre_nombres'] ?? '')),
+                'padre_telefono' => trim($datos['padre_telefono'] ?? ''),
+                'padre_ocupacion' => mb_strtoupper(trim($datos['padre_ocupacion'] ?? '')),
+                'padre_grado_estudios' => trim($datos['padre_grado_estudios'] ?? ''),
+                'padre_domicilio' => trim($datos['padre_domicilio'] ?? ''),
+
+                // Madre
+                'madre_dni' => preg_replace('/\D/', '', $datos['madre_dni'] ?? '') ?: null,
+                'madre_nombres' => mb_strtoupper(trim($datos['madre_nombres'] ?? '')),
+                'madre_telefono' => trim($datos['madre_telefono'] ?? ''),
+                'madre_ocupacion' => mb_strtoupper(trim($datos['madre_ocupacion'] ?? '')),
+                'madre_grado_estudios' => trim($datos['madre_grado_estudios'] ?? ''),
+                'madre_domicilio' => trim($datos['madre_domicilio'] ?? ''),
+
+                // Apoderado
+                'apoderado_dni' => preg_replace('/\D/', '', $datos['apoderado_dni'] ?? '') ?: null,
+                'apoderado_nombres' => mb_strtoupper(trim($datos['apoderado_nombres'] ?? '')),
+                'apoderado_telefono' => trim($datos['apoderado_telefono'] ?? ''),
+                'apoderado_ocupacion' => mb_strtoupper(trim($datos['apoderado_ocupacion'] ?? '')),
+                'apoderado_grado_estudios' => trim($datos['apoderado_grado_estudios'] ?? ''),
+                'apoderado_domicilio' => trim($datos['apoderado_domicilio'] ?? ''),
+                'apoderado_parentesco' => mb_strtoupper(trim($datos['patria_potestad'] ?? 'APODERADO')),
+
+                'respuestas_cuestionario' => $cuestionario,
+                'docente_entrevistador_id' => $docenteId,
+                'fecha_entrevista' => $fechaEntrevista,
+                'resultado_conformidad' => $resultadoConformidad,
+                'estado' => 'nuevo_ingresante',
+                'archivo_excel_origen' => $file->getClientOriginalName(),
+            ]
+        );
+
+        return [
+            'id' => $entrevista->id,
+            'dni' => $dniEstudiante,
+            'estudiante' => $entrevista->nombre_completo_estudiante,
+            'grado_postula' => $gradoPostula,
+            'conformidad' => $resultadoConformidad,
+        ];
+    }
+
+    /**
+     * Extrae el diccionario [codigo => respuesta] del libro de Excel.
+     * Busca primero la hoja de exportación horizontal, y si no existe, lee la columna de códigos de la hoja vertical.
+     */
+    protected function extraerDiccionarioDeFicha(Spreadsheet $spreadsheet): array
+    {
+        $diccionario = [];
+
+        // Estrategia 1: Hoja "Exportar_Ficha" o segunda hoja horizontal
+        foreach ($spreadsheet->getAllSheets() as $sheet) {
+            $sheetName = strtolower(trim($sheet->getTitle()));
+            if (str_contains($sheetName, 'export') || str_contains($sheetName, 'respuest')) {
+                $row1 = $sheet->rangeToArray('A1:BK1')[0] ?? [];
+                $row2 = $sheet->rangeToArray('A2:BK2')[0] ?? [];
+                if (!empty($row1) && !empty($row2)) {
+                    foreach ($row1 as $idx => $code) {
+                        $code = trim((string) $code);
+                        if (!empty($code)) {
+                            $diccionario[$code] = $row2[$idx] ?? '';
+                        }
+                    }
+                    if (isset($diccionario['est_dni']) || isset($diccionario['est_nombres'])) {
+                        return $diccionario;
+                    }
+                }
+            }
+        }
+
+        // Estrategia 2: Hoja principal vertical buscando columna "Código" (generalmente Columna F / 6)
+        $sheet = $spreadsheet->getActiveSheet();
+        $highestRow = $sheet->getHighestRow();
+
+        for ($r = 1; $r <= $highestRow; $r++) {
+            $codigo = trim((string) $sheet->getCell("F{$r}")->getValue());
+            $respuesta = $sheet->getCell("C{$r}")->getValue();
+
+            // Si la celda es una fórmula, obtener el valor calculado
+            if (is_string($respuesta) && str_starts_with($respuesta, '=')) {
+                $respuesta = $sheet->getCell("C{$r}")->getOldCalculatedValue() ?? '';
+            }
+
+            if (!empty($codigo) && $codigo !== 'Código' && !str_starts_with($codigo, 'ENCABEZADO')) {
+                $diccionario[$codigo] = is_string($respuesta) ? trim($respuesta) : $respuesta;
+            }
+        }
+
+        return $diccionario;
+    }
+
+    /**
+     * Separa un string de nombre completo en [nombres, apellido_paterno, apellido_materno].
+     */
+    public function separarNombresApellidos(string $completo): array
+    {
+        $completo = trim($completo);
+
+        // Si viene con formato "Apellidos, Nombres"
+        if (str_contains($completo, ',')) {
+            $partes = explode(',', $completo, 2);
+            $apellidos = trim($partes[0]);
+            $nombres = trim($partes[1]);
+            $apWords = explode(' ', preg_replace('/\s+/', ' ', $apellidos));
+            $paterno = $apWords[0] ?? '';
+            $materno = isset($apWords[1]) ? implode(' ', array_slice($apWords, 1)) : '';
+            return [$nombres, $paterno, $materno];
+        }
+
+        // Formato natural "Nombres ApellidoPaterno ApellidoMaterno"
+        $words = explode(' ', preg_replace('/\s+/', ' ', $completo));
+        $count = count($words);
+
+        if ($count === 1) {
+            return [$words[0], '', ''];
+        }
+        if ($count === 2) {
+            return [$words[0], $words[1], ''];
+        }
+        if ($count === 3) {
+            return [$words[0], $words[1], $words[2]];
+        }
+
+        // 4 o más palabras: los dos últimos son paterno y materno
+        $materno = array_pop($words);
+        $paterno = array_pop($words);
+        $nombres = implode(' ', $words);
+
+        return [$nombres, $paterno, $materno];
+    }
+
+    /**
+     * Parsea fechas en distintos formatos comunes de Excel.
+     */
+    protected function parsearFecha($valor): ?string
+    {
+        if (empty($valor)) {
+            return null;
+        }
+
+        // Si viene como número serial de fecha de Excel
+        if (is_numeric($valor) && $valor > 1000) {
+            try {
+                return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($valor))->toDateString();
+            } catch (\Exception) {}
+        }
+
+        $str = trim((string) $valor);
+        foreach (['d/m/Y', 'd-m-Y', 'Y-m-d', 'Y/m/d'] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $str)->toDateString();
+            } catch (\Exception) {}
+        }
+
+        return null;
+    }
+
+    /**
+     * Asigna sección y formaliza la matrícula de un postulante en una sola transacción segura.
+     *
+     * @param EntrevistaAdmision $entrevista
+     * @param int $gradoSeccionId
+     * @param int $anoLectivoId
+     * @return array
+     * @throws \Exception
+     */
+    public function matricularPostulante(EntrevistaAdmision $entrevista, int $gradoSeccionId, int $anoLectivoId): array
+    {
+        if ($entrevista->estado === 'matriculado') {
+            throw new \Exception("Este estudiante ya ha sido matriculado previamente.");
+        }
+
+        $gradoSeccion = GradoSeccion::with('grado', 'seccion')->findOrFail($gradoSeccionId);
+
+        return DB::transaction(function () use ($entrevista, $gradoSeccion, $anoLectivoId) {
+            $dni = $entrevista->estudiante_dni;
+
+            // 1. Crear o recuperar usuario del estudiante
+            $roleEstudianteId = Role::where('nombre', 'estudiante')->value('id');
+            $user = User::firstOrCreate(
+                ['dni' => $dni],
+                [
+                    'name' => "{$entrevista->estudiante_nombres} {$entrevista->estudiante_apellido_paterno}",
+                    'email' => $dni . '@santacruz.edu.pe',
+                    'password' => Hash::make($dni),
+                    'role_id' => $roleEstudianteId,
+                    'must_change_password' => true,
+                ]
+            );
+
+            // 2. Crear o actualizar el registro en Estudiante
+            $estudiante = Estudiante::updateOrCreate(
+                ['dni' => $dni],
+                [
+                    'user_id' => $user->id,
+                    'apellido_paterno' => $entrevista->estudiante_apellido_paterno ?: 'APELLIDO',
+                    'apellido_materno' => $entrevista->estudiante_apellido_materno ?: '',
+                    'nombres' => $entrevista->estudiante_nombres,
+                    'fecha_nacimiento' => $entrevista->estudiante_fecha_nacimiento ?: now()->subYears(6)->toDateString(),
+                    'sexo' => 'M', // Por defecto si no viene especificado
+                    'nivel' => $gradoSeccion->grado->nivel,
+                    'estado' => 'matriculado',
+                    'colegio_inicial' => $entrevista->colegio_procedencia,
+                ]
+            );
+
+            // 3. Crear Apoderados (Padre, Madre y Apoderado si aplica)
+            if (!empty($entrevista->padre_dni) || !empty($entrevista->padre_nombres)) {
+                Apoderado::updateOrCreate(
+                    [
+                        'estudiante_dni' => $dni,
+                        'parentesco' => 'PADRE'
+                    ],
+                    [
+                        'dni' => $entrevista->padre_dni,
+                        'nombres' => $entrevista->padre_nombres,
+                        'telefono' => $entrevista->padre_telefono,
+                        'direccion' => $entrevista->padre_domicilio,
+                        'es_apoderado' => false,
+                    ]
+                );
+            }
+
+            if (!empty($entrevista->madre_dni) || !empty($entrevista->madre_nombres)) {
+                Apoderado::updateOrCreate(
+                    [
+                        'estudiante_dni' => $dni,
+                        'parentesco' => 'MADRE'
+                    ],
+                    [
+                        'dni' => $entrevista->madre_dni,
+                        'nombres' => $entrevista->madre_nombres,
+                        'telefono' => $entrevista->madre_telefono,
+                        'direccion' => $entrevista->madre_domicilio,
+                        'es_apoderado' => false,
+                    ]
+                );
+            }
+
+            // Registrar Apoderado titular
+            $apoDni = $entrevista->apoderado_dni ?: ($entrevista->padre_dni ?: $entrevista->madre_dni);
+            $apoNombres = $entrevista->apoderado_nombres ?: ($entrevista->padre_nombres ?: $entrevista->madre_nombres);
+
+            if (!empty($apoDni) && !empty($apoNombres)) {
+                Apoderado::updateOrCreate(
+                    [
+                        'estudiante_dni' => $dni,
+                        'dni' => $apoDni,
+                    ],
+                    [
+                        'nombres' => $apoNombres,
+                        'telefono' => $entrevista->apoderado_telefono ?: ($entrevista->padre_telefono ?: $entrevista->madre_telefono),
+                        'direccion' => $entrevista->apoderado_domicilio ?: ($entrevista->padre_domicilio ?: $entrevista->madre_domicilio),
+                        'parentesco' => $entrevista->apoderado_parentesco ?: 'APODERADO',
+                        'es_apoderado' => true,
+                    ]
+                );
+            }
+
+            // 4. Crear la Matrícula oficial en la sección
+            $matricula = Matricula::updateOrCreate(
+                [
+                    'estudiante_id' => $estudiante->id,
+                    'ano_lectivo_id' => $anoLectivoId,
+                ],
+                [
+                    'grado_seccion_id' => $gradoSeccion->id,
+                    'estado' => 'matriculado',
+                    'tipo_matricula' => 'Regular',
+                ]
+            );
+
+            // 5. Actualizar el estado de la ficha de entrevista
+            $entrevista->update([
+                'estado' => 'matriculado',
+                'estudiante_id' => $estudiante->id,
+                'matricula_id' => $matricula->id,
+                'grado_seccion_asignada_id' => $gradoSeccion->id,
+            ]);
+
+            return [
+                'estudiante_id' => $estudiante->id,
+                'matricula_id' => $matricula->id,
+                'seccion' => "{$gradoSeccion->grado->nombre} {$gradoSeccion->seccion->nombre}",
+            ];
+        });
+    }
+
+    /**
+     * Genera dinámicamente el archivo Excel oficial (Formato 1) listo para ser descargado y llenado.
+     *
+     * @param string $nivel 'primaria' o 'secundaria'
+     * @return StreamedResponse
+     */
+    public function descargarPlantilla(string $nivel = 'primaria'): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+
+        // HOJA 1: FICHA DE ENTREVISTA
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Ficha');
+
+        // Configurar ancho de columnas
+        $sheet->getColumnDimension('A')->setWidth(6);
+        $sheet->getColumnDimension('B')->setWidth(50);
+        $sheet->getColumnDimension('C')->setWidth(35);
+        $sheet->getColumnDimension('D')->setWidth(15);
+        $sheet->getColumnDimension('E')->setWidth(40);
+        $sheet->getColumnDimension('F')->setWidth(25);
+
+        // Título Institucional
+        $sheet->setCellValue('A1', 'ENTREVISTA A PADRES DE FAMILIA – PROCESO DE MATRÍCULA 2027 – ' . strtoupper($nivel));
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(13)->getColor()->setRGB('1E40AF');
+
+        $sheet->setCellValue('A2', 'Llene la columna «Respuesta» (celeste). Una ficha por entrevista.');
+        $sheet->mergeCells('A2:F2');
+        $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(10)->getColor()->setRGB('4B5563');
+
+        // Encabezados de tabla
+        $headers = ['N°', 'Pregunta / campo', 'Respuesta', 'Estado', 'Indicación / ejemplo', 'Código'];
+        $cols = ['A', 'B', 'C', 'D', 'E', 'F'];
+        foreach ($headers as $i => $h) {
+            $sheet->setCellValue($cols[$i] . '4', $h);
+        }
+        $sheet->getStyle('A4:F4')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E40AF']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        // Campos del Formato 1
+        $campos = [
+            ['—', 'Proceso de matrícula 2027 – Grado al que postula', $nivel === 'secundaria' ? '1° Secundaria' : '1° Primaria', 'Completo', 'Elegir grado', 'grado'],
+            ['1', 'Nombre y apellidos del estudiante', '', 'Falta', 'Ej.: Lucía Fernanda Pérez Rojas', 'est_nombres'],
+            ['2', 'Fecha de nacimiento', '', 'Falta', 'dd/mm/aaaa. Ej.: 14/03/2018', 'est_fecha_nacimiento'],
+            ['2.1', 'D.N.I. del estudiante', '', 'Falta', '8 dígitos. Ej.: 71234567', 'est_dni'],
+            ['3', 'Nombres y apellidos del Padre', '', 'Falta', 'Ej.: Juan Carlos Pérez Díaz', 'padre_nombres'],
+            ['4', 'DNI del Padre', '', 'Falta', '8 dígitos. Ej.: 71234567', 'padre_dni'],
+            ['4.1', 'Grado de estudios del Padre', '', 'Falta', 'Elegir de la lista', 'padre_grado_estudios'],
+            ['5', 'Ocupación del Padre', '', 'Falta', 'Ej.: Agricultor', 'padre_ocupacion'],
+            ['6', 'Domicilio del Padre', '', 'Falta', 'Ej.: Av. Grau 123, Chulucanas', 'padre_domicilio'],
+            ['7', 'Teléfono del Padre', '', 'Falta', 'Solo números, 6 a 9 dígitos. Ej.: 987654321', 'padre_telefono'],
+            ['8', 'Nombres y apellidos de la Madre', '', 'Falta', 'Ej.: María Elena Rojas Vega', 'madre_nombres'],
+            ['9', 'DNI de la Madre', '', 'Falta', '8 dígitos. Ej.: 71234567', 'madre_dni'],
+            ['9.1', 'Grado de estudio de la Madre', '', 'Falta', 'Elegir de la lista', 'madre_grado_estudios'],
+            ['10', 'Ocupación de la Madre', '', 'Falta', 'Ej.: Comerciante', 'madre_ocupacion'],
+            ['11', 'Domicilio de la Madre', '', 'Falta', 'Ej.: Av. Grau 123, Chulucanas', 'madre_domicilio'],
+            ['12', 'Teléfono de la Madre', '', 'Falta', 'Solo números, 6 a 9 dígitos. Ej.: 987654321', 'madre_telefono'],
+            ['13', 'Nombre y apellidos del Apoderado (si corresponde)', '', '', 'Ej.: Rosa Díaz Vega', 'apoderado_nombres'],
+            ['14', 'DNI del Apoderado', '', '', '8 dígitos. Ej.: 71234567', 'apoderado_dni'],
+            ['14.1', 'Grado de estudio del Apoderado', '', '', 'Elegir de la lista', 'apoderado_grado_estudios'],
+            ['15', 'Ocupación del Apoderado', '', '', 'Ej.: Docente', 'apoderado_ocupacion'],
+            ['16', 'Domicilio del Apoderado', '', '', 'Ej.: Jr. Lima 456, Chulucanas', 'apoderado_domicilio'],
+            ['17', 'Teléfono del Apoderado', '', '', 'Solo números, 6 a 9 dígitos. Ej.: 987654321', 'apoderado_telefono'],
+            ['18', 'Número de hermanos del estudiante', '', 'Falta', 'Número entero (0 si no tiene)', 'num_hermanos'],
+            ['19', 'Personas con quienes vive el estudiante', '', 'Falta', 'Papá y mamá, Solo mamá, etc.', 'vive_con'],
+            ['20', '¿Tiene hermanos que estudian actualmente en la IE?', '', 'Falta', 'Sí / No', 'hermanos_en_ie'],
+            ['21', '¿Cuántos en la IE?', '', '', 'Solo si N° 20 = Sí', 'hermanos_en_ie_cantidad'],
+            ['22', 'Nombre de los hermanos en la IE', '', '', 'Separar con punto y coma (;)', 'hermanos_en_ie_nombres'],
+            ['23', 'Axiología de COMUNIÓN y FRATERNIDAD. ¿Acepta?', '', 'Falta', 'Sí / No', 'acuerdo_comunion'],
+            ['24', 'Parroquia', '', 'Falta', 'Ej.: Parroquia San Juan Bautista', 'parroquia'],
+            ['25', 'Comunidad zonal a la que pertenece', '', 'Falta', 'Ej.: Comunidad Santa Rosa', 'comunidad_zonal'],
+            ['26.1', 'Sacramento – Bautizo', '', 'Falta', 'Sí / No', 'sacramento_bautizo'],
+            ['26.2', 'Sacramento – Eucaristía', '', 'Falta', 'Sí / No', 'sacramento_eucaristia'],
+            ['27.1', '¿Considera importante la Eucaristía?', '', 'Falta', 'Sí / No', 'eucaristia_importante'],
+            ['27.2', '¿Por qué?', '', 'Falta', 'Ej.: Fortalece la fe familiar', 'eucaristia_por_que'],
+            ['27.3', '¿Qué día participa?', '', 'Falta', 'Domingo, Sábado, etc.', 'eucaristia_dia'],
+            ['28', 'Papá y Mamá ¿Casados?', '', 'Falta', 'Sí / No', 'padres_casados'],
+            ['28.1', 'Estado conyugal', '', '', 'Civil, Eclesiástico, Conviviente', 'estado_conyugal'],
+            ['29', '¿Padece alguna enfermedad?', '', 'Falta', 'Sí / No', 'enfermedad'],
+            ['30', '¿Conoce el diagnóstico?', '', '', 'Sí / No', 'conoce_diagnostico'],
+            ['31', '¿Cuál es el diagnóstico?', '', '', 'Solo si padece enfermedad', 'diagnostico_cual'],
+            ['32', '¿Quién tiene la patria potestad? (Separados)', '', '', 'Ambos, Madre, Padre, etc.', 'patria_potestad'],
+            ['33', 'Progenitor sin potestad dispuesto a participar', '', '', 'Sí / No', 'persona_dispuesta'],
+            ['34.1', 'Obligación: Reuniones de aula', '', 'Falta', 'Sí / No', 'oblig_reuniones_aula'],
+            ['34.2', 'Obligación: Atención a Padres', '', 'Falta', 'Sí / No', 'oblig_atencion_padres'],
+            ['34.3', 'Obligación: Escuela para Padres y Eucaristías', '', 'Falta', 'Sí / No', 'oblig_escuela_padres'],
+            ['34.4', 'Obligación: Conservación de mobiliario', '', 'Falta', 'Sí / No', 'oblig_conservacion'],
+            ['34.5', 'Obligación: Multa APAFA por incumplimiento', '', 'Falta', 'Sí / No', 'oblig_multa_apafa'],
+            ['35.1', 'Norma: Puntualidad (7:05 am / 2:15 pm)', '', 'Falta', 'Sí / No', 'norma_horario'],
+            ['35.2', 'Norma: Corte de cabello escolar', '', 'Falta', 'Sí / No', 'norma_corte_cabello'],
+            ['35.3', 'Norma: Cabello trenzado sin maquillaje', '', 'Falta', 'Sí / No', 'norma_cabello_trenzado'],
+            ['35.4', 'Norma: Uso de uniforme completo', '', 'Falta', 'Sí / No', 'norma_uniforme'],
+            ['36', 'Compromiso económico (Pensión S/. 40.00 mensual)', '', 'Falta', 'Sí / No', 'compromiso_pago'],
+            ['37.1', 'Autorizo comunicación por WhatsApp y llamadas', '', 'Falta', 'Sí / No', 'autoriza_comunicacion'],
+            ['37.2', 'Autorizo uso de fotos y videos pedagógicos', '', 'Falta', 'Sí / No', 'autoriza_fotos_videos'],
+            ['37.3', 'Autorizo participación en paseos y desfiles', '', 'Falta', 'Sí / No', 'autoriza_actividades'],
+            ['37.4', 'Autorizo atención médica en emergencia', '', 'Falta', 'Sí / No', 'autoriza_atencion_medica'],
+            ['37.5', 'Autorizo que el estudiante regrese solo a casa', '', 'Falta', 'Sí / No', 'autoriza_regresa_solo'],
+            ['37.6', 'Persona autorizada a recoger (si no regresa solo)', '', '', 'Nombre completo', 'recoge_nombre'],
+            ['37.7', 'DNI de la persona autorizada a recoger', '', '', '8 dígitos', 'recoge_dni'],
+            ['38', 'Estrategia de INTEGRACIÓN DE AULAS. ¿Acepta?', '', 'Falta', 'Sí / No', 'acuerdo_integracion_aulas'],
+            ['39', 'Conformidad con el proceso de admisión', 'CONFORME', 'Completo', 'CONFORME / NO CONFORME', 'conformidad'],
+            ['—', 'Fecha de entrevista', now()->format('d/m/Y'), 'Completo', 'dd/mm/aaaa', 'fecha_entrevista'],
+        ];
+
+        $row = 5;
+        foreach ($campos as $item) {
+            $sheet->setCellValue('A' . $row, $item[0]);
+            $sheet->setCellValue('B' . $row, $item[1]);
+            $sheet->setCellValue('C' . $row, $item[2]);
+            $sheet->setCellValue('D' . $row, $item[3]);
+            $sheet->setCellValue('E' . $row, $item[4]);
+            $sheet->setCellValue('F' . $row, $item[5]);
+
+            // Fondo celeste suave para columna Respuesta
+            $sheet->getStyle('C' . $row)->applyFromArray([
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E0F2FE']],
+            ]);
+
+            $row++;
+        }
+
+        // Bordes finos para la tabla
+        $sheet->getStyle('A4:F' . ($row - 1))->applyFromArray([
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'D1D5DB']]],
+        ]);
+
+        // HOJA 2: EXPORTAR (Consolidado horizontal automático)
+        $sheetExport = $spreadsheet->createSheet();
+        $sheetExport->setTitle('Exportar_Ficha');
+
+        $colLetter = 'A';
+        foreach ($campos as $idx => $item) {
+            $filaFicha = 5 + $idx;
+            $sheetExport->setCellValue($colLetter . '1', $item[5]); // Código de campo
+            $sheetExport->setCellValue($colLetter . '2', "=Ficha!C{$filaFicha}"); // Fórmula vinculada
+            $colLetter++;
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, 'Ficha_Entrevista_Admision_2027_' . ucfirst($nivel) . '.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+}
+

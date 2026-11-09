@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MensualidadController;
 use App\Http\Controllers\Admin\AnoLectivoController;
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\AdmisionController;
 
 Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->name('admin.')->group(function () {
 
@@ -79,4 +80,14 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     Route::patch('mensualidades/{mensualidad}', [MensualidadController::class, 'update'])->name('mensualidades.update');
     Route::post('mensualidades/generar', [MensualidadController::class, 'generar'])->name('mensualidades.generar');
     Route::post('mensualidades/masivo', [MensualidadController::class, 'actualizarMasivo'])->name('mensualidades.masivo');
+
+    // Admisión y Entrevistas a Padres
+    Route::prefix('admision')->name('admision.')->group(function () {
+        Route::get('/', [AdmisionController::class, 'index'])->name('index');
+        Route::get('/plantilla', [AdmisionController::class, 'descargarPlantilla'])->name('plantilla');
+        Route::post('/importar', [AdmisionController::class, 'importar'])->name('importar');
+        Route::get('/{entrevista}', [AdmisionController::class, 'show'])->name('show');
+        Route::post('/{entrevista}/matricular', [AdmisionController::class, 'matricular'])->name('matricular');
+        Route::delete('/{entrevista}', [AdmisionController::class, 'destroy'])->name('destroy');
+    });
 });
