@@ -9,7 +9,7 @@
                     <span>Admisión e Ingresantes {{ $anoPostula }}</span>
                 </h2>
                 <p class="text-sm text-gray-500 mt-1">
-                    Gestión de fichas de entrevista a padres para nuevos postulantes (Inicial a 1° Primaria y Secundaria).
+                    Gestión de fichas de entrevista a padres para nuevos postulantes (A Primaria y Secundaria).
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -27,7 +27,7 @@
                     <div x-show="open" x-cloak class="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20 py-1">
                         <a href="{{ route('admin.admision.plantilla', ['nivel' => 'primaria']) }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700">
                             <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                            Plantilla Primaria (1° Grado)
+                            Plantilla Primaria
                         </a>
                         <a href="{{ route('admin.admision.plantilla', ['nivel' => 'secundaria']) }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
@@ -229,8 +229,8 @@
                             @foreach($anosLectivos as $al)
                                 <option value="{{ $al->anio }}" {{ $anoPostula == $al->anio ? 'selected' : '' }}>{{ $al->anio }}</option>
                             @endforeach
-                            @if(!$anosLectivos->pluck('anio')->contains(2027))
-                                <option value="2027" {{ $anoPostula == 2027 ? 'selected' : '' }}>2027</option>
+                            @if(!$anosLectivos->pluck('anio')->contains($anoActual + 1))
+                                <option value="{{ $anoActual + 1 }}" {{ $anoPostula == ($anoActual + 1) ? 'selected' : '' }}>{{ $anoActual + 1 }}</option>
                             @endif
                         </select>
                     </div>
@@ -493,7 +493,7 @@
 
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Año de Postulación</label>
-                                        <input type="number" name="ano_postula" value="{{ $anoPostula ?: 2027 }}" required class="w-full text-sm rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                        <input type="number" name="ano_postula" value="{{ $anoActual }}" required class="w-full text-sm rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                                     </div>
 
                                     <div>

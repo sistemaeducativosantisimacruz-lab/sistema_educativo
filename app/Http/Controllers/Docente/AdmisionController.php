@@ -16,7 +16,8 @@ class AdmisionController extends Controller
     public function index(Request $request)
     {
         $docenteId = auth()->id();
-        $anoPostula = $request->get('ano_postula', 2027);
+        $anoActual = \App\Models\AnoLectivo::where('activo', true)->value('anio') ?? (int) date('Y');
+        $anoPostula = $request->filled('ano_postula') ? (int) $request->get('ano_postula') : $anoActual;
 
         $query = EntrevistaAdmision::with([
             'seccionAsignada.grado',
@@ -61,6 +62,7 @@ class AdmisionController extends Controller
         return view('docente.admision.index', compact(
             'entrevistas',
             'anoPostula',
+            'anoActual',
             'totalMisEntrevistas',
             'totalConformes',
             'totalNoConformes',

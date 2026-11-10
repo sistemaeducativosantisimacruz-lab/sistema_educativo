@@ -32,8 +32,12 @@ class EntrevistaImportService
      * @return array
      * @throws \Exception
      */
-    public function importarFicha(UploadedFile $file, int $docenteId, int $anoPostula = 2027): array
+    public function importarFicha(UploadedFile $file, int $docenteId, ?int $anoPostula = null): array
     {
+        if (!$anoPostula) {
+            $anoPostula = \App\Models\AnoLectivo::where('activo', true)->value('anio') ?? (int) date('Y');
+        }
+
         $spreadsheet = IOFactory::load($file->getRealPath());
         $datos = $this->extraerDiccionarioDeFicha($spreadsheet);
 

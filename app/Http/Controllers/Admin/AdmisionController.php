@@ -19,7 +19,8 @@ class AdmisionController extends Controller
      */
     public function index(Request $request)
     {
-        $anoPostula = $request->get('ano_postula', 2027);
+        $anoActual = AnoLectivo::where('activo', true)->value('anio') ?? (int) date('Y');
+        $anoPostula = $request->filled('ano_postula') ? (int) $request->get('ano_postula') : $anoActual;
 
         $query = EntrevistaAdmision::with([
             'docenteEntrevistador',
@@ -111,6 +112,7 @@ class AdmisionController extends Controller
         return view('admin.admision.index', compact(
             'entrevistas',
             'anoPostula',
+            'anoActual',
             'totalPostulantes',
             'totalConformes',
             'totalNoConformes',

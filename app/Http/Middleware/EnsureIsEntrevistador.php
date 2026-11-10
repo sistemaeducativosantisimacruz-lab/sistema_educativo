@@ -21,3 +21,4 @@ class EnsureIsEntrevistador
         return $next($request);
     }
 }
+

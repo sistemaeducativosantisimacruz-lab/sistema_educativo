@@ -326,7 +326,7 @@
 
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Año de Postulación</label>
-                                        <input type="number" name="ano_postula" value="{{ $anoPostula ?: 2027 }}" required class="w-full text-sm rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                        <input type="number" name="ano_postula" value="{{ $anoActual }}" required class="w-full text-sm rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                                     </div>
 
                                     <div>
