@@ -58,8 +58,16 @@ class EntrevistaImportService
         $fechaEntrevista = $this->parsearFecha($datos['fecha_entrevista'] ?? null) ?? now()->toDateString();
 
         // Determinar grado y nivel
-        $gradoPostula = trim($datos['grado'] ?? '1° Primaria');
-        $nivel = (stripos($gradoPostula, 'secundaria') !== false) ? 'secundaria' : 'primaria';
+        $gradoPostula = trim($datos['grado'] ?? '');
+        $esSecundaria = (stripos($gradoPostula, 'secundaria') !== false) || isset($datos['sacramento_confirmacion']);
+
+        if ($esSecundaria && !str_contains(strtolower($gradoPostula), 'secundaria')) {
+            $gradoPostula = !empty($gradoPostula) ? "{$gradoPostula} Secundaria" : "1° Secundaria";
+        } elseif (!$esSecundaria && !str_contains(strtolower($gradoPostula), 'primaria')) {
+            $gradoPostula = !empty($gradoPostula) ? "{$gradoPostula} Primaria" : "1° Primaria";
+        }
+
+        $nivel = $esSecundaria ? 'secundaria' : 'primaria';
 
         // Conformidad
         $conformidadRaw = strtoupper(trim($datos['conformidad'] ?? 'CONFORME'));
@@ -134,9 +142,9 @@ class EntrevistaImportService
     }
 
     /**
-     * Mapeo oficial de fila de la hoja Ficha a código de campo (sin depender de columna Código).
+     * Mapeo oficial de fila de la hoja Ficha a código de campo para PRIMARIA.
      */
-    public static array $mapaFilasFicha = [
+    public static array $mapaFilasFichaPrimaria = [
         7 => 'grado',
         9 => 'est_nombres',
         10 => 'est_fecha_nacimiento',
@@ -204,40 +212,119 @@ class EntrevistaImportService
     ];
 
     /**
+     * Mapeo oficial de fila de la hoja Ficha a código de campo para SECUNDARIA.
+     */
+    public static array $mapaFilasFichaSecundaria = [
+        7 => 'grado',
+        9 => 'est_nombres',
+        10 => 'est_fecha_nacimiento',
+        11 => 'est_dni',
+        12 => 'padre_nombres',
+        13 => 'padre_dni',
+        14 => 'padre_grado_estudios',
+        15 => 'padre_ocupacion',
+        16 => 'padre_domicilio',
+        17 => 'padre_telefono',
+        18 => 'madre_nombres',
+        19 => 'madre_dni',
+        20 => 'madre_grado_estudios',
+        21 => 'madre_ocupacion',
+        22 => 'madre_domicilio',
+        23 => 'madre_telefono',
+        24 => 'apoderado_nombres',
+        25 => 'apoderado_dni',
+        26 => 'apoderado_grado_estudios',
+        27 => 'apoderado_ocupacion',
+        28 => 'apoderado_domicilio',
+        29 => 'apoderado_telefono',
+        31 => 'num_hermanos',
+        32 => 'vive_con',
+        33 => 'hermanos_en_ie',
+        34 => 'hermanos_en_ie_cantidad',
+        35 => 'hermanos_en_ie_nombres',
+        36 => 'acuerdo_comunion',
+        38 => 'parroquia',
+        39 => 'comunidad_zonal',
+        40 => 'sacramento_bautizo',
+        41 => 'sacramento_eucaristia',
+        42 => 'sacramento_confirmacion',
+        43 => 'eucaristia_importante',
+        44 => 'eucaristia_por_que',
+        45 => 'eucaristia_dia',
+        47 => 'padres_casados',
+        48 => 'estado_conyugal',
+        49 => 'enfermedad',
+        50 => 'conoce_diagnostico',
+        51 => 'diagnostico_cual',
+        53 => 'patria_potestad',
+        54 => 'persona_dispuesta',
+        57 => 'oblig_reuniones_aula',
+        58 => 'oblig_atencion_padres',
+        59 => 'oblig_escuela_padres',
+        60 => 'oblig_conservacion',
+        61 => 'oblig_actividades_ie',
+        62 => 'oblig_multa_apafa',
+        64 => 'norma_horario',
+        65 => 'norma_corte_cabello',
+        66 => 'norma_cabello_trenzado',
+        67 => 'norma_uniforme',
+        68 => 'norma_asistencia',
+        70 => 'compromiso_pago',
+        72 => 'autoriza_comunicacion',
+        73 => 'autoriza_fotos_videos',
+        74 => 'autoriza_actividades',
+        75 => 'autoriza_atencion_medica',
+        76 => 'autoriza_regresa_solo',
+        77 => 'recoge_nombre',
+        78 => 'recoge_dni',
+        79 => 'acuerdo_integracion_aulas',
+        81 => 'conformidad',
+        82 => 'fecha_entrevista',
+    ];
+
+    /**
      * Extrae el diccionario [codigo => respuesta] del libro de Excel.
-     * Soporta lectura directa por número de fila de la hoja «Ficha» (sin columna Código),
-     * hoja de exportación horizontal, y columna F de archivos anteriores.
+     * Soporta lectura directa por número de fila de la hoja «Ficha» (tanto Primaria como Secundaria),
+     * hoja de exportación horizontal, y columna F de archivos de trabajo.
      */
     protected function extraerDiccionarioDeFicha(Spreadsheet $spreadsheet): array
     {
         $diccionario = [];
 
-        // Estrategia 1: Lectura directa de la hoja «Ficha» por número de fila oficial
+        // Estrategia 1: Lectura directa de la hoja «Ficha» por número de fila según nivel
         $sheetFicha = $spreadsheet->getSheetByName('Ficha') ?? $spreadsheet->getActiveSheet();
         if ($sheetFicha) {
             $posibleDni = preg_replace('/\D/', '', (string)$sheetFicha->getCell('C11')->getValue());
             $posibleNombre = trim((string)$sheetFicha->getCell('C9')->getValue());
 
             if (strlen($posibleDni) >= 8 || !empty($posibleNombre)) {
-                foreach (self::$mapaFilasFicha as $fila => $codigo) {
+                // Detectar si la ficha corresponde a secundaria
+                $textoEncabezado = (string)$sheetFicha->getCell('A1')->getValue() . ' ' . (string)$sheetFicha->getCell('B7')->getValue();
+                $esSecundaria = (stripos($textoEncabezado, 'secundaria') !== false);
+
+                $mapaFilas = $esSecundaria ? self::$mapaFilasFichaSecundaria : self::$mapaFilasFichaPrimaria;
+
+                foreach ($mapaFilas as $fila => $codigo) {
                     $val = $sheetFicha->getCell("C{$fila}")->getValue();
                     if (is_string($val) && str_starts_with($val, '=')) {
                         $val = $sheetFicha->getCell("C{$fila}")->getOldCalculatedValue() ?? '';
                     }
                     $diccionario[$codigo] = is_string($val) ? trim($val) : $val;
                 }
+
                 if (!empty($diccionario['est_dni']) || !empty($diccionario['est_nombres'])) {
                     return $diccionario;
                 }
             }
         }
 
-        // Estrategia 2: Hoja "Exportar_Ficha" o segunda hoja horizontal
+        // Estrategia 2: Hoja "Exportar_Ficha", "Exportación" o similar
         foreach ($spreadsheet->getAllSheets() as $sheet) {
             $sheetName = strtolower(trim($sheet->getTitle()));
             if (str_contains($sheetName, 'export') || str_contains($sheetName, 'respuest')) {
-                $row1 = $sheet->rangeToArray('A1:BK1')[0] ?? [];
-                $row2 = $sheet->rangeToArray('A2:BK2')[0] ?? [];
+                $maxCol = $sheet->getHighestColumn();
+                $row1 = $sheet->rangeToArray("A1:{$maxCol}1")[0] ?? [];
+                $row2 = $sheet->rangeToArray("A2:{$maxCol}2")[0] ?? [];
                 if (!empty($row1) && !empty($row2)) {
                     foreach ($row1 as $idx => $code) {
                         $code = trim((string) $code);

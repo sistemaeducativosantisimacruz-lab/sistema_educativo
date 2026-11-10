@@ -519,4 +519,66 @@ class EntrevistasAdmisionTest extends TestCase
             @unlink($tempFile);
         }
     }
+
+    public function test_descarga_plantilla_secundaria_retorna_stream_valido(): void
+    {
+        $response = $this->actingAs($this->adminUser)->get(route('admin.admision.plantilla', ['nivel' => 'secundaria']));
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('Ficha_Entrevista_Admision_2027_Secundaria.xlsx', $response->headers->get('content-disposition'));
+    }
+
+    public function test_importacion_ficha_secundaria_guarda_cuestionario_completo(): void
+    {
+        $templatePath = resource_path('templates/plantilla_entrevista_secundaria_2027.xlsx');
+        if (!file_exists($templatePath)) {
+            $this->markTestSkipped('Plantilla de secundaria no encontrada.');
+        }
+
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($templatePath);
+        $sheet = $spreadsheet->getSheetByName('Ficha');
+
+        // Llenar datos de prueba para Secundaria (sin columna F, solo columna C)
+        $sheet->setCellValue('C7', '1° Secundaria');
+        $sheet->setCellValue('C9', 'NAVARRO CASTILLO, MATIAS ADRIAN');
+        $sheet->setCellValue('C10', '2014-07-22');
+        $sheet->setCellValue('C11', '72345678');
+        $sheet->setCellValue('C12', 'PEDRO NAVARRO');
+        $sheet->setCellValue('C13', '42345678');
+        $sheet->setCellValue('C17', '976543210');
+        $sheet->setCellValue('C18', 'LUCIA CASTILLO');
+        $sheet->setCellValue('C19', '42345679');
+        $sheet->setCellValue('C42', 'Sí'); // sacramento_confirmacion (exclusivo de secundaria)
+        $sheet->setCellValue('C70', 'Sí'); // compromiso pago S/ 50.00
+        $sheet->setCellValue('C81', 'CONFORME');
+        $sheet->setCellValue('C82', '2026-11-20');
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_sec_') . '.xlsx';
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($tempFile);
+
+        $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $tempFile,
+            'Ficha_Entrevista_Padres_Secundaria_2027.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
+
+        $service = new EntrevistaImportService();
+        $resultado = $service->importarFicha($uploadedFile, $this->docenteUser1->id, 2027);
+
+        $this->assertEquals('72345678', $resultado['dni']);
+        $this->assertEquals('CONFORME', $resultado['conformidad']);
+
+        $entrevista = EntrevistaAdmision::findOrFail($resultado['id']);
+        $this->assertEquals('secundaria', $entrevista->nivel);
+        $this->assertStringContainsString('Secundaria', $entrevista->grado_postula);
+        $this->assertArrayHasKey('sacramento_confirmacion', $entrevista->respuestas_cuestionario);
+        $this->assertEquals('Sí', $entrevista->respuestas_cuestionario['sacramento_confirmacion']);
+
+        if (file_exists($tempFile)) {
+            @unlink($tempFile);
+        }
+    }
 }
