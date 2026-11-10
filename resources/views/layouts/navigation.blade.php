@@ -23,14 +23,16 @@
 
                     <!-- DOCENTE -->
                     @if(auth()->user()->role?->nombre === 'docente')
-                        <x-nav-link :href="route('docente.admision.index')" :active="request()->routeIs('docente.admision.*')">
-                            <span class="inline-flex items-center gap-1.5">
-                                {{ __('Admisión') }}
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                                    2027
+                        @if(auth()->user()->esEntrevistador())
+                            <x-nav-link :href="route('docente.admision.index')" :active="request()->routeIs('docente.admision.*')">
+                                <span class="inline-flex items-center gap-1.5">
+                                    {{ __('Admisión') }}
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                                        2027
+                                    </span>
                                 </span>
-                            </span>
-                        </x-nav-link>
+                            </x-nav-link>
+                        @endif
                         <x-nav-link :href="route('docente.secciones')" :active="request()->routeIs('docente.secciones')">
                             {{ __('Secciones a cargo') }}
                         </x-nav-link>
@@ -208,9 +210,14 @@
             @endif
 
             @if(auth()->user()->role?->nombre === 'docente')
-                <x-responsive-nav-link :href="route('docente.admision.index')" :active="request()->routeIs('docente.admision.*')">
-                    {{ __('Admisión 2027') }}
-                </x-responsive-nav-link>
+                @if(auth()->user()->esEntrevistador())
+                    <x-responsive-nav-link :href="route('docente.admision.index')" :active="request()->routeIs('docente.admision.*')">
+                        <span class="flex items-center justify-between">
+                            <span>{{ __('Admisión') }}</span>
+                            <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-indigo-100 text-indigo-700">2027</span>
+                        </span>
+                    </x-responsive-nav-link>
+                @endif
                 <x-responsive-nav-link :href="route('docente.secciones')" :active="request()->routeIs('docente.secciones')">
                     {{ __('Secciones a cargo') }}
                 </x-responsive-nav-link>

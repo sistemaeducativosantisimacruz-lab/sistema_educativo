@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AnoLectivo;
+use App\Models\Docente;
 use App\Models\EntrevistaAdmision;
 use App\Models\GradoSeccion;
 use App\Models\User;
@@ -101,6 +102,12 @@ class AdmisionController extends Controller
             ->orderBy('grado_postula')
             ->pluck('grado_postula');
 
+        $docentesParaAsignar = Docente::with('user')
+            ->orderBy('apellido_paterno')
+            ->orderBy('apellido_materno')
+            ->orderBy('nombres')
+            ->get();
+
         return view('admin.admision.index', compact(
             'entrevistas',
             'anoPostula',
@@ -113,6 +120,7 @@ class AdmisionController extends Controller
             'anoActivo',
             'gradoSecciones',
             'docentes',
+            'docentesParaAsignar',
             'gradosPostulaDisponibles'
         ));
     }
@@ -221,6 +229,32 @@ class AdmisionController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Error al procesar la matrícula: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Alterna la asignación del rol de entrevistador para un docente.
+     */
+    public function toggleEntrevistador(Request $request, Docente $docente)
+    {
+        $docente->update([
+            'es_entrevistador' => !$docente->es_entrevistador,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'docente_id' => $docente->id,
+                'es_entrevistador' => (bool) $docente->es_entrevistador,
+                'nombre' => $docente->nombre_completo,
+                'mensaje' => $docente->es_entrevistador
+                    ? "Rol de entrevistador asignado a {$docente->nombre_completo}."
+                    : "Rol de entrevistador revocado a {$docente->nombre_completo}.",
+            ]);
+        }
+
+        return back()->with('success', $docente->es_entrevistador
+            ? "Rol de entrevistador asignado a {$docente->nombre_completo}."
+            : "Rol de entrevistador revocado a {$docente->nombre_completo}.");
     }
 
     /**

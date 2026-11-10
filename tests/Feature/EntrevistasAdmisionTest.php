@@ -62,6 +62,7 @@ class EntrevistasAdmisionTest extends TestCase
             $table->string('apellido_paterno')->nullable();
             $table->string('apellido_materno')->nullable();
             $table->string('nombres')->nullable();
+            $table->boolean('es_entrevistador')->default(false);
             $table->timestamps();
         });
 
@@ -211,6 +212,7 @@ class EntrevistasAdmisionTest extends TestCase
             'nombres' => 'María',
             'apellido_paterno' => 'Entrevistadora',
             'dni' => '20000001',
+            'es_entrevistador' => true,
         ]);
 
         $this->docenteUser2 = User::create([
@@ -226,6 +228,7 @@ class EntrevistasAdmisionTest extends TestCase
             'nombres' => 'Carlos',
             'apellido_paterno' => 'Entrevistador',
             'dni' => '20000002',
+            'es_entrevistador' => true,
         ]);
 
         $this->anoLectivo = AnoLectivo::create([
@@ -580,5 +583,56 @@ class EntrevistasAdmisionTest extends TestCase
         if (file_exists($tempFile)) {
             @unlink($tempFile);
         }
+    }
+
+    public function test_docente_sin_rol_entrevistador_recibe_403(): void
+    {
+        $roleDocente = Role::where('nombre', 'docente')->first();
+        $docenteSinRol = User::create([
+            'name' => 'Prof. Juan Regular',
+            'email' => 'juan@santacruz.edu.pe',
+            'dni' => '20000099',
+            'password' => bcrypt('password'),
+            'role_id' => $roleDocente->id,
+            'must_change_password' => false,
+        ]);
+        Docente::create([
+            'user_id' => $docenteSinRol->id,
+            'nombres' => 'Juan',
+            'apellido_paterno' => 'Regular',
+            'dni' => '20000099',
+            'es_entrevistador' => false,
+        ]);
+
+        $response = $this->actingAs($docenteSinRol)->get(route('docente.admision.index'));
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_puede_asignar_y_revocar_rol_entrevistador_a_docente(): void
+    {
+        $docente = Docente::where('dni', '20000001')->first();
+        $this->assertTrue((bool)$docente->es_entrevistador);
+
+        // Revocar
+        $response = $this->actingAs($this->adminUser)->postJson(route('admin.admision.docentes.toggle', $docente));
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'es_entrevistador' => false,
+        ]);
+
+        $docente->refresh();
+        $this->assertFalse((bool)$docente->es_entrevistador);
+
+        // Volver a asignar
+        $response2 = $this->actingAs($this->adminUser)->postJson(route('admin.admision.docentes.toggle', $docente));
+        $response2->assertStatus(200);
+        $response2->assertJson([
+            'success' => true,
+            'es_entrevistador' => true,
+        ]);
+
+        $docente->refresh();
+        $this->assertTrue((bool)$docente->es_entrevistador);
     }
 }

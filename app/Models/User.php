@@ -70,6 +70,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Estudiante::class);
     }
 
+    public function esEntrevistador(): bool
+    {
+        if ($this->role?->nombre === 'admin') {
+            return true;
+        }
+        return (bool) ($this->docente?->es_entrevistador);
+    }
+
     protected function name(): Attribute
     {
         return Attribute::make(

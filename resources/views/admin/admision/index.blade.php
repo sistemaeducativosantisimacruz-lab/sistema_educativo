@@ -36,6 +36,14 @@
                     </div>
                 </div>
 
+                <!-- Botón Asignar Rol de Entrevistador -->
+                <button x-data @click="window.dispatchEvent(new CustomEvent('open-entrevistadores-modal'))" type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    Asignar Rol de Entrevistador
+                </button>
+
                 <!-- Botón Subir Entrevistas -->
                 <button x-data @click="window.dispatchEvent(new CustomEvent('open-import-modal'))" type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 shadow-sm transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,6 +59,48 @@
         showImportModal: false,
         showAssignModal: false,
         showDetailModal: false,
+        showEntrevistadoresModal: false,
+        searchDocente: '',
+        docentesList: {{ json_encode($docentesParaAsignar->map(fn($d) => [
+            'id' => $d->id,
+            'dni' => $d->dni ?: '',
+            'nombre_completo' => $d->nombre_completo,
+            'nivel' => $d->nivel ?: 'General',
+            'es_entrevistador' => (bool)$d->es_entrevistador,
+            'updating' => false,
+        ])) }},
+        async toggleDocente(docente) {
+            docente.updating = true;
+            try {
+                const res = await fetch(`{{ url('admin/admision/docentes') }}/${docente.id}/toggle-entrevistador`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').getAttribute('content'),
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    docente.es_entrevistador = data.es_entrevistador;
+                }
+            } catch (e) {
+                alert('No se pudo actualizar el rol de entrevistador');
+            } finally {
+                docente.updating = false;
+            }
+        },
+        get filteredDocentes() {
+            if (!this.searchDocente.trim()) return this.docentesList;
+            const s = this.searchDocente.toLowerCase();
+            return this.docentesList.filter(d => 
+                (d.nombre_completo && d.nombre_completo.toLowerCase().includes(s)) ||
+                (d.dni && d.dni.toLowerCase().includes(s))
+            );
+        },
+        get totalEntrevistadores() {
+            return this.docentesList.filter(d => d.es_entrevistador).length;
+        },
         selectedEntrevista: null,
         openAssign(entrevista) {
             this.selectedEntrevista = entrevista;
@@ -60,7 +110,8 @@
             this.selectedEntrevista = entrevista;
             this.showDetailModal = true;
         }
-    }" @open-import-modal.window="showImportModal = true">
+    }" @open-import-modal.window="showImportModal = true"
+       @open-entrevistadores-modal.window="showEntrevistadoresModal = true">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <!-- Alertas Flash -->
@@ -644,6 +695,106 @@
                                 </div>
                             </div>
                         </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: Asignar Rol de Entrevistador a Docentes -->
+            <div x-show="showEntrevistadoresModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div x-show="showEntrevistadoresModal" @click="showEntrevistadoresModal = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                    <div x-show="showEntrevistadoresModal" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                        <div class="bg-white">
+                            <!-- Modal Header -->
+                            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                        </svg>
+                                        Asignar Rol de Entrevistador
+                                    </h3>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        Solo los docentes con este rol activo podrán ver la opción de <strong>Admisión 2027</strong> en su panel y subir fichas.
+                                    </p>
+                                </div>
+                                <button type="button" @click="showEntrevistadoresModal = false" class="text-gray-400 hover:text-gray-600 text-2xl font-light">&times;</button>
+                            </div>
+
+                            <!-- Search & Counters -->
+                            <div class="px-6 pt-4 pb-2 border-b border-gray-100 bg-white">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div class="relative flex-1">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                            </svg>
+                                        </div>
+                                        <input type="text" x-model="searchDocente" placeholder="Buscar docente por nombre o DNI..." class="w-full pl-9 text-xs rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            <span class="w-2 h-2 rounded-full bg-indigo-600 mr-1.5"></span>
+                                            <span x-text="`${totalEntrevistadores} asignados`"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Docentes List -->
+                            <div class="px-6 py-2 max-h-[55vh] overflow-y-auto divide-y divide-gray-100">
+                                <template x-for="docente in filteredDocentes" :key="docente.id">
+                                    <div class="py-3 flex items-center justify-between gap-3 hover:bg-gray-50/75 rounded-lg px-2 transition">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs" :class="docente.es_entrevistador ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-gray-100 text-gray-600'">
+                                                <span x-text="docente.nombre_completo.substring(0, 2).toUpperCase()"></span>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold text-gray-900" x-text="docente.nombre_completo"></p>
+                                                <div class="flex items-center gap-2 mt-0.5">
+                                                    <span class="text-[11px] font-mono text-gray-500" x-text="`DNI: ${docente.dni || 'Sin DNI'}`"></span>
+                                                    <span class="text-gray-300">·</span>
+                                                    <span class="text-[11px] text-gray-500 capitalize" x-text="docente.nivel"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-3">
+                                            <span x-show="docente.es_entrevistador" class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                                                Entrevistador
+                                            </span>
+                                            <span x-show="!docente.es_entrevistador" class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600">
+                                                Sin rol
+                                            </span>
+
+                                            <!-- Toggle Switch Button -->
+                                            <button type="button" @click="toggleDocente(docente)" :disabled="docente.updating" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" :class="docente.es_entrevistador ? 'bg-indigo-600' : 'bg-gray-200'">
+                                                <span class="sr-only">Asignar rol</span>
+                                                <span aria-hidden="true" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="docente.es_entrevistador ? 'translate-x-5' : 'translate-x-0'"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template x-if="filteredDocentes.length === 0">
+                                    <div class="py-8 text-center text-xs text-gray-500">
+                                        No se encontraron docentes con ese nombre o DNI.
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Modal Footer -->
+                            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                                <span class="text-[11px] text-gray-500">
+                                    Los cambios se guardan automáticamente al activar el interruptor.
+                                </span>
+                                <button type="button" @click="showEntrevistadoresModal = false" class="px-4 py-2 bg-gray-800 text-white rounded-lg text-xs font-semibold hover:bg-gray-700 transition">
+                                    Listo
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

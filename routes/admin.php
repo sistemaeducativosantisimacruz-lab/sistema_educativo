@@ -86,6 +86,7 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
         Route::get('/', [AdmisionController::class, 'index'])->name('index');
         Route::get('/plantilla', [AdmisionController::class, 'descargarPlantilla'])->name('plantilla');
         Route::post('/importar', [AdmisionController::class, 'importar'])->name('importar');
+        Route::post('/docentes/{docente}/toggle-entrevistador', [AdmisionController::class, 'toggleEntrevistador'])->name('docentes.toggle');
         Route::get('/{entrevista}', [AdmisionController::class, 'show'])->name('show');
         Route::post('/{entrevista}/matricular', [AdmisionController::class, 'matricular'])->name('matricular');
         Route::delete('/{entrevista}', [AdmisionController::class, 'destroy'])->name('destroy');

@@ -23,12 +23,14 @@ class Docente extends Model
         'apellido_paterno',
         'apellido_materno',
         'nombres',
+        'es_entrevistador',
     ];
 
     protected function casts(): array
     {
         return [
             'tipo' => 'string',
+            'es_entrevistador' => 'boolean',
         ];
     }
 
@@ -71,6 +73,11 @@ class Docente extends Model
     public function plantillas(): HasMany
     {
         return $this->hasMany(PlantillaListaCotejo::class);
+    }
+
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim("{$this->apellido_paterno} {$this->apellido_materno}, {$this->nombres}");
     }
 
     /* ── Helpers ─────────────────────────────────────────── */
