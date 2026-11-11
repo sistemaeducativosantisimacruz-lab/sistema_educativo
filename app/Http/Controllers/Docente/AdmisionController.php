@@ -152,5 +152,136 @@ class AdmisionController extends Controller
 
         return view('docente.admision.show', compact('entrevista'));
     }
+
+    /**
+     * Búsqueda en vivo de estudiantes existentes (para autocompletar paso de grado o hermanos).
+     */
+    public function buscarEstudiantes(Request $request, EntrevistaImportService $service)
+    {
+        $resultados = $service->buscarEstudiantes($request->get('q', ''));
+        return response()->json($resultados);
+    }
+
+    /**
+     * Muestra el formulario para crear una entrevista en línea como docente.
+     */
+    public function create(Request $request)
+    {
+        $anoActual = \App\Models\AnoLectivo::where('activo', true)->value('anio') ?? (int) date('Y');
+        $nivel = $request->get('nivel', 'primaria');
+        $gradosPrimaria = \App\Models\Grado::where('nivel', 'primaria')->orderBy('orden')->get();
+        $gradosSecundaria = \App\Models\Grado::where('nivel', 'secundaria')->orderBy('orden')->get();
+
+        $entrevista = new EntrevistaAdmision([
+            'ano_lectivo_postula' => $anoActual,
+            'nivel' => $nivel,
+            'grado_postula' => $nivel === 'secundaria' ? '1° Secundaria' : '1° Primaria',
+            'fecha_entrevista' => now()->toDateString(),
+            'resultado_conformidad' => 'CONFORME',
+            'estado_entrevista' => 'en_progreso',
+            'docente_entrevistador_id' => auth()->id(),
+        ]);
+
+        $routeStore = route('docente.admision.guardar-en-linea');
+        $routeCerrar = route('docente.admision.cerrar', ['entrevista' => '__ID__']);
+        $routeBack = route('docente.admision.index');
+        $routeBuscarEstudiantes = route('docente.admision.buscar-estudiantes');
+        $esAdmin = false;
+
+        return view('admin.admision.form', compact(
+            'entrevista', 'anoActual', 'nivel', 'gradosPrimaria', 'gradosSecundaria',
+            'routeStore', 'routeCerrar', 'routeBack', 'routeBuscarEstudiantes', 'esAdmin'
+        ));
+    }
+
+    /**
+     * Muestra el formulario para editar o continuar una entrevista en línea.
+     */
+    public function edit(EntrevistaAdmision $entrevista)
+    {
+        if ($entrevista->docente_entrevistador_id !== auth()->id()) {
+            abort(403, 'No tiene autorización para editar esta ficha de entrevista.');
+        }
+
+        $anoActual = \App\Models\AnoLectivo::where('activo', true)->value('anio') ?? (int) date('Y');
+        $nivel = $entrevista->nivel;
+        $gradosPrimaria = \App\Models\Grado::where('nivel', 'primaria')->orderBy('orden')->get();
+        $gradosSecundaria = \App\Models\Grado::where('nivel', 'secundaria')->orderBy('orden')->get();
+
+        $routeStore = route('docente.admision.guardar-en-linea');
+        $routeCerrar = route('docente.admision.cerrar', ['entrevista' => $entrevista->id]);
+        $routeBack = route('docente.admision.index');
+        $routeBuscarEstudiantes = route('docente.admision.buscar-estudiantes');
+        $esAdmin = false;
+
+        return view('admin.admision.form', compact(
+            'entrevista', 'anoActual', 'nivel', 'gradosPrimaria', 'gradosSecundaria',
+            'routeStore', 'routeCerrar', 'routeBack', 'routeBuscarEstudiantes', 'esAdmin'
+        ));
+    }
+
+    /**
+     * Guarda el progreso (borrador / autoguardado) de la entrevista en línea.
+     */
+    public function guardarEnLinea(Request $request, EntrevistaImportService $service)
+    {
+        $docenteId = auth()->id();
+        $entrevistaId = $request->entrevista_id ? (int) $request->entrevista_id : null;
+
+        if ($entrevistaId) {
+            $existente = EntrevistaAdmision::findOrFail($entrevistaId);
+            if ($existente->docente_entrevistador_id !== $docenteId) {
+                abort(403, 'No tiene permiso para modificar esta ficha.');
+            }
+        }
+
+        try {
+            $entrevista = $service->guardarEntrevistaEnLinea($request->all(), $docenteId, $entrevistaId, 'en_progreso');
+
+            return response()->json([
+                'success' => true,
+                'entrevista_id' => $entrevista->id,
+                'estado_entrevista' => $entrevista->estado_entrevista,
+                'saved_at' => now()->format('H:i:s'),
+                'mensaje' => 'Progreso guardado automáticamente.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al guardar progreso: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Registra y cierra definitivamente la entrevista en línea.
+     */
+    public function cerrarEntrevista(Request $request, EntrevistaAdmision $entrevista, EntrevistaImportService $service)
+    {
+        $docenteId = auth()->id();
+        if ($entrevista->docente_entrevistador_id !== $docenteId) {
+            abort(403, 'No tiene permiso para cerrar esta ficha.');
+        }
+
+        try {
+            $entrevista = $service->guardarEntrevistaEnLinea($request->all(), $docenteId, $entrevista->id, 'completada');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'redirect' => route('docente.admision.index', ['ano_postula' => $entrevista->ano_lectivo_postula]),
+                    'mensaje' => "¡Entrevista de {$entrevista->nombre_completo_estudiante} registrada y cerrada exitosamente!",
+                ]);
+            }
+
+            return redirect()->route('docente.admision.index', ['ano_postula' => $entrevista->ano_lectivo_postula])
+                ->with('success', "¡Entrevista de {$entrevista->nombre_completo_estudiante} registrada y cerrada exitosamente!");
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'mensaje' => $e->getMessage()], 422);
+            }
+            return back()->with('error', 'Error al cerrar entrevista: ' . $e->getMessage());
+        }
+    }
 }
 

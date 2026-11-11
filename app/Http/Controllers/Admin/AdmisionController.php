@@ -260,6 +260,125 @@ class AdmisionController extends Controller
     }
 
     /**
+     * Búsqueda en vivo de estudiantes existentes (para autocompletar paso de grado o hermanos).
+     */
+    public function buscarEstudiantes(Request $request, EntrevistaImportService $service)
+    {
+        $resultados = $service->buscarEstudiantes($request->get('q', ''));
+        return response()->json($resultados);
+    }
+
+    /**
+     * Muestra el formulario para crear una entrevista en línea.
+     */
+    public function create(Request $request)
+    {
+        $anoActual = AnoLectivo::where('activo', true)->value('anio') ?? (int) date('Y');
+        $nivel = $request->get('nivel', 'primaria');
+        $gradosPrimaria = \App\Models\Grado::where('nivel', 'primaria')->orderBy('orden')->get();
+        $gradosSecundaria = \App\Models\Grado::where('nivel', 'secundaria')->orderBy('orden')->get();
+        $docentes = User::whereHas('role', fn ($q) => $q->where('nombre', 'docente'))->orderBy('name')->get();
+
+        $entrevista = new EntrevistaAdmision([
+            'ano_lectivo_postula' => $anoActual,
+            'nivel' => $nivel,
+            'grado_postula' => $nivel === 'secundaria' ? '1° Secundaria' : '1° Primaria',
+            'fecha_entrevista' => now()->toDateString(),
+            'resultado_conformidad' => 'CONFORME',
+            'estado_entrevista' => 'en_progreso',
+            'docente_entrevistador_id' => auth()->id(),
+        ]);
+
+        $routeStore = route('admin.admision.guardar-en-linea');
+        $routeCerrar = route('admin.admision.cerrar', ['entrevista' => '__ID__']);
+        $routeBack = route('admin.admision.index');
+        $routeBuscarEstudiantes = route('admin.admision.buscar-estudiantes');
+        $esAdmin = true;
+
+        return view('admin.admision.form', compact(
+            'entrevista', 'anoActual', 'nivel', 'gradosPrimaria', 'gradosSecundaria',
+            'docentes', 'routeStore', 'routeCerrar', 'routeBack', 'routeBuscarEstudiantes', 'esAdmin'
+        ));
+    }
+
+    /**
+     * Muestra el formulario para editar o continuar una entrevista en línea.
+     */
+    public function edit(EntrevistaAdmision $entrevista)
+    {
+        $anoActual = AnoLectivo::where('activo', true)->value('anio') ?? (int) date('Y');
+        $nivel = $entrevista->nivel;
+        $gradosPrimaria = \App\Models\Grado::where('nivel', 'primaria')->orderBy('orden')->get();
+        $gradosSecundaria = \App\Models\Grado::where('nivel', 'secundaria')->orderBy('orden')->get();
+        $docentes = User::whereHas('role', fn ($q) => $q->where('nombre', 'docente'))->orderBy('name')->get();
+
+        $routeStore = route('admin.admision.guardar-en-linea');
+        $routeCerrar = route('admin.admision.cerrar', ['entrevista' => $entrevista->id]);
+        $routeBack = route('admin.admision.index');
+        $routeBuscarEstudiantes = route('admin.admision.buscar-estudiantes');
+        $esAdmin = true;
+
+        return view('admin.admision.form', compact(
+            'entrevista', 'anoActual', 'nivel', 'gradosPrimaria', 'gradosSecundaria',
+            'docentes', 'routeStore', 'routeCerrar', 'routeBack', 'routeBuscarEstudiantes', 'esAdmin'
+        ));
+    }
+
+    /**
+     * Guarda el progreso (borrador / autoguardado) de la entrevista en línea.
+     */
+    public function guardarEnLinea(Request $request, EntrevistaImportService $service)
+    {
+        $docenteId = $request->docente_id ?: auth()->id();
+        $entrevistaId = $request->entrevista_id ? (int) $request->entrevista_id : null;
+
+        try {
+            $entrevista = $service->guardarEntrevistaEnLinea($request->all(), $docenteId, $entrevistaId, 'en_progreso');
+
+            return response()->json([
+                'success' => true,
+                'entrevista_id' => $entrevista->id,
+                'estado_entrevista' => $entrevista->estado_entrevista,
+                'saved_at' => now()->format('H:i:s'),
+                'mensaje' => 'Progreso guardado automáticamente.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al guardar progreso: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Registra y cierra definitivamente la entrevista en línea.
+     */
+    public function cerrarEntrevista(Request $request, EntrevistaAdmision $entrevista, EntrevistaImportService $service)
+    {
+        $docenteId = $request->docente_id ?: auth()->id();
+
+        try {
+            $entrevista = $service->guardarEntrevistaEnLinea($request->all(), $docenteId, $entrevista->id, 'completada');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'redirect' => route('admin.admision.index', ['ano_postula' => $entrevista->ano_lectivo_postula]),
+                    'mensaje' => "¡Entrevista de {$entrevista->nombre_completo_estudiante} registrada y cerrada exitosamente!",
+                ]);
+            }
+
+            return redirect()->route('admin.admision.index', ['ano_postula' => $entrevista->ano_lectivo_postula])
+                ->with('success', "¡Entrevista de {$entrevista->nombre_completo_estudiante} registrada y cerrada exitosamente!");
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'mensaje' => $e->getMessage()], 422);
+            }
+            return back()->with('error', 'Error al cerrar entrevista: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Elimina una ficha de entrevista (solo permitido si está en estado 'nuevo_ingresante').
      */
     public function destroy(EntrevistaAdmision $entrevista)

@@ -132,6 +132,7 @@ class EntrevistaImportService
                 'fecha_entrevista' => $fechaEntrevista,
                 'resultado_conformidad' => $resultadoConformidad,
                 'estado' => 'nuevo_ingresante',
+                'estado_entrevista' => 'completada',
                 'archivo_excel_origen' => $file->getClientOriginalName(),
             ]
         );
@@ -558,6 +559,257 @@ class EntrevistaImportService
                 'seccion' => "{$gradoSeccion->grado->nombre} {$gradoSeccion->seccion->nombre}",
             ];
         });
+    }
+
+    /**
+     * Búsqueda en vivo de estudiantes existentes (para reinscripción o hermanos en la IE).
+     */
+    public function buscarEstudiantes(string $query): array
+    {
+        $query = trim($query);
+        if (strlen($query) < 2) {
+            return [];
+        }
+
+        $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
+        $estudiantes = Estudiante::with([
+            'familiares',
+            'matriculas' => fn ($q) => $q->orderByDesc('id')->with('gradoSeccion.grado', 'gradoSeccion.seccion'),
+        ])
+        ->where(function ($q) use ($query, $likeOp) {
+            $q->where('dni', 'like', "%{$query}%")
+              ->orWhere('nombres', $likeOp, "%{$query}%")
+              ->orWhere('apellido_paterno', $likeOp, "%{$query}%")
+              ->orWhere('apellido_materno', $likeOp, "%{$query}%");
+        })
+        ->limit(10)
+        ->get();
+
+        return $estudiantes->map(function (Estudiante $estudiante) {
+            $ultimaMatricula = $estudiante->matriculas->first();
+            $ultimoGrado = $ultimaMatricula?->gradoSeccion?->grado;
+            $siguienteGrado = null;
+            if ($ultimoGrado) {
+                $siguienteGrado = \App\Models\Grado::where('orden', '>', $ultimoGrado->orden)
+                    ->orderBy('orden')
+                    ->first();
+            }
+
+            // Familiares
+            $padre = $estudiante->familiares->first(fn ($f) => in_array(strtoupper($f->parentesco ?? ''), ['PADRE', 'PAPA', 'PAPÁ']));
+            $madre = $estudiante->familiares->first(fn ($f) => in_array(strtoupper($f->parentesco ?? ''), ['MADRE', 'MAMA', 'MAMÁ']));
+            $apoderado = $estudiante->familiares->first(fn ($f) => $f->es_apoderado) ?? $estudiante->familiares->first();
+
+            return [
+                'id' => $estudiante->id,
+                'dni' => $estudiante->dni,
+                'nombres' => $estudiante->nombres,
+                'apellido_paterno' => $estudiante->apellido_paterno,
+                'apellido_materno' => $estudiante->apellido_materno,
+                'nombre_completo' => trim("{$estudiante->apellido_paterno} {$estudiante->apellido_materno}, {$estudiante->nombres}"),
+                'sexo' => $estudiante->sexo,
+                'fecha_nacimiento' => $estudiante->fecha_nacimiento?->format('Y-m-d'),
+                'nivel_actual' => $estudiante->nivel,
+                'grado_actual' => $ultimoGrado ? "{$ultimoGrado->nombre} {$ultimaMatricula->gradoSeccion->seccion?->nombre}" : null,
+                'grado_siguiente' => $siguienteGrado?->nombre ?? ($ultimoGrado?->nombre ?? '1° Primaria'),
+                'nivel_siguiente' => $siguienteGrado?->nivel ?? ($estudiante->nivel ?? 'primaria'),
+                'colegio_procedencia' => 'I.E.P. Santísima Cruz',
+                'padre' => $padre ? [
+                    'dni' => $padre->dni,
+                    'nombres' => $padre->nombre_completo,
+                    'telefono' => $padre->telefono,
+                    'domicilio' => $padre->direccion,
+                    'ocupacion' => '',
+                    'grado_estudios' => '',
+                ] : null,
+                'madre' => $madre ? [
+                    'dni' => $madre->dni,
+                    'nombres' => $madre->nombre_completo,
+                    'telefono' => $madre->telefono,
+                    'domicilio' => $madre->direccion,
+                    'ocupacion' => '',
+                    'grado_estudios' => '',
+                ] : null,
+                'apoderado' => $apoderado ? [
+                    'dni' => $apoderado->dni,
+                    'nombres' => $apoderado->nombre_completo,
+                    'telefono' => $apoderado->telefono,
+                    'domicilio' => $apoderado->direccion,
+                    'parentesco' => $apoderado->parentesco,
+                    'ocupacion' => '',
+                    'grado_estudios' => '',
+                ] : null,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Guarda el progreso o actualiza una ficha de entrevista completada en línea.
+     */
+    public function guardarEntrevistaEnLinea(array $datos, int $docenteId, ?int $entrevistaId = null, string $estadoEntrevista = 'en_progreso'): EntrevistaAdmision
+    {
+        $dniEstudiante = preg_replace('/\D/', '', $datos['estudiante_dni'] ?? ($datos['est_dni'] ?? ''));
+        $anoPostula = (int) ($datos['ano_lectivo_postula'] ?? ($datos['ano_postula'] ?? 2026));
+        $nivel = strtolower(trim($datos['nivel'] ?? 'primaria')) === 'secundaria' ? 'secundaria' : 'primaria';
+        $gradoPostula = trim($datos['grado_postula'] ?? ($datos['grado'] ?? ($nivel === 'secundaria' ? '1° Secundaria' : '1° Primaria')));
+
+        // Género y regla condicional
+        $sexo = in_array(strtoupper(trim($datos['estudiante_sexo'] ?? '')), ['M', 'F']) ? strtoupper(trim($datos['estudiante_sexo'])) : null;
+
+        // Separar nombres si no vienen separados
+        $nombres = trim($datos['estudiante_nombres'] ?? '');
+        $paterno = trim($datos['estudiante_apellido_paterno'] ?? '');
+        $materno = trim($datos['estudiante_apellido_materno'] ?? '');
+        if (empty($paterno) && empty($materno) && !empty($nombres)) {
+            [$n, $p, $m] = $this->separarNombresApellidos($nombres);
+            $nombres = $n;
+            $paterno = $p;
+            $materno = $m;
+        }
+
+        // Hermanos en la IE
+        $hermanosDatos = is_array($datos['hermanos_datos'] ?? null) ? $datos['hermanos_datos'] : [];
+        $tieneHermanosIE = ($datos['hermanos_en_ie'] ?? 'No') === 'Sí' || !empty($hermanosDatos);
+        $cantHermanosIE = count($hermanosDatos);
+        $nombresHermanosIE = !empty($hermanosDatos)
+            ? implode(' ; ', array_map(fn ($h) => ($h['nombre'] ?? '') . (!empty($h['grado']) ? " ({$h['grado']})" : ''), $hermanosDatos))
+            : ($datos['hermanos_en_ie_nombres'] ?? '');
+
+        // Convivencia familiar (Pregunta 19): puede ser array de checks
+        $viveCon = $datos['vive_con'] ?? '';
+        if (is_array($viveCon)) {
+            $viveCon = implode(', ', array_filter($viveCon));
+        }
+
+        // Días de eucaristía (Pregunta 27.3): puede ser array de checks
+        $eucaristiaDia = $datos['eucaristia_dia'] ?? '';
+        if (is_array($eucaristiaDia)) {
+            $eucaristiaDia = implode(', ', array_filter($eucaristiaDia));
+        }
+
+        // Regla condicional de corte de cabello vs trenzas por género
+        $corteCabello = $datos['norma_corte_cabello'] ?? '';
+        $cabelloTrenzado = $datos['norma_cabello_trenzado'] ?? '';
+        if ($sexo === 'M') {
+            $cabelloTrenzado = 'No aplica';
+            if (empty($corteCabello)) $corteCabello = 'Sí';
+        } elseif ($sexo === 'F') {
+            $corteCabello = 'No aplica';
+            if (empty($cabelloTrenzado)) $cabelloTrenzado = 'Sí';
+        }
+
+        // Armar array completo de respuestas del cuestionario
+        $cuestionario = [
+            'num_hermanos' => $datos['num_hermanos'] ?? 0,
+            'vive_con' => $viveCon,
+            'hermanos_en_ie' => $tieneHermanosIE ? 'Sí' : 'No',
+            'hermanos_en_ie_cantidad' => $cantHermanosIE,
+            'hermanos_en_ie_nombres' => $nombresHermanosIE,
+            'acuerdo_comunion' => $datos['acuerdo_comunion'] ?? 'Sí',
+            'parroquia' => $datos['parroquia'] ?? '',
+            'comunidad_zonal' => $datos['comunidad_zonal'] ?? '',
+            'sacramento_bautizo' => $datos['sacramento_bautizo'] ?? 'Sí',
+            'sacramento_eucaristia' => $datos['sacramento_eucaristia'] ?? 'Sí',
+            'sacramento_confirmacion' => $datos['sacramento_confirmacion'] ?? ($nivel === 'secundaria' ? 'No' : 'No aplica'),
+            'eucaristia_importante' => $datos['eucaristia_importante'] ?? 'Sí',
+            'eucaristia_por_que' => $datos['eucaristia_por_que'] ?? '',
+            'eucaristia_dia' => $eucaristiaDia,
+            'padres_casados' => $datos['padres_casados'] ?? 'Sí',
+            'estado_conyugal' => $datos['estado_conyugal'] ?? '',
+            'enfermedad' => $datos['enfermedad'] ?? 'No',
+            'conoce_diagnostico' => $datos['conoce_diagnostico'] ?? 'No aplica',
+            'diagnostico_cual' => $datos['diagnostico_cual'] ?? '',
+            'patria_potestad' => $datos['patria_potestad'] ?? 'Ambos padres',
+            'persona_dispuesta' => $datos['persona_dispuesta'] ?? '',
+            'oblig_reuniones_aula' => $datos['oblig_reuniones_aula'] ?? 'Sí',
+            'oblig_atencion_padres' => $datos['oblig_atencion_padres'] ?? 'Sí',
+            'oblig_escuela_padres' => $datos['oblig_escuela_padres'] ?? 'Sí',
+            'oblig_conservacion' => $datos['oblig_conservacion'] ?? 'Sí',
+            'oblig_actividades_ie' => $datos['oblig_actividades_ie'] ?? 'Sí',
+            'oblig_multa_apafa' => $datos['oblig_multa_apafa'] ?? 'Sí',
+            'norma_horario' => $datos['norma_horario'] ?? 'Sí',
+            'norma_corte_cabello' => $corteCabello,
+            'norma_cabello_trenzado' => $cabelloTrenzado,
+            'norma_uniforme' => $datos['norma_uniforme'] ?? 'Sí',
+            'norma_asistencia' => $datos['norma_asistencia'] ?? 'Sí',
+            'compromiso_pago' => $datos['compromiso_pago'] ?? 'Sí',
+            'autoriza_comunicacion' => $datos['autoriza_comunicacion'] ?? 'Sí',
+            'autoriza_fotos_videos' => $datos['autoriza_fotos_videos'] ?? 'Sí',
+            'autoriza_actividades' => $datos['autoriza_actividades'] ?? 'Sí',
+            'autoriza_atencion_medica' => $datos['autoriza_atencion_medica'] ?? 'Sí',
+            'autoriza_regresa_solo' => $datos['autoriza_regresa_solo'] ?? 'No',
+            'recoge_nombre' => $datos['recoge_nombre'] ?? '',
+            'recoge_dni' => $datos['recoge_dni'] ?? '',
+            'acuerdo_integracion_aulas' => $datos['acuerdo_integracion_aulas'] ?? 'Sí',
+        ];
+
+        $payload = [
+            'ano_lectivo_postula' => $anoPostula,
+            'nivel' => $nivel,
+            'grado_postula' => $gradoPostula,
+            'estudiante_dni' => $dniEstudiante ?: ($entrevistaId ? null : 'BORRADOR-' . time()),
+            'estudiante_nombres' => mb_strtoupper($nombres),
+            'estudiante_apellido_paterno' => mb_strtoupper($paterno),
+            'estudiante_apellido_materno' => mb_strtoupper($materno),
+            'estudiante_sexo' => $sexo,
+            'estudiante_fecha_nacimiento' => $this->parsearFecha($datos['estudiante_fecha_nacimiento'] ?? null),
+            'colegio_procedencia' => $datos['colegio_procedencia'] ?? null,
+
+            // Padre
+            'padre_dni' => preg_replace('/\D/', '', $datos['padre_dni'] ?? '') ?: null,
+            'padre_nombres' => mb_strtoupper(trim($datos['padre_nombres'] ?? '')),
+            'padre_telefono' => trim($datos['padre_telefono'] ?? ''),
+            'padre_ocupacion' => mb_strtoupper(trim($datos['padre_ocupacion'] ?? '')),
+            'padre_grado_estudios' => trim($datos['padre_grado_estudios'] ?? ''),
+            'padre_domicilio' => trim($datos['padre_domicilio'] ?? ''),
+
+            // Madre
+            'madre_dni' => preg_replace('/\D/', '', $datos['madre_dni'] ?? '') ?: null,
+            'madre_nombres' => mb_strtoupper(trim($datos['madre_nombres'] ?? '')),
+            'madre_telefono' => trim($datos['madre_telefono'] ?? ''),
+            'madre_ocupacion' => mb_strtoupper(trim($datos['madre_ocupacion'] ?? '')),
+            'madre_grado_estudios' => trim($datos['madre_grado_estudios'] ?? ''),
+            'madre_domicilio' => trim($datos['madre_domicilio'] ?? ''),
+
+            // Apoderado
+            'apoderado_dni' => preg_replace('/\D/', '', $datos['apoderado_dni'] ?? '') ?: null,
+            'apoderado_nombres' => mb_strtoupper(trim($datos['apoderado_nombres'] ?? '')),
+            'apoderado_telefono' => trim($datos['apoderado_telefono'] ?? ''),
+            'apoderado_ocupacion' => mb_strtoupper(trim($datos['apoderado_ocupacion'] ?? '')),
+            'apoderado_grado_estudios' => trim($datos['apoderado_grado_estudios'] ?? ''),
+            'apoderado_domicilio' => trim($datos['apoderado_domicilio'] ?? ''),
+            'apoderado_parentesco' => mb_strtoupper(trim($datos['apoderado_parentesco'] ?? 'APODERADO')),
+
+            'respuestas_cuestionario' => $cuestionario,
+            'hermanos_datos' => $hermanosDatos,
+            'docente_entrevistador_id' => $docenteId,
+            'fecha_entrevista' => $this->parsearFecha($datos['fecha_entrevista'] ?? null) ?? now()->toDateString(),
+            'resultado_conformidad' => strtoupper(trim($datos['resultado_conformidad'] ?? 'CONFORME')),
+            'estado_entrevista' => $estadoEntrevista,
+            'observaciones' => $datos['observaciones'] ?? null,
+        ];
+
+        if ($entrevistaId) {
+            $entrevista = EntrevistaAdmision::findOrFail($entrevistaId);
+            if (empty($dniEstudiante)) {
+                unset($payload['estudiante_dni']);
+            }
+            $entrevista->update($payload);
+            return $entrevista;
+        }
+
+        if (strlen($dniEstudiante) >= 8) {
+            $entrevista = EntrevistaAdmision::firstOrNew([
+                'estudiante_dni' => $dniEstudiante,
+                'ano_lectivo_postula' => $anoPostula,
+            ]);
+            $entrevista->fill($payload);
+            $entrevista->save();
+            return $entrevista;
+        }
+
+        return EntrevistaAdmision::create($payload);
     }
 
     /**

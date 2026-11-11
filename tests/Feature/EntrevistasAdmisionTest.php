@@ -151,6 +151,7 @@ class EntrevistasAdmisionTest extends TestCase
             $table->string('estudiante_nombres', 100);
             $table->string('estudiante_apellido_paterno', 100)->nullable();
             $table->string('estudiante_apellido_materno', 100)->nullable();
+            $table->char('estudiante_sexo', 1)->nullable();
             $table->date('estudiante_fecha_nacimiento')->nullable();
             $table->string('colegio_procedencia', 150)->nullable();
             $table->string('padre_dni', 15)->nullable();
@@ -173,10 +174,12 @@ class EntrevistasAdmisionTest extends TestCase
             $table->text('apoderado_domicilio')->nullable();
             $table->string('apoderado_parentesco', 50)->nullable();
             $table->json('respuestas_cuestionario')->nullable();
+            $table->json('hermanos_datos')->nullable();
             $table->foreignId('docente_entrevistador_id')->nullable();
             $table->date('fecha_entrevista')->nullable();
             $table->string('resultado_conformidad', 50)->default('CONFORME');
             $table->string('estado', 30)->default('nuevo_ingresante');
+            $table->string('estado_entrevista', 30)->default('completada');
             $table->text('observaciones')->nullable();
             $table->foreignId('estudiante_id')->nullable();
             $table->foreignId('matricula_id')->nullable();
@@ -634,5 +637,126 @@ class EntrevistasAdmisionTest extends TestCase
 
         $docente->refresh();
         $this->assertTrue((bool)$docente->es_entrevistador);
+    }
+
+    public function test_buscar_estudiantes_retorna_datos_y_siguiente_grado(): void
+    {
+        $grado2 = Grado::create([
+            'nombre' => '2° Primaria',
+            'nivel' => 'primaria',
+            'orden' => 2,
+        ]);
+
+        $estudiante = Estudiante::create([
+            'dni' => '71112233',
+            'nombres' => 'Alejandro',
+            'apellido_paterno' => 'Castillo',
+            'apellido_materno' => 'Navarro',
+            'fecha_nacimiento' => '2018-04-10',
+            'sexo' => 'M',
+            'nivel' => 'primaria',
+            'estado' => 'matriculado',
+        ]);
+
+        $seccion1 = GradoSeccion::first();
+        Matricula::create([
+            'estudiante_id' => $estudiante->id,
+            'grado_seccion_id' => $seccion1->id,
+            'ano_lectivo_id' => 1,
+            'estado' => 'matriculado',
+        ]);
+
+        $response = $this->actingAs($this->adminUser)->getJson(route('admin.admision.buscar-estudiantes', ['q' => 'Castillo']));
+        $response->assertStatus(200);
+        $data = $response->json();
+        $this->assertNotEmpty($data);
+        $this->assertEquals('71112233', $data[0]['dni']);
+        $this->assertEquals('M', $data[0]['sexo']);
+        $this->assertEquals('2° Primaria', $data[0]['grado_siguiente']);
+    }
+
+    public function test_guardar_progreso_en_linea_aplica_regla_de_genero_y_multichecks(): void
+    {
+        $payload = [
+            'estudiante_dni' => '79998877',
+            'estudiante_nombres' => 'Lucas Mateo',
+            'estudiante_apellido_paterno' => 'Gómez',
+            'estudiante_apellido_materno' => 'Pérez',
+            'estudiante_sexo' => 'M',
+            'estudiante_fecha_nacimiento' => '2019-03-15',
+            'nivel' => 'primaria',
+            'grado_postula' => '1° Primaria',
+            'ano_lectivo_postula' => 2026,
+            'padre_nombres' => 'Carlos Gómez',
+            'padre_dni' => '10203040',
+            'vive_con' => ['Papá', 'Mamá', 'Tíos'],
+            'eucaristia_dia' => ['Sábados', 'Domingos'],
+            'hermanos_en_ie' => 'Sí',
+            'hermanos_datos' => [
+                ['dni' => '71112233', 'nombre' => 'Alejandro Castillo', 'grado' => '1ro Primaria A']
+            ],
+            'norma_corte_cabello' => 'Sí',
+            'resultado_conformidad' => 'CONFORME',
+        ];
+
+        $response = $this->actingAs($this->adminUser)->postJson(route('admin.admision.guardar-en-linea'), $payload);
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $entrevista = EntrevistaAdmision::where('estudiante_dni', '79998877')->first();
+        $this->assertNotNull($entrevista);
+        $this->assertEquals('en_progreso', $entrevista->estado_entrevista);
+        $this->assertEquals('M', $entrevista->estudiante_sexo);
+        $this->assertEquals('Papá, Mamá, Tíos', $entrevista->respuestas_cuestionario['vive_con']);
+        $this->assertEquals('Sábados, Domingos', $entrevista->respuestas_cuestionario['eucaristia_dia']);
+        // Regla: corte de cabello 'Sí', y cabello trenzado 'No aplica' para varones
+        $this->assertEquals('Sí', $entrevista->respuestas_cuestionario['norma_corte_cabello']);
+        $this->assertEquals('No aplica', $entrevista->respuestas_cuestionario['norma_cabello_trenzado']);
+        // Detalle de hermanos
+        $this->assertCount(1, $entrevista->hermanos_datos);
+    }
+
+    public function test_registrar_y_cerrar_entrevista_en_linea(): void
+    {
+        $entrevista = EntrevistaAdmision::create([
+            'ano_lectivo_postula' => 2026,
+            'nivel' => 'primaria',
+            'grado_postula' => '1° Primaria',
+            'estudiante_dni' => '78881122',
+            'estudiante_nombres' => 'Valeria',
+            'estudiante_apellido_paterno' => 'Mendoza',
+            'estudiante_apellido_materno' => 'Flores',
+            'estudiante_sexo' => 'F',
+            'estado_entrevista' => 'en_progreso',
+            'docente_entrevistador_id' => $this->docenteUser1->id,
+        ]);
+
+        $payload = [
+            'entrevista_id' => $entrevista->id,
+            'estudiante_dni' => '78881122',
+            'estudiante_nombres' => 'Valeria',
+            'estudiante_apellido_paterno' => 'Mendoza',
+            'estudiante_apellido_materno' => 'Flores',
+            'estudiante_sexo' => 'F',
+            'nivel' => 'primaria',
+            'grado_postula' => '1° Primaria',
+            'ano_lectivo_postula' => 2026,
+            'padre_nombres' => 'Juan Mendoza',
+            'resultado_conformidad' => 'CONFORME',
+            'norma_cabello_trenzado' => 'Sí',
+        ];
+
+        $response = $this->actingAs($this->docenteUser1)->postJson(
+            route('docente.admision.cerrar', $entrevista),
+            $payload
+        );
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $entrevista->refresh();
+        $this->assertEquals('completada', $entrevista->estado_entrevista);
+        // Para mujeres: cabello trenzado 'Sí', y corte escolar 'No aplica'
+        $this->assertEquals('Sí', $entrevista->respuestas_cuestionario['norma_cabello_trenzado']);
+        $this->assertEquals('No aplica', $entrevista->respuestas_cuestionario['norma_corte_cabello']);
     }
 }

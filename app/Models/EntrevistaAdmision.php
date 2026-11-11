@@ -20,6 +20,7 @@ class EntrevistaAdmision extends Model
         'estudiante_nombres',
         'estudiante_apellido_paterno',
         'estudiante_apellido_materno',
+        'estudiante_sexo',
         'estudiante_fecha_nacimiento',
         'colegio_procedencia',
         'padre_dni',
@@ -42,10 +43,12 @@ class EntrevistaAdmision extends Model
         'apoderado_domicilio',
         'apoderado_parentesco',
         'respuestas_cuestionario',
+        'hermanos_datos',
         'docente_entrevistador_id',
         'fecha_entrevista',
         'resultado_conformidad',
         'estado',
+        'estado_entrevista',
         'observaciones',
         'estudiante_id',
         'matricula_id',
@@ -59,7 +62,27 @@ class EntrevistaAdmision extends Model
             'estudiante_fecha_nacimiento' => 'date',
             'fecha_entrevista' => 'date',
             'respuestas_cuestionario' => 'array',
+            'hermanos_datos' => 'array',
         ];
+    }
+
+    public function esBorrador(): bool
+    {
+        return $this->estado_entrevista === 'en_progreso';
+    }
+
+    public function estaCompletada(): bool
+    {
+        return $this->estado_entrevista === 'completada';
+    }
+
+    public function getSexoTextoAttribute(): string
+    {
+        return match ($this->estudiante_sexo) {
+            'M' => 'Masculino',
+            'F' => 'Femenino',
+            default => 'No especificado',
+        };
     }
 
     public function docenteEntrevistador(): BelongsTo

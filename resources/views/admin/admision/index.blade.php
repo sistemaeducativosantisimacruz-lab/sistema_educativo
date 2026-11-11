@@ -36,6 +36,14 @@
                     </div>
                 </div>
 
+                <!-- Botón Llenar Entrevista en Línea -->
+                <a href="{{ route('admin.admision.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:from-emerald-700 hover:to-teal-700 shadow-md shadow-emerald-200 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Llenar Entrevista en Línea
+                </a>
+
                 <!-- Botón Asignar Rol de Entrevistador -->
                 <button x-data @click="window.dispatchEvent(new CustomEvent('open-entrevistadores-modal'))" type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
                     <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,16 +411,34 @@
                                                 </svg>
                                                 Matriculado ({{ $entrevista->seccionAsignada?->grado?->nombre }} {{ $entrevista->seccionAsignada?->seccion?->nombre }})
                                             </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                                        @elseif($entrevista->esBorrador())
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                                Nuevo Ingresante
+                                                En Progreso (Borrador)
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                Completada
                                             </span>
                                         @endif
                                     </td>
 
                                     <!-- Acciones -->
-                                    <td class="px-5 py-4 text-right space-x-2">
+                                    <td class="px-5 py-4 text-right space-x-1.5">
+                                        <!-- Continuar o Editar -->
+                                        @if($entrevista->esBorrador())
+                                            <a href="{{ route('admin.admision.edit', $entrevista) }}" class="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 shadow-sm transition" title="Continuar llenando la ficha">
+                                                ✏️ Continuar
+                                            </a>
+                                        @else
+                                            <a href="{{ route('admin.admision.edit', $entrevista) }}" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition inline-block" title="Editar Ficha">
+                                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                            </a>
+                                        @endif
+
                                         <!-- Ver Detalle -->
                                         <button type="button" @click="openDetail({{ json_encode($entrevista) }})" class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Ver Ficha y Respuestas de la Entrevista">
                                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">

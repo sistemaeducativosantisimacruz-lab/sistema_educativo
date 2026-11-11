@@ -84,6 +84,11 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     // Admisión y Entrevistas a Padres
     Route::prefix('admision')->name('admision.')->group(function () {
         Route::get('/', [AdmisionController::class, 'index'])->name('index');
+        Route::get('/buscar-estudiantes', [AdmisionController::class, 'buscarEstudiantes'])->name('buscar-estudiantes');
+        Route::get('/entrevista/crear', [AdmisionController::class, 'create'])->name('create');
+        Route::get('/entrevista/{entrevista}/editar', [AdmisionController::class, 'edit'])->name('edit');
+        Route::post('/entrevista/guardar', [AdmisionController::class, 'guardarEnLinea'])->name('guardar-en-linea');
+        Route::post('/entrevista/{entrevista}/cerrar', [AdmisionController::class, 'cerrarEntrevista'])->name('cerrar');
         Route::get('/plantilla', [AdmisionController::class, 'descargarPlantilla'])->name('plantilla');
         Route::post('/importar', [AdmisionController::class, 'importar'])->name('importar');
         Route::post('/docentes/{docente}/toggle-entrevistador', [AdmisionController::class, 'toggleEntrevistador'])->name('docentes.toggle');
