@@ -706,7 +706,8 @@
                                                 <template x-for="(valor, clave) in selectedEntrevista.respuestas_cuestionario" :key="clave">
                                                     <div class="p-3 rounded-lg border border-gray-100 bg-gray-50/75">
                                                         <span class="font-bold text-gray-600 block uppercase text-[10px]" x-text="clave.replace(/_/g, ' ')"></span>
-                                                        <span class="font-medium text-gray-900 mt-1 block" x-text="valor || 'Sin respuesta'"></span>
+                                                        <span class="font-medium text-gray-900 mt-1 block"
+                                                              x-text="Array.isArray(valor) ? valor.map(v => typeof v === 'object' ? (v.nombre + (v.parentesco ? ' ('+v.parentesco+')' : '') + (v.dni ? ' - DNI: '+v.dni : '')) : v).join(' ; ') : (valor || 'Sin respuesta')"></span>
                                                     </div>
                                                 </template>
                                             </div>

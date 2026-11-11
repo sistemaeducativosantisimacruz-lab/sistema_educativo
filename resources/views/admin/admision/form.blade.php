@@ -1019,25 +1019,126 @@
                     </div>
                 </div>
 
-                <!-- RETIRO DEL ESTUDIANTE -->
-                <div class="mt-4 pt-4 border-t-2 border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-xs font-black text-black mb-1">¿Autoriza que regrese solo a casa?</label>
-                        <select x-model="respuestas.autoriza_regresa_solo" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
-                            <option value="">-- Seleccionar --</option>
-                            <option value="No">No (Será recogido)</option>
-                            <option value="Sí">Sí (Regresa solo)</option>
-                        </select>
+                <!-- RETIRO DEL ESTUDIANTE (AUTORIZACIÓN Y LISTA DE PERSONAS) -->
+                <div class="mt-4 pt-4 border-t-2 border-gray-200 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-300">
+                        <div>
+                            <label class="block text-xs font-black text-black">
+                                37.5 ¿Autoriza que el estudiante regrese solo a casa? <span class="text-rose-600 font-black">*</span>
+                            </label>
+                            <p class="text-[11px] text-gray-700 font-bold">
+                                Si marca "No", podrá registrar a una o más personas autorizadas para recoger al estudiante al finalizar la jornada.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="setAutorizaRegresaSolo('Sí')"
+                                    :class="respuestas.autoriza_regresa_solo === 'Sí' ? 'bg-black text-white font-black border-black' : 'bg-white text-black border border-gray-400 font-bold hover:bg-gray-100'"
+                                    class="px-4 py-2 rounded-xl text-xs border-2 transition">
+                                Sí (Regresa solo)
+                            </button>
+                            <button type="button" @click="setAutorizaRegresaSolo('No')"
+                                    :class="respuestas.autoriza_regresa_solo === 'No' ? 'bg-black text-white font-black border-black' : 'bg-white text-black border border-gray-400 font-bold hover:bg-gray-100'"
+                                    class="px-4 py-2 rounded-xl text-xs border-2 transition">
+                                No (Será recogido)
+                            </button>
+                        </div>
                     </div>
-                    <div x-show="respuestas.autoriza_regresa_solo === 'No'">
-                        <label class="block text-xs font-black text-black mb-1">Nombre de quien recoge</label>
-                        <input type="text" x-model="respuestas.recoge_nombre" @input="triggerAutosave()" placeholder="Ej.: Rosa Díaz"
-                               class="w-full text-xs rounded-xl border-gray-400 font-bold text-black">
-                    </div>
-                    <div x-show="respuestas.autoriza_regresa_solo === 'No'">
-                        <label class="block text-xs font-black text-black mb-1">DNI de quien recoge</label>
-                        <input type="text" x-model="respuestas.recoge_dni" @input="triggerAutosave()" maxlength="8" placeholder="8 dígitos"
-                               class="w-full text-xs rounded-xl border-gray-400 font-mono font-bold text-black">
+
+                    <!-- PANEL DE PERSONAS AUTORIZADAS A RECOGER (CUANDO NO REGRESA SOLO) -->
+                    <div x-show="respuestas.autoriza_regresa_solo === 'No'" x-cloak class="p-4 rounded-xl bg-gray-50 border-2 border-gray-400 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-300 pb-2">
+                            <div>
+                                <h4 class="text-xs font-black text-black uppercase tracking-wider flex items-center gap-2">
+                                    <span>Personas Autorizadas a Recoger al Estudiante</span>
+                                    <span class="text-rose-600 font-black">*</span>
+                                </h4>
+                                <p class="text-[11px] text-black font-bold">
+                                    Añada a los familiares, apoderados o personas de confianza que pueden retirar al alumno (mamá, abuela, tíos, movilidad, etc.).
+                                </p>
+                            </div>
+                            <span class="text-xs font-black px-2.5 py-1 bg-black text-white rounded-lg self-start sm:self-auto"
+                                  x-text="personasRecogen.length + ' registrada(s)'"></span>
+                        </div>
+
+                        <!-- FORMULARIO RÁPIDO PARA AGREGAR PERSONA -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-white p-3 rounded-xl border-2 border-gray-300">
+                            <div class="sm:col-span-5">
+                                <label class="block text-[10px] font-black uppercase text-black mb-1">
+                                    Nombres y Apellidos Completos <span class="text-rose-600 font-black">*</span>
+                                </label>
+                                <input type="text" x-model="nuevaPersonaRecoge.nombre"
+                                       @keydown.enter.prevent="anadirPersonaRecoge()"
+                                       placeholder="Ej.: ROSA ELENA FLORES DÍAZ"
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black font-black text-black uppercase py-2 px-3">
+                            </div>
+
+                            <div class="sm:col-span-3">
+                                <label class="block text-[10px] font-black uppercase text-black mb-1">
+                                    Parentesco / Vínculo
+                                </label>
+                                <input type="text" x-model="nuevaPersonaRecoge.parentesco"
+                                       @keydown.enter.prevent="anadirPersonaRecoge()"
+                                       placeholder="Ej.: Abuela / Tío / Movilidad"
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black font-bold text-black py-2 px-3">
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <label class="block text-[10px] font-black uppercase text-black mb-1">
+                                    DNI (Opcional)
+                                </label>
+                                <input type="text" x-model="nuevaPersonaRecoge.dni" maxlength="8"
+                                       @keydown.enter.prevent="anadirPersonaRecoge()"
+                                       placeholder="8 dígitos"
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black font-mono font-bold text-black py-2 px-3">
+                            </div>
+
+                            <div class="sm:col-span-2 flex items-end">
+                                <button type="button" @click="anadirPersonaRecoge()"
+                                        class="w-full py-2 px-3 bg-black text-white rounded-lg text-xs font-black hover:bg-gray-800 transition flex items-center justify-center gap-1 shadow-sm">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    <span>+ Añadir</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TABLA DE PERSONAS REGISTRADAS -->
+                        <div class="overflow-x-auto bg-white rounded-xl border-2 border-gray-300 shadow-sm">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-gray-200 text-black uppercase font-black text-[10px] border-b border-gray-300">
+                                    <tr>
+                                        <th class="p-2.5">Nombres y Apellidos</th>
+                                        <th class="p-2.5">Parentesco / Vínculo</th>
+                                        <th class="p-2.5">DNI</th>
+                                        <th class="p-2.5 text-center w-12">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    <template x-for="(persona, idx) in personasRecogen" :key="idx">
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="p-2.5 font-black uppercase text-black" x-text="persona.nombre"></td>
+                                            <td class="p-2.5 text-black font-bold" x-text="persona.parentesco || 'Familiar'"></td>
+                                            <td class="p-2.5 font-mono font-bold text-black" x-text="persona.dni || 'S/D'"></td>
+                                            <td class="p-2.5 text-center">
+                                                <button type="button" @click="eliminarPersonaRecoge(idx)" class="text-rose-600 hover:text-rose-900 font-black p-1" title="Quitar persona autorizada">
+                                                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                    <template x-if="personasRecogen.length === 0">
+                                        <tr>
+                                            <td colspan="4" class="p-3 text-center text-rose-600 font-bold italic bg-rose-50">
+                                                Aún no ha agregado personas autorizadas a recoger al estudiante. Ingrese los datos en el recuadro superior y presione "+ Añadir".
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1397,6 +1498,14 @@
                 error: ''
             },
 
+            // Personas que recogen al estudiante (cuando autoriza_regresa_solo === 'No')
+            personasRecogen: [],
+            nuevaPersonaRecoge: {
+                nombre: '',
+                parentesco: '',
+                dni: ''
+            },
+
             // Estados de guardado
             isSaving: false,
             isClosing: false,
@@ -1431,9 +1540,71 @@
                     });
                 }
 
+                // Inicializar personas autorizadas a recoger al estudiante
+                if (Array.isArray(this.respuestas.personas_recogen) && this.respuestas.personas_recogen.length > 0) {
+                    this.personasRecogen = JSON.parse(JSON.stringify(this.respuestas.personas_recogen));
+                } else if (this.respuestas.recoge_nombre && this.respuestas.recoge_nombre.trim()) {
+                    const nombres = this.respuestas.recoge_nombre.split(';').map(s => s.trim()).filter(Boolean);
+                    const dnis = (this.respuestas.recoge_dni || '').split(';').map(s => s.trim());
+                    this.personasRecogen = nombres.map((nom, i) => ({
+                        nombre: nom,
+                        parentesco: 'FAMILIAR',
+                        dni: dnis[i] || ''
+                    }));
+                }
+
                 // Ajustar regla de corte según sexo inicial
                 if (this.estudianteSexo) {
                     this.setSexo(this.estudianteSexo, false);
+                }
+            },
+
+            setAutorizaRegresaSolo(val) {
+                this.respuestas.autoriza_regresa_solo = val;
+                this.sincronizarPersonasRecogen();
+                this.triggerAutosave();
+            },
+
+            anadirPersonaRecoge() {
+                const nombre = (this.nuevaPersonaRecoge.nombre || '').trim();
+                const parentesco = (this.nuevaPersonaRecoge.parentesco || '').trim();
+                const dni = (this.nuevaPersonaRecoge.dni || '').trim();
+
+                if (!nombre) {
+                    alert('Debe ingresar los nombres y apellidos de la persona autorizada.');
+                    return;
+                }
+
+                this.personasRecogen.push({
+                    nombre: nombre.toUpperCase(),
+                    parentesco: parentesco ? parentesco.toUpperCase() : 'FAMILIAR',
+                    dni: dni
+                });
+
+                this.nuevaPersonaRecoge = { nombre: '', parentesco: '', dni: '' };
+                this.sincronizarPersonasRecogen();
+                this.triggerAutosave();
+            },
+
+            eliminarPersonaRecoge(index) {
+                this.personasRecogen.splice(index, 1);
+                this.sincronizarPersonasRecogen();
+                this.triggerAutosave();
+            },
+
+            sincronizarPersonasRecogen() {
+                this.respuestas.personas_recogen = this.personasRecogen;
+                if (this.personasRecogen.length > 0) {
+                    this.respuestas.recoge_nombre = this.personasRecogen
+                        .map(p => p.nombre + (p.parentesco ? ` (${p.parentesco})` : ''))
+                        .join(' ; ');
+                    this.respuestas.recoge_dni = this.personasRecogen
+                        .map(p => p.dni)
+                        .filter(Boolean)
+                        .join(' ; ');
+                } else if (this.respuestas.autoriza_regresa_solo === 'Sí') {
+                    this.respuestas.recoge_nombre = '';
+                    this.respuestas.recoge_dni = '';
                 }
             },
 
@@ -1771,8 +1942,8 @@
                 }
                 if (!this.respuestas.autoriza_regresa_solo) {
                     faltantes.push('Autorización: Retiro de estudiante (¿Regresa solo?)');
-                } else if (this.respuestas.autoriza_regresa_solo === 'No' && (!this.respuestas.recoge_nombre || !this.respuestas.recoge_nombre.trim())) {
-                    faltantes.push('Nombre de la persona autorizada a recoger al estudiante');
+                } else if (this.respuestas.autoriza_regresa_solo === 'No' && this.personasRecogen.length === 0) {
+                    faltantes.push('Persona(s) autorizada(s) a recoger al estudiante (al menos una)');
                 }
 
                 return faltantes;
@@ -1848,13 +2019,15 @@
                     apoderado_parentesco: this.apoderadoParentesco,
 
                     hermanos_datos: this.hermanosDatos,
+                    personas_recogen: this.personasRecogen,
                     resultado_conformidad: this.conformidad,
                     fecha_entrevista: this.fechaEntrevista,
                     observaciones: this.observaciones,
                     estado_entrevista: estadoEntrevista,
 
                     // Cuestionario completo
-                    ...this.respuestas
+                    ...this.respuestas,
+                    personas_recogen: this.personasRecogen
                 };
             },
 

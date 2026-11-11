@@ -688,6 +688,23 @@ class EntrevistaImportService
             $eucaristiaDia = implode(', ', array_filter($eucaristiaDia));
         }
 
+        // Personas autorizadas a recoger al estudiante (cuando autoriza_regresa_solo === 'No')
+        $personasRecogen = is_array($datos['personas_recogen'] ?? null) ? $datos['personas_recogen'] : [];
+        $recogeNombre = trim($datos['recoge_nombre'] ?? '');
+        $recogeDni = trim($datos['recoge_dni'] ?? '');
+
+        if (!empty($personasRecogen)) {
+            $recogeNombre = implode(' ; ', array_filter(array_map(function ($p) {
+                $nom = trim($p['nombre'] ?? '');
+                $par = trim($p['parentesco'] ?? '');
+                return $nom ? ($nom . ($par ? " ({$par})" : '')) : '';
+            }, $personasRecogen)));
+
+            $recogeDni = implode(' ; ', array_filter(array_map(function ($p) {
+                return trim($p['dni'] ?? '');
+            }, $personasRecogen)));
+        }
+
         // Regla condicional de corte de cabello vs trenzas por género
         $corteCabello = $datos['norma_corte_cabello'] ?? '';
         $cabelloTrenzado = $datos['norma_cabello_trenzado'] ?? '';
@@ -737,8 +754,9 @@ class EntrevistaImportService
             'autoriza_actividades' => $datos['autoriza_actividades'] ?? '',
             'autoriza_atencion_medica' => $datos['autoriza_atencion_medica'] ?? '',
             'autoriza_regresa_solo' => $datos['autoriza_regresa_solo'] ?? '',
-            'recoge_nombre' => $datos['recoge_nombre'] ?? '',
-            'recoge_dni' => $datos['recoge_dni'] ?? '',
+            'personas_recogen' => $personasRecogen,
+            'recoge_nombre' => $recogeNombre,
+            'recoge_dni' => $recogeDni,
             'acuerdo_integracion_aulas' => $datos['acuerdo_integracion_aulas'] ?? '',
         ];
 
@@ -784,7 +802,11 @@ class EntrevistaImportService
                 if (empty($cuestionario['autoriza_comunicacion'])) $faltantes[] = 'Autorización: Comunicaciones WhatsApp';
                 if (empty($cuestionario['autoriza_fotos_videos'])) $faltantes[] = 'Autorización: Fotos y videos';
                 if (empty($cuestionario['autoriza_atencion_medica'])) $faltantes[] = 'Autorización: Atención médica';
-                if (empty($cuestionario['autoriza_regresa_solo'])) $faltantes[] = 'Autorización: Retiro del estudiante';
+                if (empty($cuestionario['autoriza_regresa_solo'])) {
+                    $faltantes[] = 'Autorización: Retiro del estudiante (¿Regresa solo?)';
+                } elseif ($cuestionario['autoriza_regresa_solo'] === 'No' && empty($cuestionario['recoge_nombre']) && empty($personasRecogen)) {
+                    $faltantes[] = 'Persona(s) autorizada(s) a recoger al estudiante';
+                }
 
                 if (!empty($faltantes)) {
                     throw new \Exception("No se puede dar CONFORMIDAD si aún hay campos obligatorios sin marcar: " . implode(', ', array_slice($faltantes, 0, 4)) . (count($faltantes) > 4 ? ' y otros más.' : '.'));

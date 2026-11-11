@@ -342,8 +342,13 @@
                                 </div>
 
                                 <div class="mt-4 space-y-4">
-                                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-                                        ℹ️ Las fichas que suba quedarán registradas a su nombre (<strong>{{ Auth::user()->name }}</strong>). La dirección/administración procederá con la asignación de sección y matrícula oficial.
+                                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex items-start gap-2">
+                                        <svg class="w-4 h-4 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <div>
+                                            Las fichas que suba quedarán registradas a su nombre (<strong>{{ Auth::user()->name }}</strong>). La dirección/administración procederá con la asignación de sección y matrícula oficial.
+                                        </div>
                                     </div>
 
                                     <div>
@@ -434,7 +439,8 @@
                                                 <template x-for="(valor, clave) in selectedEntrevista.respuestas_cuestionario" :key="clave">
                                                     <div class="p-3 rounded-lg border border-gray-100 bg-gray-50/75">
                                                         <span class="font-bold text-gray-600 block uppercase text-[10px]" x-text="clave.replace(/_/g, ' ')"></span>
-                                                        <span class="font-medium text-gray-900 mt-1 block" x-text="valor || 'Sin respuesta'"></span>
+                                                        <span class="font-medium text-gray-900 mt-1 block"
+                                                              x-text="Array.isArray(valor) ? valor.map(v => typeof v === 'object' ? (v.nombre + (v.parentesco ? ' ('+v.parentesco+')' : '') + (v.dni ? ' - DNI: '+v.dni : '')) : v).join(' ; ') : (valor || 'Sin respuesta')"></span>
                                                     </div>
                                                 </template>
                                             </div>

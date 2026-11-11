@@ -177,7 +177,7 @@ class EntrevistasAdmisionTest extends TestCase
             $table->json('hermanos_datos')->nullable();
             $table->foreignId('docente_entrevistador_id')->nullable();
             $table->date('fecha_entrevista')->nullable();
-            $table->string('resultado_conformidad', 50)->default('CONFORME');
+            $table->string('resultado_conformidad', 50)->nullable()->default(null);
             $table->string('estado', 30)->default('nuevo_ingresante');
             $table->string('estado_entrevista', 30)->default('completada');
             $table->text('observaciones')->nullable();
@@ -843,5 +843,46 @@ class EntrevistasAdmisionTest extends TestCase
         $this->assertNotNull($estudiante);
         $this->assertEquals('71122334', $estudiante->dni);
         $this->assertEquals('F', $estudiante->sexo);
+    }
+
+    public function test_guardar_entrevista_con_multiples_personas_autorizadas_a_recoger(): void
+    {
+        $payload = [
+            'estudiante_dni' => '79991122',
+            'estudiante_nombres' => 'Mateo',
+            'estudiante_apellido_paterno' => 'Castillo',
+            'estudiante_apellido_materno' => 'Vargas',
+            'estudiante_sexo' => 'M',
+            'nivel' => 'primaria',
+            'grado_postula' => '1° Primaria',
+            'ano_lectivo_postula' => 2026,
+            'padre_nombres' => 'Hernán Castillo',
+            'autoriza_regresa_solo' => 'No',
+            'personas_recogen' => [
+                [
+                    'nombre' => 'ROSA FLORES',
+                    'parentesco' => 'ABUELA',
+                    'dni' => '11223344'
+                ],
+                [
+                    'nombre' => 'CARLOS MENDOZA',
+                    'parentesco' => 'TÍO',
+                    'dni' => '55667788'
+                ]
+            ],
+        ];
+
+        $response = $this->actingAs($this->adminUser)->postJson(route('admin.admision.guardar-en-linea'), $payload);
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $entrevista = EntrevistaAdmision::where('estudiante_dni', '79991122')->first();
+        $this->assertNotNull($entrevista);
+        $this->assertEquals('No', $entrevista->respuestas_cuestionario['autoriza_regresa_solo']);
+        $this->assertCount(2, $entrevista->respuestas_cuestionario['personas_recogen']);
+        $this->assertStringContainsString('ROSA FLORES', $entrevista->respuestas_cuestionario['recoge_nombre']);
+        $this->assertStringContainsString('CARLOS MENDOZA', $entrevista->respuestas_cuestionario['recoge_nombre']);
+        $this->assertStringContainsString('11223344', $entrevista->respuestas_cuestionario['recoge_dni']);
+        $this->assertStringContainsString('55667788', $entrevista->respuestas_cuestionario['recoge_dni']);
     }
 }
