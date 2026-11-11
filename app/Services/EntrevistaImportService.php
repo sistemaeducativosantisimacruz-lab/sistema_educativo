@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\AnoLectivo;
 use App\Models\Apoderado;
 use App\Models\EntrevistaAdmision;
 use App\Models\Estudiante;
+use App\Models\Grado;
 use App\Models\GradoSeccion;
 use App\Models\Matricula;
 use App\Models\Role;
@@ -575,7 +577,7 @@ class EntrevistaImportService
 
         $estudiantes = Estudiante::with([
             'familiares',
-            'matriculas' => fn ($q) => $q->orderByDesc('id')->with('gradoSeccion.grado', 'gradoSeccion.seccion'),
+            'matriculas' => fn ($q) => $q->orderByDesc('id')->with('gradoSeccion.grado', 'gradoSeccion.seccion', 'anoLectivo'),
         ])
         ->where(function ($q) use ($query, $likeOp) {
             $q->where('dni', 'like', "%{$query}%")
@@ -586,7 +588,10 @@ class EntrevistaImportService
         ->limit(10)
         ->get();
 
-        return $estudiantes->map(function (Estudiante $estudiante) {
+        $anoActivo = AnoLectivo::where('activo', true)->first();
+        $anioActivo = $anoActivo ? (int) $anoActivo->anio : (int) date('Y');
+
+        return $estudiantes->map(function (Estudiante $estudiante) use ($anioActivo) {
             $ultimaMatricula = $estudiante->matriculas->first();
             $ultimoGrado = $ultimaMatricula?->gradoSeccion?->grado;
             $siguienteGrado = null;
@@ -594,6 +599,25 @@ class EntrevistaImportService
                 $siguienteGrado = \App\Models\Grado::where('orden', '>', $ultimoGrado->orden)
                     ->orderBy('orden')
                     ->first();
+            }
+
+            // Determinar año lectivo sugerido para el siguiente grado (Continuidad)
+            $anioMatricula = $ultimaMatricula?->anoLectivo?->anio;
+            $esContinuidad = false;
+            if ($ultimaMatricula) {
+                if ($anioMatricula && (int) $anioMatricula >= $anioActivo) {
+                    $anoSiguiente = (int) $anioMatricula + 1;
+                    $esContinuidad = true;
+                } elseif ($anioMatricula && (int) $anioMatricula < $anioActivo) {
+                    $anoSiguiente = (int) $anioActivo;
+                    $esContinuidad = false;
+                } else {
+                    $anoSiguiente = (int) $anioActivo + 1;
+                    $esContinuidad = true;
+                }
+            } else {
+                $anoSiguiente = (int) $anioActivo;
+                $esContinuidad = false;
             }
 
             // Familiares
@@ -614,6 +638,9 @@ class EntrevistaImportService
                 'grado_actual' => $ultimoGrado ? "{$ultimoGrado->nombre} {$ultimaMatricula->gradoSeccion->seccion?->nombre}" : null,
                 'grado_siguiente' => $siguienteGrado?->nombre ?? ($ultimoGrado?->nombre ?? '1° Primaria'),
                 'nivel_siguiente' => $siguienteGrado?->nivel ?? ($estudiante->nivel ?? 'primaria'),
+                'ano_siguiente' => $anoSiguiente,
+                'es_continuidad' => $esContinuidad,
+                'ultimo_ano' => $anioMatricula,
                 'colegio_procedencia' => 'I.E.P. Santísima Cruz',
                 'padre' => $padre ? [
                     'dni' => $padre->dni,

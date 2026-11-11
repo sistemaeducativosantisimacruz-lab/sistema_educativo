@@ -26,6 +26,7 @@
          x-data="entrevistaForm({
             entrevistaId: {{ $entrevista->id ? $entrevista->id : 'null' }},
             anoLectivo: {{ $entrevista->ano_lectivo_postula ?? $anoActual }},
+            anoActual: {{ (int) $anoActual }},
             nivel: '{{ $entrevista->nivel ?? $nivel }}',
             gradoPostula: '{{ $entrevista->grado_postula ?? ($nivel === 'secundaria' ? '1° Secundaria' : '1° Primaria') }}',
             estudianteDni: '{{ $entrevista->estudiante_dni && !str_starts_with($entrevista->estudiante_dni, 'BORRADOR') ? $entrevista->estudiante_dni : '' }}',
@@ -195,6 +196,22 @@
                             <span class="font-black text-black">Año:</span>
                             <input type="number" x-model.number="anoLectivo" @change="triggerAutosave()" class="w-16 text-xs p-0 border-0 font-black text-black focus:ring-0">
                         </div>
+
+                        <!-- ACCESOS RÁPIDOS DE AÑO LECTIVO (ACTUAL / CONTINUIDAD) -->
+                        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl border border-gray-300">
+                            <button type="button" @click="anoLectivo = {{ (int) $anoActual }}; triggerAutosave()"
+                                    :class="anoLectivo === {{ (int) $anoActual }} ? 'bg-black text-white font-black shadow-sm' : 'text-gray-700 hover:text-black font-bold'"
+                                    class="px-2.5 py-1 rounded-lg text-xs transition"
+                                    title="Para ingreso durante el año en curso">
+                                {{ $anoActual }} (Actual)
+                            </button>
+                            <button type="button" @click="anoLectivo = {{ (int) ($anoActual + 1) }}; triggerAutosave()"
+                                    :class="anoLectivo === {{ (int) ($anoActual + 1) }} ? 'bg-black text-white font-black shadow-sm' : 'text-gray-700 hover:text-black font-bold'"
+                                    class="px-2.5 py-1 rounded-lg text-xs transition"
+                                    title="Para continuidad y paso de grado al próximo año escolar">
+                                {{ $anoActual + 1 }} (Continuidad)
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -223,10 +240,17 @@
                                         class="w-full text-left p-3 hover:bg-gray-100 transition flex items-center justify-between group">
                                     <div>
                                         <div class="font-black text-xs text-black group-hover:underline" x-text="est.nombre_completo"></div>
-                                        <div class="text-[11px] text-gray-600 flex items-center gap-2 mt-0.5">
+                                        <div class="text-[11px] text-gray-600 flex flex-wrap items-center gap-2 mt-0.5">
                                             <span>DNI: <strong class="text-black font-black" x-text="est.dni"></strong></span>
                                             <span class="text-gray-400">·</span>
                                             <span>Grado actual: <strong class="text-black" x-text="est.grado_actual || 'Sin matrícula'"></strong></span>
+                                            <template x-if="est.grado_siguiente">
+                                                <span class="inline-flex items-center gap-1 text-emerald-900 font-black bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 text-[10px]">
+                                                    <span>Pasa a:</span>
+                                                    <span x-text="est.grado_siguiente"></span>
+                                                    <span x-text="'(' + (est.ano_siguiente || '{{ (int) ($anoActual + 1) }}') + ')'"></span>
+                                                </span>
+                                            </template>
                                             <span class="text-gray-400">·</span>
                                             <span class="px-2 py-0.5 rounded font-black text-[10px] border"
                                                   :class="est.sexo === 'M' ? 'bg-blue-50 text-blue-900 border-blue-300' : 'bg-pink-50 text-pink-900 border-pink-300'"
@@ -240,6 +264,21 @@
                             </template>
                         </div>
                     </div>
+
+                    <!-- BANNER DE CONFIRMACIÓN DE ESTUDIANTE CARGADO -->
+                    <template x-if="estudianteCargadoMensaje">
+                        <div class="mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between text-xs text-emerald-950 font-bold">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span x-text="estudianteCargadoMensaje"></span>
+                            </div>
+                            <button type="button" @click="estudianteCargadoMensaje = ''" class="text-emerald-800 hover:text-black font-black text-xs ml-2">
+                                ✕
+                            </button>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -1484,6 +1523,7 @@
             // Búsqueda estudiante existente
             searchEstudianteQuery: '',
             searchEstudianteResults: [],
+            estudianteCargadoMensaje: '',
 
             // Búsqueda hermano
             searchHermanoQuery: '',
@@ -1692,6 +1732,13 @@
                     if (est.nivel_siguiente) this.nivel = est.nivel_siguiente;
                 }
 
+                // ACTUALIZAR AUTOMÁTICAMENTE EL AÑO LECTIVO (CONTINUIDAD / PASO DE GRADO)
+                if (est.ano_siguiente) {
+                    this.anoLectivo = parseInt(est.ano_siguiente, 10);
+                } else if (est.es_continuidad || (est.grado_siguiente && est.grado_actual)) {
+                    this.anoLectivo = Number(config.anoActual || {{ (int) $anoActual }}) + 1;
+                }
+
                 if (est.padre) {
                     this.padreDni = est.padre.dni || this.padreDni;
                     this.padreNombres = est.padre.nombres || this.padreNombres;
@@ -1714,6 +1761,7 @@
                     this.apoderadoParentesco = est.apoderado.parentesco || this.apoderadoParentesco;
                 }
 
+                this.estudianteCargadoMensaje = `Estudiante cargado: ${est.nombre_completo} · Continuidad a ${this.gradoPostula} (${this.anoLectivo}). Datos familiares vinculados.`;
                 this.searchEstudianteResults = [];
                 this.searchEstudianteQuery = '';
                 this.triggerAutosave();

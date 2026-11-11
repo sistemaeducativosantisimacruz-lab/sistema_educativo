@@ -673,6 +673,8 @@ class EntrevistasAdmisionTest extends TestCase
         $this->assertEquals('71112233', $data[0]['dni']);
         $this->assertEquals('M', $data[0]['sexo']);
         $this->assertEquals('2° Primaria', $data[0]['grado_siguiente']);
+        $this->assertEquals(2028, $data[0]['ano_siguiente']);
+        $this->assertTrue($data[0]['es_continuidad']);
     }
 
     public function test_guardar_progreso_en_linea_aplica_regla_de_genero_y_multichecks(): void
