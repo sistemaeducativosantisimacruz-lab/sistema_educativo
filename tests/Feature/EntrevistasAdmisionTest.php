@@ -759,4 +759,32 @@ class EntrevistasAdmisionTest extends TestCase
         $this->assertEquals('Sí', $entrevista->respuestas_cuestionario['norma_cabello_trenzado']);
         $this->assertEquals('No aplica', $entrevista->respuestas_cuestionario['norma_corte_cabello']);
     }
+
+    public function test_matricular_postulante_respeta_sexo_y_promocion(): void
+    {
+        $entrevista = EntrevistaAdmision::create([
+            'ano_lectivo_postula' => 2026,
+            'nivel' => 'primaria',
+            'grado_postula' => '1° Primaria',
+            'estudiante_dni' => '71122334',
+            'estudiante_nombres' => 'Camila',
+            'estudiante_apellido_paterno' => 'Suarez',
+            'estudiante_apellido_materno' => 'Paredes',
+            'estudiante_sexo' => 'F',
+            'padre_nombres' => 'Carlos Suarez',
+            'padre_dni' => '09988771',
+            'estado_entrevista' => 'completada',
+            'resultado_conformidad' => 'CONFORME',
+            'docente_entrevistador_id' => $this->docenteUser1->id,
+        ]);
+
+        $service = app(EntrevistaImportService::class);
+        $result = $service->matricularPostulante($entrevista, $this->gradoSeccion->id, $this->anoLectivo->id);
+
+        $this->assertIsArray($result);
+        $estudiante = Estudiante::find($result['estudiante_id']);
+        $this->assertNotNull($estudiante);
+        $this->assertEquals('71122334', $estudiante->dni);
+        $this->assertEquals('F', $estudiante->sexo);
+    }
 }

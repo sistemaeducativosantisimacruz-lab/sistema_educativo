@@ -2,20 +2,20 @@
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <a href="{{ $routeBack }}" class="p-2 bg-white rounded-lg border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition shadow-sm" title="Volver al listado">
+                <a href="{{ $routeBack }}" class="p-2 bg-white rounded-lg border border-gray-300 text-gray-700 hover:text-black hover:bg-gray-100 transition shadow-sm" title="Volver al listado">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
                 </a>
                 <div>
-                    <h2 class="font-bold text-xl text-gray-800 leading-tight flex items-center gap-2">
-                        <span>📋 Ficha de Entrevista a Padres</span>
-                        <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold {{ $entrevista->esBorrador() ? 'bg-amber-100 text-amber-800 border border-amber-200' : ($entrevista->estaCompletada() ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-blue-100 text-blue-800') }}">
+                    <h2 class="font-black text-xl text-black leading-tight flex items-center gap-2">
+                        <span>Ficha de Entrevista a Padres de Familia</span>
+                        <span class="text-xs px-3 py-1 rounded-full font-black tracking-wider uppercase border {{ $entrevista->esBorrador() ? 'bg-amber-100 text-black border-amber-400' : ($entrevista->estaCompletada() ? 'bg-emerald-100 text-black border-emerald-400' : 'bg-gray-100 text-black border-gray-400') }}">
                             {{ $entrevista->id ? ($entrevista->esBorrador() ? 'En Progreso (Borrador)' : 'Completada') : 'Nueva Ficha en Línea' }}
                         </span>
                     </h2>
-                    <p class="text-xs text-gray-500 mt-0.5">
-                        Proceso de Admisión y Continuidad · Entrevistador: <strong>{{ Auth::user()->name }}</strong>
+                    <p class="text-xs text-gray-700 mt-0.5">
+                        Proceso de Admisión y Continuidad (Paso de Grado) · Docente Entrevistador: <strong class="text-black font-black">{{ Auth::user()->name }}</strong>
                     </p>
                 </div>
             </div>
@@ -75,12 +75,12 @@
          })" x-init="initForm()">
 
         <!-- BARRA FLOTANTE DE ESTADO Y ACCIONES RÁPIDAS -->
-        <div class="sticky top-4 z-40 mb-6 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-gray-200/80 flex flex-wrap items-center justify-between gap-3 transition-all">
+        <div class="sticky top-4 z-40 mb-6 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-gray-300 flex flex-wrap items-center justify-between gap-3 transition-all">
             <div class="flex items-center gap-3">
                 <div class="flex items-center gap-2">
                     <template x-if="isSaving">
-                        <span class="inline-flex items-center gap-1.5 text-xs text-amber-600 font-medium">
-                            <svg class="animate-spin h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24">
+                        <span class="inline-flex items-center gap-1.5 text-xs text-amber-700 font-bold">
+                            <svg class="animate-spin h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                             </svg>
@@ -88,30 +88,36 @@
                         </span>
                     </template>
                     <template x-if="!isSaving && lastSaved">
-                        <span class="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span class="inline-flex items-center gap-1.5 text-xs text-emerald-800 font-bold">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                             <span x-text="`Guardado a las ${lastSaved}`"></span>
                         </span>
                     </template>
                     <template x-if="!isSaving && !lastSaved">
-                        <span class="text-xs text-gray-400">Autoguardado activado</span>
+                        <span class="text-xs text-gray-600 font-semibold">Autoguardado activado</span>
                     </template>
                 </div>
 
-                <div class="h-4 w-px bg-gray-200 hidden sm:block"></div>
+                <div class="h-4 w-px bg-gray-300 hidden sm:block"></div>
 
                 <!-- CONTADOR DE CAMPOS PENDIENTES -->
                 <div>
                     <template x-if="camposPendientesCount > 0">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            <span>⏳ Quedan <strong x-text="camposPendientesCount"></strong> campos requeridos pendientes</span>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-black border border-amber-300">
+                            <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Quedan <strong class="text-black underline font-black" x-text="camposPendientesCount"></strong> campos obligatorios pendientes</span>
                         </span>
                     </template>
                     <template x-if="camposPendientesCount === 0">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <span>✅ ¡Todos los campos obligatorios completos!</span>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-black border border-emerald-300">
+                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Todos los campos obligatorios completos</span>
                         </span>
                     </template>
                 </div>
@@ -120,16 +126,16 @@
             <!-- BOTONES DE GUARDADO -->
             <div class="flex items-center gap-2.5">
                 <button type="button" @click="guardarProgresoManual()" :disabled="isSaving"
-                        class="px-3.5 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50">
-                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="px-4 py-2 bg-white border border-gray-400 text-black hover:bg-gray-100 rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 disabled:opacity-50">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
                     </svg>
                     <span>Guardar Progreso</span>
                 </button>
 
                 <button type="button" @click="registrarYCerrar()" :disabled="isSaving || isClosing"
-                        :class="camposPendientesCount === 0 ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-200 hover:from-emerald-700 hover:to-teal-700' : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'"
-                        class="px-4 py-2 rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                        :class="camposPendientesCount === 0 ? 'bg-black text-white hover:bg-gray-800 shadow-md border border-black' : 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed'"
+                        class="px-4 py-2 rounded-xl text-xs font-black shadow transition flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
@@ -141,33 +147,33 @@
         <form @submit.prevent="registrarYCerrar()" class="space-y-6">
 
             <!-- 1. ENCABEZADO Y BUSCADOR DE ESTUDIANTE EXISTENTE (REINSCRIPCIÓN / PASO DE GRADO) -->
-            <div class="bg-gradient-to-br from-indigo-500/10 via-white to-purple-500/10 rounded-2xl p-6 shadow-sm border border-indigo-100">
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-indigo-100/60">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-300">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-200">
                     <div>
-                        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                            <span>🎓 Nivel y Grado de Postulación</span>
+                        <h3 class="text-base font-black text-black flex items-center gap-2">
+                            <span>Nivel y Grado de Postulación o Continuidad</span>
                         </h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Seleccione el nivel y grado para el cual se realiza la entrevista.</p>
+                        <p class="text-xs text-gray-600 mt-0.5">Seleccione el nivel y grado para el cual se realiza la entrevista.</p>
                     </div>
 
                     <!-- SELECTOR DE NIVEL Y AÑO -->
                     <div class="flex flex-wrap items-center gap-3">
-                        <div class="flex items-center bg-gray-100 p-1 rounded-xl">
+                        <div class="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-300">
                             <button type="button" @click="cambiarNivel('primaria')"
-                                    :class="nivel === 'primaria' ? 'bg-white shadow-sm text-indigo-700 font-bold' : 'text-gray-500 hover:text-gray-800'"
-                                    class="px-3.5 py-1.5 rounded-lg text-xs transition">
-                                🎒 Primaria
+                                    :class="nivel === 'primaria' ? 'bg-black text-white font-black shadow-sm' : 'text-gray-700 hover:text-black font-bold'"
+                                    class="px-4 py-1.5 rounded-lg text-xs transition">
+                                Primaria
                             </button>
                             <button type="button" @click="cambiarNivel('secundaria')"
-                                    :class="nivel === 'secundaria' ? 'bg-white shadow-sm text-indigo-700 font-bold' : 'text-gray-500 hover:text-gray-800'"
-                                    class="px-3.5 py-1.5 rounded-lg text-xs transition">
-                                🏛️ Secundaria
+                                    :class="nivel === 'secundaria' ? 'bg-black text-white font-black shadow-sm' : 'text-gray-700 hover:text-black font-bold'"
+                                    class="px-4 py-1.5 rounded-lg text-xs transition">
+                                Secundaria
                             </button>
                         </div>
 
                         <div>
                             <select x-model="gradoPostula" @change="triggerAutosave()"
-                                    class="text-xs font-semibold rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 py-1.5">
+                                    class="text-xs font-black rounded-xl border-gray-400 text-black focus:border-black focus:ring-black py-1.5">
                                 <template x-if="nivel === 'primaria'">
                                     <optgroup label="Primaria">
                                         @foreach($gradosPrimaria as $gp)
@@ -185,49 +191,49 @@
                             </select>
                         </div>
 
-                        <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-gray-200 text-xs text-gray-600">
-                            <span class="font-medium">Año:</span>
-                            <input type="number" x-model.number="anoLectivo" @change="triggerAutosave()" class="w-16 text-xs p-0 border-0 font-bold text-indigo-700 focus:ring-0">
+                        <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-gray-400 text-xs text-black">
+                            <span class="font-black text-black">Año:</span>
+                            <input type="number" x-model.number="anoLectivo" @change="triggerAutosave()" class="w-16 text-xs p-0 border-0 font-black text-black focus:ring-0">
                         </div>
                     </div>
                 </div>
 
                 <!-- BUSCADOR EN VIVO DE ESTUDIANTE EXISTENTE (PARA ARRASTRAR DATOS) -->
-                <div class="mt-4 pt-2">
+                <div class="mt-4 pt-2 bg-gray-50 p-4 rounded-xl border border-gray-300">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
-                        <label class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <label class="text-xs font-black text-black flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg>
-                            <span>¿El estudiante ya estudia o estudió en la institución? (Paso de grado o actualización de datos):</span>
+                            <span>¿EL ESTUDIANTE YA ESTUDIA O ESTUDIÓ EN LA INSTITUCIÓN? (PASO DE GRADO O TRASLADO INTERNO)</span>
                         </label>
-                        <span class="text-[11px] text-gray-500">Escriba DNI o Apellidos para autocompletar</span>
+                        <span class="text-[11px] text-gray-600 font-semibold">Escriba DNI o Apellidos para autocompletar</span>
                     </div>
 
                     <div class="relative" @click.away="searchEstudianteResults = []">
                         <input type="text" x-model="searchEstudianteQuery" @input.debounce.300ms="buscarEstudianteExistente()"
-                               placeholder="🔍 Buscar por DNI o Nombres del estudiante actual..."
-                               class="w-full text-xs rounded-xl border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500 bg-white/80 py-2.5 px-3 shadow-inner">
+                               placeholder="Buscar por DNI o Apellidos del estudiante registrado..."
+                               class="w-full text-xs rounded-xl border-gray-400 focus:border-black focus:ring-black bg-white py-2.5 px-3 shadow-sm font-semibold text-black">
                         
                         <!-- LISTA DE RESULTADOS DE BÚSQUEDA -->
                         <div x-show="searchEstudianteResults.length > 0" x-cloak
-                             class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-indigo-100 max-h-60 overflow-y-auto z-50 divide-y divide-gray-100">
+                             class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-xl border-2 border-gray-400 max-h-60 overflow-y-auto z-50 divide-y divide-gray-200">
                             <template x-for="est in searchEstudianteResults" :key="est.id">
                                 <button type="button" @click="cargarDatosEstudianteExistente(est)"
-                                        class="w-full text-left p-3 hover:bg-indigo-50 transition flex items-center justify-between group">
+                                        class="w-full text-left p-3 hover:bg-gray-100 transition flex items-center justify-between group">
                                     <div>
-                                        <div class="font-bold text-xs text-gray-800 group-hover:text-indigo-700" x-text="est.nombre_completo"></div>
-                                        <div class="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
-                                            <span>DNI: <strong x-text="est.dni"></strong></span>
-                                            <span class="text-gray-300">·</span>
-                                            <span>Grado actual: <span x-text="est.grado_actual || 'Sin matrícula'"></span></span>
-                                            <span class="text-gray-300">·</span>
-                                            <span class="px-1.5 py-0.2 rounded font-semibold text-[10px]"
-                                                  :class="est.sexo === 'M' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'"
-                                                  x-text="est.sexo === 'M' ? '👦 Masculino' : (est.sexo === 'F' ? '👧 Femenino' : 'Sexo s/d')"></span>
+                                        <div class="font-black text-xs text-black group-hover:underline" x-text="est.nombre_completo"></div>
+                                        <div class="text-[11px] text-gray-600 flex items-center gap-2 mt-0.5">
+                                            <span>DNI: <strong class="text-black font-black" x-text="est.dni"></strong></span>
+                                            <span class="text-gray-400">·</span>
+                                            <span>Grado actual: <strong class="text-black" x-text="est.grado_actual || 'Sin matrícula'"></strong></span>
+                                            <span class="text-gray-400">·</span>
+                                            <span class="px-2 py-0.5 rounded font-black text-[10px] border"
+                                                  :class="est.sexo === 'M' ? 'bg-blue-50 text-blue-900 border-blue-300' : 'bg-pink-50 text-pink-900 border-pink-300'"
+                                                  x-text="est.sexo === 'M' ? 'Masculino' : (est.sexo === 'F' ? 'Femenino' : 'Sexo s/d')"></span>
                                         </div>
                                     </div>
-                                    <span class="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold group-hover:bg-indigo-600 group-hover:text-white transition">
+                                    <span class="px-3 py-1 bg-black text-white rounded-lg text-xs font-black group-hover:bg-gray-800 transition">
                                         Cargar Datos →
                                     </span>
                                 </button>
@@ -238,137 +244,137 @@
             </div>
 
             <!-- 2. IDENTIFICACIÓN DEL ESTUDIANTE -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2 border-b pb-2">
-                    <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">1</span>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-300">
+                <h3 class="text-sm font-black text-black uppercase tracking-wider mb-4 flex items-center gap-2 border-b-2 border-gray-200 pb-2">
+                    <span class="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-xs font-black">1</span>
                     <span>Datos de Identificación del Estudiante</span>
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <!-- DNI -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
-                            D.N.I. del Estudiante <span class="text-rose-500">*</span>
+                        <label class="block text-xs font-black text-black uppercase mb-1">
+                            D.N.I. del Estudiante <span class="text-rose-600 font-black">*</span>
                         </label>
                         <input type="text" x-model="estudianteDni" @input="triggerAutosave()" maxlength="8"
                                placeholder="Ej.: 71234567"
-                               class="w-full text-xs rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 font-mono font-bold tracking-wider">
-                        <span x-show="estudianteDni.length > 0 && estudianteDni.length < 8" class="text-[10px] text-amber-600 mt-0.5 block">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:border-black focus:ring-black font-mono font-black text-black tracking-wider">
+                        <span x-show="estudianteDni.length > 0 && estudianteDni.length < 8" class="text-[10px] text-amber-700 font-bold mt-0.5 block">
                             Debe tener 8 dígitos
                         </span>
                     </div>
 
                     <!-- GÉNERO / SEXO (CONDICIONAL DE NORMAS) -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
-                            Género / Sexo <span class="text-rose-500">*</span>
+                        <label class="block text-xs font-black text-black uppercase mb-1">
+                            Género / Sexo <span class="text-rose-600 font-black">*</span>
                         </label>
                         <div class="grid grid-cols-2 gap-2">
                             <button type="button" @click="setSexo('M')"
-                                    :class="estudianteSexo === 'M' ? 'bg-blue-600 text-white shadow-md shadow-blue-100 border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'"
-                                    class="py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5">
-                                <span>👦 Masculino</span>
+                                    :class="estudianteSexo === 'M' ? 'bg-black text-white font-black shadow-md border-black' : 'bg-gray-100 text-black border-gray-300 font-bold hover:bg-gray-200'"
+                                    class="py-2 px-2 rounded-xl text-xs border-2 transition flex items-center justify-center gap-1.5">
+                                <span>Masculino (M)</span>
                             </button>
                             <button type="button" @click="setSexo('F')"
-                                    :class="estudianteSexo === 'F' ? 'bg-pink-600 text-white shadow-md shadow-pink-100 border-pink-600' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'"
-                                    class="py-2 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5">
-                                <span>👧 Femenino</span>
+                                    :class="estudianteSexo === 'F' ? 'bg-black text-white font-black shadow-md border-black' : 'bg-gray-100 text-black border-gray-300 font-bold hover:bg-gray-200'"
+                                    class="py-2 px-2 rounded-xl text-xs border-2 transition flex items-center justify-center gap-1.5">
+                                <span>Femenino (F)</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Nombres -->
                     <div class="md:col-span-2">
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
-                            Nombres del Estudiante <span class="text-rose-500">*</span>
+                        <label class="block text-xs font-black text-black uppercase mb-1">
+                            Nombres del Estudiante <span class="text-rose-600 font-black">*</span>
                         </label>
                         <input type="text" x-model="estudianteNombres" @input="triggerAutosave()"
                                placeholder="Ej.: Lucía Fernanda"
-                               class="w-full text-xs rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 uppercase">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:border-black focus:ring-black uppercase font-bold text-black">
                     </div>
 
                     <!-- Apellido Paterno -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
-                            Apellido Paterno <span class="text-rose-500">*</span>
+                        <label class="block text-xs font-black text-black uppercase mb-1">
+                            Apellido Paterno <span class="text-rose-600 font-black">*</span>
                         </label>
                         <input type="text" x-model="estudianteApellidoPaterno" @input="triggerAutosave()"
                                placeholder="Ej.: Pérez"
-                               class="w-full text-xs rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 uppercase">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:border-black focus:ring-black uppercase font-bold text-black">
                     </div>
 
                     <!-- Apellido Materno -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                        <label class="block text-xs font-black text-black uppercase mb-1">
                             Apellido Materno
                         </label>
                         <input type="text" x-model="estudianteApellidoMaterno" @input="triggerAutosave()"
                                placeholder="Ej.: Rojas"
-                               class="w-full text-xs rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 uppercase">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:border-black focus:ring-black uppercase font-bold text-black">
                     </div>
 
                     <!-- Fecha de Nacimiento -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                        <label class="block text-xs font-black text-black uppercase mb-1">
                             Fecha de Nacimiento
                         </label>
                         <input type="date" x-model="estudianteFechaNacimiento" @change="triggerAutosave()"
-                               class="w-full text-xs rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:border-black focus:ring-black font-semibold text-black">
                     </div>
 
                     <!-- Colegio de Procedencia -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                        <label class="block text-xs font-black text-black uppercase mb-1">
                             Colegio de Procedencia
                         </label>
                         <input type="text" x-model="colegioProcedencia" @input="triggerAutosave()"
                                placeholder="Ej.: I.E.P. Santísima Cruz"
-                               class="w-full text-xs rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:border-black focus:ring-black font-semibold text-black">
                     </div>
                 </div>
             </div>
 
             <!-- 3. DATOS DE LOS PADRES Y APODERADO -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center justify-between border-b pb-2">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-300">
+                <h3 class="text-sm font-black text-black uppercase tracking-wider mb-4 flex items-center justify-between border-b-2 border-gray-200 pb-2">
                     <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">2</span>
+                        <span class="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-xs font-black">2</span>
                         <span>Datos de los Padres de Familia y Apoderado</span>
                     </div>
-                    <span class="text-[11px] font-normal text-gray-400">Complete al menos uno de los progenitores o apoderado</span>
+                    <span class="text-[11px] font-bold text-black">Complete al menos uno de los progenitores o apoderado</span>
                 </h3>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- PADRE -->
-                    <div class="p-4 rounded-xl bg-blue-50/40 border border-blue-100 space-y-3">
-                        <div class="font-bold text-xs text-blue-900 uppercase flex items-center gap-1.5">
-                            <span>👨 Datos del Padre</span>
+                    <div class="p-4 rounded-xl bg-gray-50 border-2 border-gray-300 space-y-3">
+                        <div class="font-black text-xs text-black uppercase flex items-center gap-1.5 border-b border-gray-300 pb-1.5">
+                            <span>Datos del Padre</span>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">DNI del Padre</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">DNI del Padre</label>
                             <input type="text" x-model="padreDni" @input="triggerAutosave()" maxlength="8" placeholder="8 dígitos"
-                                   class="w-full text-xs rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-mono">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Nombres y Apellidos</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">Nombres y Apellidos</label>
                             <input type="text" x-model="padreNombres" @input="triggerAutosave()" placeholder="Ej.: Juan Pérez Díaz"
-                                   class="w-full text-xs rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 uppercase">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black uppercase font-bold text-black">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Teléfono</label>
+                                <label class="block text-[11px] font-black text-black mb-0.5">Teléfono</label>
                                 <input type="text" x-model="padreTelefono" @input="triggerAutosave()" placeholder="Ej.: 987654321"
-                                       class="w-full text-xs rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Ocupación</label>
+                                <label class="block text-[11px] font-black text-black mb-0.5">Ocupación</label>
                                 <input type="text" x-model="padreOcupacion" @input="triggerAutosave()" placeholder="Ej.: Agricultor"
-                                       class="w-full text-xs rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 uppercase">
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black uppercase text-black font-semibold">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Grado de Estudios</label>
-                            <select x-model="padreGradoEstudios" @change="triggerAutosave()" class="w-full text-xs rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                            <label class="block text-[11px] font-black text-black mb-0.5">Grado de Estudios</label>
+                            <select x-model="padreGradoEstudios" @change="triggerAutosave()" class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                                 <option value="">-- Seleccionar --</option>
                                 <option value="Primaria incompleta">Primaria incompleta</option>
                                 <option value="Primaria completa">Primaria completa</option>
@@ -380,46 +386,46 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Domicilio</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">Domicilio</label>
                             <input type="text" x-model="padreDomicilio" @input="triggerAutosave()" placeholder="Ej.: Av. Grau 123"
-                                   class="w-full text-xs rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                         </div>
                     </div>
 
                     <!-- MADRE -->
-                    <div class="p-4 rounded-xl bg-pink-50/40 border border-pink-100 space-y-3">
-                        <div class="font-bold text-xs text-pink-900 uppercase flex items-center justify-between">
-                            <span>👩 Datos de la Madre</span>
+                    <div class="p-4 rounded-xl bg-gray-50 border-2 border-gray-300 space-y-3">
+                        <div class="font-black text-xs text-black uppercase flex items-center justify-between border-b border-gray-300 pb-1.5">
+                            <span>Datos de la Madre</span>
                             <button type="button" @click="madreDomicilio = padreDomicilio; triggerAutosave()" 
-                                    class="text-[10px] text-pink-600 hover:underline">
+                                    class="text-[10px] text-black font-black underline">
                                 Mismo domicilio que padre
                             </button>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">DNI de la Madre</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">DNI de la Madre</label>
                             <input type="text" x-model="madreDni" @input="triggerAutosave()" maxlength="8" placeholder="8 dígitos"
-                                   class="w-full text-xs rounded-lg border-gray-300 focus:ring-pink-500 focus:border-pink-500">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-mono">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Nombres y Apellidos</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">Nombres y Apellidos</label>
                             <input type="text" x-model="madreNombres" @input="triggerAutosave()" placeholder="Ej.: María Rojas Vega"
-                                   class="w-full text-xs rounded-lg border-gray-300 focus:ring-pink-500 focus:border-pink-500 uppercase">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black uppercase font-bold text-black">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Teléfono</label>
+                                <label class="block text-[11px] font-black text-black mb-0.5">Teléfono</label>
                                 <input type="text" x-model="madreTelefono" @input="triggerAutosave()" placeholder="Ej.: 987654321"
-                                       class="w-full text-xs rounded-lg border-gray-300 focus:ring-pink-500 focus:border-pink-500">
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Ocupación</label>
+                                <label class="block text-[11px] font-black text-black mb-0.5">Ocupación</label>
                                 <input type="text" x-model="madreOcupacion" @input="triggerAutosave()" placeholder="Ej.: Comerciante"
-                                       class="w-full text-xs rounded-lg border-gray-300 focus:ring-pink-500 focus:border-pink-500 uppercase">
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black uppercase text-black font-semibold">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Grado de Estudios</label>
-                            <select x-model="madreGradoEstudios" @change="triggerAutosave()" class="w-full text-xs rounded-lg border-gray-300 focus:ring-pink-500 focus:border-pink-500">
+                            <label class="block text-[11px] font-black text-black mb-0.5">Grado de Estudios</label>
+                            <select x-model="madreGradoEstudios" @change="triggerAutosave()" class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                                 <option value="">-- Seleccionar --</option>
                                 <option value="Primaria incompleta">Primaria incompleta</option>
                                 <option value="Primaria completa">Primaria completa</option>
@@ -431,49 +437,49 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Domicilio</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">Domicilio</label>
                             <input type="text" x-model="madreDomicilio" @input="triggerAutosave()" placeholder="Ej.: Av. Grau 123"
-                                   class="w-full text-xs rounded-lg border-gray-300 focus:ring-pink-500 focus:border-pink-500">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                         </div>
                     </div>
 
                     <!-- APODERADO -->
-                    <div class="p-4 rounded-xl bg-purple-50/40 border border-purple-100 space-y-3">
-                        <div class="font-bold text-xs text-purple-900 uppercase flex items-center justify-between">
-                            <span>🤝 Apoderado (si corresponde)</span>
+                    <div class="p-4 rounded-xl bg-gray-50 border-2 border-gray-300 space-y-3">
+                        <div class="font-black text-xs text-black uppercase flex items-center justify-between border-b border-gray-300 pb-1.5">
+                            <span>Datos del Apoderado (si corresponde)</span>
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Parentesco</label>
+                                <label class="block text-[11px] font-black text-black mb-0.5">Parentesco</label>
                                 <input type="text" x-model="apoderadoParentesco" @input="triggerAutosave()" placeholder="Ej.: Tía, Abuela"
-                                       class="w-full text-xs rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500 uppercase">
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black uppercase text-black font-semibold">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">DNI Apoderado</label>
+                                <label class="block text-[11px] font-black text-black mb-0.5">DNI Apoderado</label>
                                 <input type="text" x-model="apoderadoDni" @input="triggerAutosave()" maxlength="8" placeholder="8 dígitos"
-                                       class="w-full text-xs rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500">
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-mono">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Nombres y Apellidos</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">Nombres y Apellidos</label>
                             <input type="text" x-model="apoderadoNombres" @input="triggerAutosave()" placeholder="Ej.: Rosa Díaz Vega"
-                                   class="w-full text-xs rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500 uppercase">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black uppercase font-bold text-black">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Teléfono</label>
+                                <label class="block text-[11px] font-black text-black mb-0.5">Teléfono</label>
                                 <input type="text" x-model="apoderadoTelefono" @input="triggerAutosave()" placeholder="Ej.: 987654321"
-                                       class="w-full text-xs rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500">
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Ocupación</label>
+                                <label class="block text-[11px] font-black text-black mb-0.5">Ocupación</label>
                                 <input type="text" x-model="apoderadoOcupacion" @input="triggerAutosave()" placeholder="Ej.: Docente"
-                                       class="w-full text-xs rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500 uppercase">
+                                       class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black uppercase text-black font-semibold">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Grado de Estudios</label>
-                            <select x-model="apoderadoGradoEstudios" @change="triggerAutosave()" class="w-full text-xs rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500">
+                            <label class="block text-[11px] font-black text-black mb-0.5">Grado de Estudios</label>
+                            <select x-model="apoderadoGradoEstudios" @change="triggerAutosave()" class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                                 <option value="">-- Seleccionar --</option>
                                 <option value="Primaria incompleta">Primaria incompleta</option>
                                 <option value="Primaria completa">Primaria completa</option>
@@ -485,18 +491,18 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-0.5">Domicilio</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">Domicilio</label>
                             <input type="text" x-model="apoderadoDomicilio" @input="triggerAutosave()" placeholder="Ej.: Jr. Lima 456"
-                                   class="w-full text-xs rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black text-black font-semibold">
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- 4. SITUACIÓN FAMILIAR Y CONVIVENCIA (PREGUNTAS 18, 19, 20) -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2 border-b pb-2">
-                    <span class="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">3</span>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-300">
+                <h3 class="text-sm font-black text-black uppercase tracking-wider mb-4 flex items-center gap-2 border-b-2 border-gray-200 pb-2">
+                    <span class="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-xs font-black">3</span>
                     <span>Situación Familiar y Convivencia</span>
                 </h3>
 
@@ -504,100 +510,100 @@
                     <!-- PREGUNTA 18: NÚMERO DE HERMANOS -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                         <div class="md:col-span-3">
-                            <label class="block text-xs font-bold text-gray-800">
+                            <label class="block text-xs font-black text-black">
                                 18. Número total de hermanos del estudiante
                             </label>
-                            <p class="text-[11px] text-gray-500">Colocar 0 si es hijo único.</p>
+                            <p class="text-[11px] text-gray-600 font-semibold">Colocar 0 si es hijo único.</p>
                         </div>
                         <div>
                             <input type="number" min="0" x-model.number="respuestas.num_hermanos" @input="triggerAutosave()"
-                                   class="w-full text-xs font-bold rounded-xl border-gray-300 focus:ring-amber-500 focus:border-amber-500">
+                                   class="w-full text-xs font-black text-black rounded-xl border-gray-400 focus:ring-black focus:border-black">
                         </div>
                     </div>
 
                     <!-- PREGUNTA 19: ¿CON QUIÉN VIVE EL ESTUDIANTE? (CHECKS MULTI-SELECCIÓN) -->
-                    <div class="p-4 rounded-xl bg-amber-50/40 border border-amber-200/60">
-                        <label class="block text-xs font-bold text-gray-800 mb-1">
-                            19. Personas con quienes vive el estudiante <span class="text-rose-500">*</span>
+                    <div class="p-4 rounded-xl bg-gray-50 border-2 border-gray-400">
+                        <label class="block text-sm font-black text-black mb-1">
+                            19. PERSONAS CON QUIENES VIVE EL ESTUDIANTE <span class="text-rose-600 font-black">*</span>
                         </label>
-                        <p class="text-[11px] text-gray-500 mb-3">Marque todas las opciones que correspondan para reflejar con quién convive actualmente el alumno:</p>
+                        <p class="text-[11px] text-black font-bold mb-3">Marque todas las opciones que correspondan para armar la lista de convivencia:</p>
 
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
                             <template x-for="item in opcionesConvivencia" :key="item.id">
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border transition cursor-pointer text-xs"
-                                       :class="viveConSelected.includes(item.id) ? 'bg-amber-100/80 border-amber-400 font-bold text-amber-900' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'">
+                                <label class="flex items-center gap-2 p-3 rounded-xl border-2 transition cursor-pointer text-xs"
+                                       :class="viveConSelected.includes(item.id) ? 'bg-black text-white border-black font-black shadow-sm' : 'bg-white border-gray-300 text-black font-black hover:bg-gray-100'">
                                     <input type="checkbox" :value="item.id" x-model="viveConSelected" @change="actualizarViveCon()"
-                                           class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
-                                    <span x-text="`${item.icon} ${item.label}`"></span>
+                                           class="rounded border-gray-400 text-black focus:ring-black">
+                                    <span x-text="item.label"></span>
                                 </label>
                             </template>
                         </div>
 
                         <!-- Opción Otro especificar -->
                         <div class="mt-3" x-show="viveConSelected.includes('Otro')">
-                            <label class="block text-[11px] font-semibold text-gray-700 mb-0.5">Especifique otros familiares o personas con quienes vive:</label>
+                            <label class="block text-[11px] font-black text-black mb-0.5">Especifique otros familiares o personas con quienes vive:</label>
                             <input type="text" x-model="viveConOtro" @input="actualizarViveCon()"
                                    placeholder="Ej.: Tía materna, prima hermana, bisabuela..."
-                                   class="w-full text-xs rounded-lg border-amber-300 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black bg-white font-bold text-black">
                         </div>
                     </div>
 
                     <!-- PREGUNTA 20 & TABLA DE HERMANOS EN LA IE (ARMADO DE FAMILIAS) -->
-                    <div class="p-4 rounded-xl bg-indigo-50/40 border border-indigo-200/60 space-y-3">
+                    <div class="p-4 rounded-xl bg-gray-50 border-2 border-gray-400 space-y-3">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
-                                <label class="block text-xs font-bold text-gray-900">
-                                    20. ¿Tiene hermanos que estudian actualmente en la Institución Educativa?
+                                <label class="block text-sm font-black text-black">
+                                    20. ¿TIENE HERMANOS QUE ESTUDIAN ACTUALMENTE EN LA INSTITUCIÓN EDUCATIVA?
                                 </label>
-                                <p class="text-[11px] text-gray-500">Permite asociar y unificar los registros familiares en el sistema.</p>
+                                <p class="text-[11px] text-black font-bold">Permite asociar y unificar los registros familiares en el sistema.</p>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button type="button" @click="setTieneHermanos('Sí')"
-                                        :class="respuestas.hermanos_en_ie === 'Sí' ? 'bg-indigo-600 text-white font-bold' : 'bg-white text-gray-700 border border-gray-300'"
-                                        class="px-4 py-1.5 rounded-lg text-xs transition">
+                                        :class="respuestas.hermanos_en_ie === 'Sí' ? 'bg-black text-white font-black border-black' : 'bg-white text-black border border-gray-400 font-bold'"
+                                        class="px-5 py-2 rounded-xl text-xs border-2 transition">
                                     Sí
                                 </button>
                                 <button type="button" @click="setTieneHermanos('No')"
-                                        :class="respuestas.hermanos_en_ie === 'No' ? 'bg-gray-700 text-white font-bold' : 'bg-white text-gray-700 border border-gray-300'"
-                                        class="px-4 py-1.5 rounded-lg text-xs transition">
+                                        :class="respuestas.hermanos_en_ie === 'No' ? 'bg-black text-white font-black border-black' : 'bg-white text-black border border-gray-400 font-bold'"
+                                        class="px-5 py-2 rounded-xl text-xs border-2 transition">
                                     No
                                 </button>
                             </div>
                         </div>
 
                         <!-- PANEL DINÁMICO DE HERMANOS -->
-                        <div x-show="respuestas.hermanos_en_ie === 'Sí'" x-cloak class="mt-3 pt-3 border-t border-indigo-100 space-y-3">
+                        <div x-show="respuestas.hermanos_en_ie === 'Sí'" x-cloak class="mt-3 pt-3 border-t-2 border-gray-300 space-y-3">
                             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                 <div class="relative flex-1" @click.away="searchHermanoResults = []">
                                     <input type="text" x-model="searchHermanoQuery" @input.debounce.300ms="buscarHermano()"
                                            placeholder="Buscar hermano(a) por DNI o Nombres..."
-                                           class="w-full text-xs rounded-lg border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500 bg-white py-2 px-3">
+                                           class="w-full text-xs rounded-lg border-gray-400 focus:ring-black focus:border-black bg-white py-2 px-3 font-semibold text-black">
 
                                     <div x-show="searchHermanoResults.length > 0" x-cloak
-                                         class="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-indigo-100 max-h-48 overflow-y-auto z-50 divide-y divide-gray-100">
+                                         class="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border-2 border-gray-400 max-h-48 overflow-y-auto z-50 divide-y divide-gray-200">
                                         <template x-for="h in searchHermanoResults" :key="h.id">
                                             <button type="button" @click="anadirHermanoDesdeBusqueda(h)"
-                                                    class="w-full text-left p-2.5 hover:bg-indigo-50 text-xs flex items-center justify-between">
+                                                    class="w-full text-left p-2.5 hover:bg-gray-100 text-xs flex items-center justify-between">
                                                 <div>
-                                                    <span class="font-bold text-gray-800" x-text="h.nombre_completo"></span>
-                                                    <span class="text-gray-400 text-[11px]" x-text="` (DNI: ${h.dni} · ${h.grado_actual || 'Sin aula'})`"></span>
+                                                    <span class="font-black text-black" x-text="h.nombre_completo"></span>
+                                                    <span class="text-gray-700 font-bold text-[11px]" x-text="` (DNI: ${h.dni} · ${h.grado_actual || 'Sin aula'})`"></span>
                                                 </div>
-                                                <span class="text-[11px] text-indigo-600 font-bold">+ Añadir</span>
+                                                <span class="text-[11px] text-black font-black underline">+ Añadir</span>
                                             </button>
                                         </template>
                                     </div>
                                 </div>
 
                                 <button type="button" @click="anadirHermanoManual()"
-                                        class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-1">
+                                        class="px-4 py-2 bg-black text-white rounded-lg text-xs font-black hover:bg-gray-800 transition flex items-center justify-center gap-1">
                                     <span>+ Añadir Manualmente</span>
                                 </button>
                             </div>
 
                             <!-- TABLA DE HERMANOS REGISTRADOS -->
-                            <div class="overflow-x-auto bg-white rounded-xl border border-indigo-100 shadow-inner">
+                            <div class="overflow-x-auto bg-white rounded-xl border-2 border-gray-300 shadow-sm">
                                 <table class="w-full text-xs text-left">
-                                    <thead class="bg-indigo-50/70 text-indigo-900 uppercase font-semibold text-[10px]">
+                                    <thead class="bg-gray-200 text-black uppercase font-black text-[10px] border-b border-gray-300">
                                         <tr>
                                             <th class="p-2.5">DNI</th>
                                             <th class="p-2.5">Nombres y Apellidos</th>
@@ -605,22 +611,24 @@
                                             <th class="p-2.5 text-center w-12">Acción</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-gray-100">
+                                    <tbody class="divide-y divide-gray-200">
                                         <template x-for="(hermano, index) in hermanosDatos" :key="index">
-                                            <tr class="hover:bg-indigo-50/30">
-                                                <td class="p-2.5 font-mono" x-text="hermano.dni || 'S/D'"></td>
-                                                <td class="p-2.5 font-medium uppercase" x-text="hermano.nombre"></td>
-                                                <td class="p-2.5 text-gray-500" x-text="hermano.grado || '—'"></td>
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="p-2.5 font-mono font-black text-black" x-text="hermano.dni || 'S/D'"></td>
+                                                <td class="p-2.5 font-bold uppercase text-black" x-text="hermano.nombre"></td>
+                                                <td class="p-2.5 text-black font-semibold" x-text="hermano.grado || '—'"></td>
                                                 <td class="p-2.5 text-center">
-                                                    <button type="button" @click="eliminarHermano(index)" class="text-rose-500 hover:text-rose-700 font-bold" title="Quitar">
-                                                        🗑️
+                                                    <button type="button" @click="eliminarHermano(index)" class="text-rose-600 hover:text-rose-900 font-black p-1" title="Quitar hermano">
+                                                        <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                        </svg>
                                                     </button>
                                                 </td>
                                             </tr>
                                         </template>
                                         <template x-if="hermanosDatos.length === 0">
                                             <tr>
-                                                <td colspan="4" class="p-3 text-center text-gray-400 italic">
+                                                <td colspan="4" class="p-3 text-center text-gray-500 font-semibold italic">
                                                     No se han añadido hermanos en la IE aún. Use el buscador de arriba.
                                                 </td>
                                             </tr>
@@ -632,11 +640,11 @@
                     </div>
 
                     <!-- PREGUNTA 23: AXIOLOGÍA INSTITUCIONAL -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                        <div class="text-xs text-gray-800">
-                            <strong>23. Axiología de la IE:</strong> La axiología de la institución educativa es promover la <strong>COMUNIÓN y PARTICIPACIÓN</strong> a la luz del evangelio y de la espiritualidad Agustiniana. ¿Acepta?
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-300">
+                        <div class="text-xs text-black font-bold">
+                            <strong class="font-black">23. Axiología de la IE:</strong> La axiología de la institución educativa es promover la <strong class="underline">COMUNIÓN y PARTICIPACIÓN</strong> a la luz del evangelio y de la espiritualidad Agustiniana. ¿Acepta?
                         </div>
-                        <select x-model="respuestas.acuerdo_comunion" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-300 font-bold">
+                        <select x-model="respuestas.acuerdo_comunion" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -645,34 +653,34 @@
             </div>
 
             <!-- 5. VIDA DE FE Y SACRAMENTOS (PREGUNTA 27.3 MULTI-CHECK) -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2 border-b pb-2">
-                    <span class="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold">4</span>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-300">
+                <h3 class="text-sm font-black text-black uppercase tracking-wider mb-4 flex items-center gap-2 border-b-2 border-gray-200 pb-2">
+                    <span class="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-xs font-black">4</span>
                     <span>Vida de Fe del Estudiante y la Familia</span>
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">24. Parroquia a la que asiste</label>
+                        <label class="block text-xs font-black text-black mb-1">24. Parroquia a la que asiste</label>
                         <input type="text" x-model="respuestas.parroquia" @input="triggerAutosave()" placeholder="Ej.: Parroquia San Juan Bautista"
-                               class="w-full text-xs rounded-xl border-gray-300 focus:ring-teal-500 focus:border-teal-500">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:ring-black focus:border-black font-semibold text-black">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">25. Comunidad zonal a la que pertenece</label>
+                        <label class="block text-xs font-black text-black mb-1">25. Comunidad zonal a la que pertenece</label>
                         <input type="text" x-model="respuestas.comunidad_zonal" @input="triggerAutosave()" placeholder="Ej.: Comunidad Santa Rosa"
-                               class="w-full text-xs rounded-xl border-gray-300 focus:ring-teal-500 focus:border-teal-500">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:ring-black focus:border-black font-semibold text-black">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">26.1 Bautizo celebrado</label>
-                        <select x-model="respuestas.sacramento_bautizo" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-300 focus:ring-teal-500 font-semibold">
+                        <label class="block text-xs font-black text-black mb-1">26.1 Bautizo celebrado</label>
+                        <select x-model="respuestas.sacramento_bautizo" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 focus:ring-black font-black text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">26.2 Eucaristía / Primera Comunión</label>
-                        <select x-model="respuestas.sacramento_eucaristia" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-300 focus:ring-teal-500 font-semibold">
+                        <label class="block text-xs font-black text-black mb-1">26.2 Eucaristía / Primera Comunión</label>
+                        <select x-model="respuestas.sacramento_eucaristia" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 focus:ring-black font-black text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -680,40 +688,40 @@
 
                     <!-- SACRAMENTO CONFIRMACIÓN (SOLO SECUNDARIA) -->
                     <div x-show="nivel === 'secundaria'">
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">26.3 Sacramento de Confirmación</label>
-                        <select x-model="respuestas.sacramento_confirmacion" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-300 focus:ring-teal-500 font-semibold">
+                        <label class="block text-xs font-black text-black mb-1">26.3 Sacramento de Confirmación</label>
+                        <select x-model="respuestas.sacramento_confirmacion" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 focus:ring-black font-black text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">27.1 ¿Considera importante la Eucaristía?</label>
-                        <select x-model="respuestas.eucaristia_importante" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-300 focus:ring-teal-500 font-semibold">
+                        <label class="block text-xs font-black text-black mb-1">27.1 ¿Considera importante la Eucaristía?</label>
+                        <select x-model="respuestas.eucaristia_importante" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 focus:ring-black font-black text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
                     <div class="md:col-span-3">
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">27.2 ¿Por qué?</label>
+                        <label class="block text-xs font-black text-black mb-1">27.2 ¿Por qué?</label>
                         <input type="text" x-model="respuestas.eucaristia_por_que" @input="triggerAutosave()" placeholder="Ej.: Fortalece la fe y la unión familiar..."
-                               class="w-full text-xs rounded-xl border-gray-300 focus:ring-teal-500 focus:border-teal-500">
+                               class="w-full text-xs rounded-xl border-gray-400 focus:ring-black focus:border-black font-semibold text-black">
                     </div>
 
                     <!-- PREGUNTA 27.3: DÍAS DE EUCARISTÍA (MULTI-CHECK) -->
-                    <div class="md:col-span-3 p-4 rounded-xl bg-teal-50/50 border border-teal-200">
-                        <label class="block text-xs font-bold text-teal-900 mb-1">
-                            27.3 ¿Qué día(s) participa en la Eucaristía? (Selección múltiple)
+                    <div class="md:col-span-3 p-4 rounded-xl bg-gray-50 border-2 border-gray-400">
+                        <label class="block text-sm font-black text-black mb-1">
+                            27.3 ¿QUÉ DÍA(S) PARTICIPA EN LA EUCARISTÍA? (SELECCIÓN MÚLTIPLE)
                         </label>
-                        <p class="text-[11px] text-gray-500 mb-3">Marque los días en que la familia acude habitualmente:</p>
+                        <p class="text-[11px] text-black font-bold mb-3">Marque todos los días en que la familia acude habitualmente:</p>
                         
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                             <template x-for="dia in opcionesEucaristiaDias" :key="dia">
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border transition cursor-pointer text-xs"
-                                       :class="eucaristiaDiasSelected.includes(dia) ? 'bg-teal-100 border-teal-400 font-bold text-teal-900' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'">
+                                <label class="flex items-center gap-2 p-3 rounded-xl border-2 transition cursor-pointer text-xs"
+                                       :class="eucaristiaDiasSelected.includes(dia) ? 'bg-black text-white border-black font-black shadow-sm' : 'bg-white border-gray-300 text-black font-black hover:bg-gray-100'">
                                     <input type="checkbox" :value="dia" x-model="eucaristiaDiasSelected" @change="actualizarEucaristiaDia()"
-                                           class="rounded border-gray-300 text-teal-600 focus:ring-teal-500">
+                                           class="rounded border-gray-400 text-black focus:ring-black">
                                     <span x-text="dia"></span>
                                 </label>
                             </template>
@@ -722,31 +730,31 @@
                         <div class="mt-2.5" x-show="eucaristiaDiasSelected.includes('Otro')">
                             <input type="text" x-model="eucaristiaDiaOtro" @input="actualizarEucaristiaDia()"
                                    placeholder="Especifique otros días o celebraciones..."
-                                   class="w-full text-xs rounded-lg border-teal-300 focus:ring-teal-500 bg-white">
+                                   class="w-full text-xs rounded-lg border-gray-400 focus:ring-black bg-white font-bold text-black">
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- 6. SITUACIÓN CONYUGAL Y SALUD -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2 border-b pb-2">
-                    <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">5</span>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-300">
+                <h3 class="text-sm font-black text-black uppercase tracking-wider mb-4 flex items-center gap-2 border-b-2 border-gray-200 pb-2">
+                    <span class="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-xs font-black">5</span>
                     <span>Situación Conyugal y Salud del Estudiante</span>
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">28. ¿Padres Casados?</label>
-                        <select x-model="respuestas.padres_casados" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-300 font-semibold">
+                        <label class="block text-xs font-black text-black mb-1">28. ¿Padres Casados?</label>
+                        <select x-model="respuestas.padres_casados" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">28.1 Estado Conyugal</label>
-                        <select x-model="respuestas.estado_conyugal" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-300 font-semibold">
+                        <label class="block text-xs font-black text-black mb-1">28.1 Estado Conyugal</label>
+                        <select x-model="respuestas.estado_conyugal" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
                             <option value="">-- Seleccionar --</option>
                             <option value="Religioso">Religioso</option>
                             <option value="Civil">Civil</option>
@@ -760,84 +768,84 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">29. ¿Padece alguna enfermedad?</label>
-                        <select x-model="respuestas.enfermedad" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-300 font-semibold">
+                        <label class="block text-xs font-black text-black mb-1">29. ¿Padece alguna enfermedad?</label>
+                        <select x-model="respuestas.enfermedad" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
                             <option value="No">No</option>
                             <option value="Sí">Sí</option>
                         </select>
                     </div>
 
-                    <div x-show="respuestas.enfermedad === 'Sí'" class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-rose-50 rounded-xl border border-rose-100">
+                    <div x-show="respuestas.enfermedad === 'Sí'" class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-gray-50 rounded-xl border-2 border-gray-400">
                         <div>
-                            <label class="block text-xs font-semibold text-rose-800 mb-1">30. ¿Conoce el diagnóstico?</label>
-                            <select x-model="respuestas.conoce_diagnostico" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-rose-300 font-semibold">
+                            <label class="block text-xs font-black text-black mb-1">30. ¿Conoce el diagnóstico?</label>
+                            <select x-model="respuestas.conoce_diagnostico" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
                                 <option value="Sí">Sí</option>
                                 <option value="No">No</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-rose-800 mb-1">31. ¿Cuál es la condición / diagnóstico?</label>
+                            <label class="block text-xs font-black text-black mb-1">31. ¿Cuál es la condición / diagnóstico?</label>
                             <input type="text" x-model="respuestas.diagnostico_cual" @input="triggerAutosave()" placeholder="Detallar diagnóstico..."
-                                   class="w-full text-xs rounded-xl border-rose-300">
+                                   class="w-full text-xs rounded-xl border-gray-400 font-semibold text-black">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">32. Patria Potestad (en padres separados)</label>
+                        <label class="block text-xs font-black text-black mb-1">32. Patria Potestad (en padres separados)</label>
                         <input type="text" x-model="respuestas.patria_potestad" @input="triggerAutosave()" placeholder="Ej.: Ambos padres / Solo mamá"
-                               class="w-full text-xs rounded-xl border-gray-300">
+                               class="w-full text-xs rounded-xl border-gray-400 font-semibold text-black">
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">33. Persona sin patria potestad dispuesta a apoyar</label>
+                        <label class="block text-xs font-black text-black mb-1">33. Persona sin patria potestad dispuesta a apoyar</label>
                         <input type="text" x-model="respuestas.persona_dispuesta" @input="triggerAutosave()" placeholder="Ej.: Sí, apoya económicamente y en visitas"
-                               class="w-full text-xs rounded-xl border-gray-300">
+                               class="w-full text-xs rounded-xl border-gray-400 font-semibold text-black">
                     </div>
                 </div>
             </div>
 
             <!-- 7. CUMPLIMIENTO DE NORMAS (CONDICIONADO POR SEXO: CORTE CABELLO VS TRENZAS) -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center justify-between border-b pb-2">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-300">
+                <h3 class="text-sm font-black text-black uppercase tracking-wider mb-4 flex items-center justify-between border-b-2 border-gray-200 pb-2">
                     <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-bold">6</span>
+                        <span class="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-xs font-black">6</span>
                         <span>Cumplimiento de Normas Institucionales</span>
                     </div>
-                    <span class="text-xs px-2.5 py-0.5 rounded-full font-bold"
-                          :class="estudianteSexo === 'M' ? 'bg-blue-100 text-blue-700' : (estudianteSexo === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-gray-100 text-gray-500')"
-                          x-text="estudianteSexo === 'M' ? '👦 Normas aplicables: Masculino' : (estudianteSexo === 'F' ? '👧 Normas aplicables: Femenino' : '⚠️ Seleccione el sexo del estudiante')">
+                    <span class="text-xs px-3 py-1 rounded-full font-black border-2 border-black"
+                          :class="estudianteSexo === 'M' ? 'bg-blue-100 text-black' : (estudianteSexo === 'F' ? 'bg-pink-100 text-black' : 'bg-gray-100 text-black')"
+                          x-text="estudianteSexo === 'M' ? 'NORMAS APLICABLES: ESTUDIANTE MASCULINO' : (estudianteSexo === 'F' ? 'NORMAS APLICABLES: ESTUDIANTE FEMENINA' : 'ATENCIÓN: SELECCIONE EL SEXO DEL ESTUDIANTE')">
                     </span>
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- HORARIO DE ENTRADA -->
-                    <div class="p-3 rounded-xl border border-gray-200 flex items-center justify-between">
-                        <span class="text-xs text-gray-800">
-                            <strong>Horario de entrada:</strong> Ingreso a la IE es 6:45 am. Puerta se cierra 7:00 am.
+                    <div class="p-3 rounded-xl border-2 border-gray-300 flex items-center justify-between">
+                        <span class="text-xs text-black">
+                            <strong class="font-black text-black">Horario de entrada:</strong> Ingreso a la IE es 6:45 am. Puerta se cierra 7:00 am.
                         </span>
-                        <select x-model="respuestas.norma_horario" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-300 font-bold ml-2">
+                        <select x-model="respuestas.norma_horario" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
                     <!-- CORTE DE CABELLO ESCOLAR (HABILITADO SOLO PARA MASCULINO) -->
-                    <div class="p-3 rounded-xl border transition"
-                         :class="estudianteSexo === 'M' ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200 bg-gray-50 opacity-60'">
+                    <div class="p-3 rounded-xl border-2 transition"
+                         :class="estudianteSexo === 'M' ? 'border-black bg-white' : 'border-gray-200 bg-gray-100 opacity-60'">
                         <div class="flex items-center justify-between">
                             <div>
-                                <span class="text-xs font-bold" :class="estudianteSexo === 'M' ? 'text-blue-900' : 'text-gray-500'">
+                                <span class="text-xs font-black text-black">
                                     Corte de cabello escolar sin modas ni cortes en las cejas
                                 </span>
                                 <template x-if="estudianteSexo === 'F'">
-                                    <span class="block text-[11px] text-pink-600 font-semibold mt-0.5">
-                                        🔒 Bloqueado: No aplica (Estudiante femenina)
+                                    <span class="block text-[11px] text-gray-700 font-bold mt-0.5">
+                                        No aplica (Estudiante femenina)
                                     </span>
                                 </template>
                             </div>
                             <select x-model="respuestas.norma_corte_cabello" @change="triggerAutosave()"
                                     :disabled="estudianteSexo === 'F'"
-                                    class="text-xs rounded-lg border-gray-300 font-bold ml-2">
+                                    class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
                                 <option value="Sí">Sí</option>
                                 <option value="No">No</option>
                                 <option value="No aplica">No aplica</option>
@@ -846,22 +854,22 @@
                     </div>
 
                     <!-- CABELLO TRENZADO (HABILITADO SOLO PARA FEMENINO) -->
-                    <div class="p-3 rounded-xl border transition"
-                         :class="estudianteSexo === 'F' ? 'border-pink-300 bg-pink-50/30' : 'border-gray-200 bg-gray-50 opacity-60'">
+                    <div class="p-3 rounded-xl border-2 transition"
+                         :class="estudianteSexo === 'F' ? 'border-black bg-white' : 'border-gray-200 bg-gray-100 opacity-60'">
                         <div class="flex items-center justify-between">
                             <div>
-                                <span class="text-xs font-bold" :class="estudianteSexo === 'F' ? 'text-pink-900' : 'text-gray-500'">
-                                    Cabello trenzado, sin maquillaje ni accesorios
+                                <span class="text-xs font-black text-black">
+                                    Cabello trenzado, sin maquillaje ni accesorios ni maquillaje
                                 </span>
                                 <template x-if="estudianteSexo === 'M'">
-                                    <span class="block text-[11px] text-blue-600 font-semibold mt-0.5">
-                                        🔒 Bloqueado: No aplica (Estudiante masculino)
+                                    <span class="block text-[11px] text-gray-700 font-bold mt-0.5">
+                                        No aplica (Estudiante masculino)
                                     </span>
                                 </template>
                             </div>
                             <select x-model="respuestas.norma_cabello_trenzado" @change="triggerAutosave()"
                                     :disabled="estudianteSexo === 'M'"
-                                    class="text-xs rounded-lg border-gray-300 font-bold ml-2">
+                                    class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
                                 <option value="Sí">Sí</option>
                                 <option value="No">No</option>
                                 <option value="No aplica">No aplica</option>
@@ -870,33 +878,33 @@
                     </div>
 
                     <!-- UNIFORME COMPLETO -->
-                    <div class="p-3 rounded-xl border border-gray-200 flex items-center justify-between">
-                        <span class="text-xs text-gray-800">
-                            <strong>Uso de uniforme completo</strong> según indicación en el RI.
+                    <div class="p-3 rounded-xl border-2 border-gray-300 flex items-center justify-between">
+                        <span class="text-xs text-black">
+                            <strong class="font-black text-black">Uso de uniforme completo</strong> según indicación en el RI.
                         </span>
-                        <select x-model="respuestas.norma_uniforme" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-300 font-bold ml-2">
+                        <select x-model="respuestas.norma_uniforme" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
                     <!-- ASISTENCIA Y PUNTUALIDAD -->
-                    <div class="p-3 rounded-xl border border-gray-200 flex items-center justify-between">
-                        <span class="text-xs text-gray-800">
-                            <strong>Asistencia y puntualidad</strong> diaria según horario establecido.
+                    <div class="p-3 rounded-xl border-2 border-gray-300 flex items-center justify-between">
+                        <span class="text-xs text-black">
+                            <strong class="font-black text-black">Asistencia y puntualidad</strong> diaria según horario establecido.
                         </span>
-                        <select x-model="respuestas.norma_asistencia" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-300 font-bold ml-2">
+                        <select x-model="respuestas.norma_asistencia" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
                     <!-- COMPROMISO ECONÓMICO -->
-                    <div class="p-3 rounded-xl border border-gray-200 flex items-center justify-between">
-                        <span class="text-xs text-gray-800">
-                            <strong>Compromiso económico de pensiones</strong> en fechas establecidas.
+                    <div class="p-3 rounded-xl border-2 border-gray-300 flex items-center justify-between">
+                        <span class="text-xs text-black">
+                            <strong class="font-black text-black">Compromiso económico de pensiones</strong> en fechas establecidas.
                         </span>
-                        <select x-model="respuestas.compromiso_pago" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-300 font-bold ml-2">
+                        <select x-model="respuestas.compromiso_pago" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -905,80 +913,80 @@
             </div>
 
             <!-- 8. OBLIGACIONES Y AUTORIZACIONES -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2 border-b pb-2">
-                    <span class="w-6 h-6 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">7</span>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-300">
+                <h3 class="text-sm font-black text-black uppercase tracking-wider mb-4 flex items-center gap-2 border-b-2 border-gray-200 pb-2">
+                    <span class="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-xs font-black">7</span>
                     <span>Obligaciones de Padres y Autorizaciones</span>
                 </h3>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Reuniones de aula</span>
-                        <select x-model="respuestas.oblig_reuniones_aula" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.oblig_reuniones_aula" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Atención a Padres</span>
-                        <select x-model="respuestas.oblig_atencion_padres" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.oblig_atencion_padres" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Escuela para Padres</span>
-                        <select x-model="respuestas.oblig_escuela_padres" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.oblig_escuela_padres" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Conservación de ambientes</span>
-                        <select x-model="respuestas.oblig_conservacion" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.oblig_conservacion" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Multa por inasistencia APAFA</span>
-                        <select x-model="respuestas.oblig_multa_apafa" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.oblig_multa_apafa" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Integración de aulas</span>
-                        <select x-model="respuestas.acuerdo_integracion_aulas" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.acuerdo_integracion_aulas" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Comunicaciones WhatsApp / llamada</span>
-                        <select x-model="respuestas.autoriza_comunicacion" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.autoriza_comunicacion" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Uso de fotos y videos</span>
-                        <select x-model="respuestas.autoriza_fotos_videos" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.autoriza_fotos_videos" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
                     </div>
 
-                    <div class="p-2.5 bg-gray-50 rounded-xl border flex items-center justify-between text-xs">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Atención médica de emergencia</span>
-                        <select x-model="respuestas.autoriza_atencion_medica" @change="triggerAutosave()" class="rounded-lg text-xs font-semibold py-1">
+                        <select x-model="respuestas.autoriza_atencion_medica" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -986,90 +994,90 @@
                 </div>
 
                 <!-- RETIRO DEL ESTUDIANTE -->
-                <div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="mt-4 pt-4 border-t-2 border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">¿Autoriza que regrese solo a casa?</label>
-                        <select x-model="respuestas.autoriza_regresa_solo" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-300 font-semibold">
+                        <label class="block text-xs font-black text-black mb-1">¿Autoriza que regrese solo a casa?</label>
+                        <select x-model="respuestas.autoriza_regresa_solo" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
                             <option value="No">No (Será recogido)</option>
                             <option value="Sí">Sí (Regresa solo)</option>
                         </select>
                     </div>
                     <div x-show="respuestas.autoriza_regresa_solo === 'No'">
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Nombre de quien recoge</label>
+                        <label class="block text-xs font-black text-black mb-1">Nombre de quien recoge</label>
                         <input type="text" x-model="respuestas.recoge_nombre" @input="triggerAutosave()" placeholder="Ej.: Rosa Díaz"
-                               class="w-full text-xs rounded-xl border-gray-300">
+                               class="w-full text-xs rounded-xl border-gray-400 font-bold text-black">
                     </div>
                     <div x-show="respuestas.autoriza_regresa_solo === 'No'">
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">DNI de quien recoge</label>
+                        <label class="block text-xs font-black text-black mb-1">DNI de quien recoge</label>
                         <input type="text" x-model="respuestas.recoge_dni" @input="triggerAutosave()" maxlength="8" placeholder="8 dígitos"
-                               class="w-full text-xs rounded-xl border-gray-300">
+                               class="w-full text-xs rounded-xl border-gray-400 font-mono font-bold text-black">
                     </div>
                 </div>
             </div>
 
             <!-- 9. CONFORMIDAD FINAL Y CIERRE -->
-            <div class="bg-gradient-to-br from-gray-900 to-indigo-950 text-white rounded-2xl p-6 shadow-xl">
-                <h3 class="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-gray-800 pb-2">
-                    <span class="w-6 h-6 rounded-lg bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">8</span>
+            <div class="bg-black text-white rounded-2xl p-6 shadow-xl border-2 border-black">
+                <h3 class="text-sm font-black uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-gray-700 pb-2">
+                    <span class="w-6 h-6 rounded-lg bg-white text-black flex items-center justify-center text-xs font-black">8</span>
                     <span>Conformidad de Entrevista y Cierre</span>
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-xs font-bold uppercase mb-2">
-                            Resultado de Conformidad <span class="text-rose-400">*</span>
+                        <label class="block text-xs font-black uppercase tracking-wider mb-2 text-white">
+                            RESULTADO DE CONFORMIDAD <span class="text-rose-400">*</span>
                         </label>
                         <div class="grid grid-cols-2 gap-2">
                             <button type="button" @click="conformidad = 'CONFORME'; triggerAutosave()"
-                                    :class="conformidad === 'CONFORME' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50 border-emerald-500' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'"
-                                    class="py-2.5 px-3 rounded-xl text-xs font-bold border transition text-center">
-                                🟢 CONFORME
+                                    :class="conformidad === 'CONFORME' ? 'bg-emerald-500 text-black shadow-lg font-black border-2 border-white' : 'bg-gray-800 text-gray-300 border-2 border-gray-700 font-bold hover:bg-gray-700'"
+                                    class="py-3 px-3 rounded-xl text-xs border transition text-center uppercase">
+                                CONFORME
                             </button>
                             <button type="button" @click="conformidad = 'NO CONFORME'; triggerAutosave()"
-                                    :class="conformidad === 'NO CONFORME' ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/50 border-rose-500' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'"
-                                    class="py-2.5 px-3 rounded-xl text-xs font-bold border transition text-center">
-                                🔴 NO CONFORME
+                                    :class="conformidad === 'NO CONFORME' ? 'bg-rose-500 text-white shadow-lg font-black border-2 border-white' : 'bg-gray-800 text-gray-300 border-2 border-gray-700 font-bold hover:bg-gray-700'"
+                                    class="py-3 px-3 rounded-xl text-xs border transition text-center uppercase">
+                                NO CONFORME
                             </button>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase mb-2">Fecha de Entrevista</label>
+                        <label class="block text-xs font-black uppercase tracking-wider mb-2 text-white">Fecha de Entrevista</label>
                         <input type="date" x-model="fechaEntrevista" @change="triggerAutosave()"
-                               class="w-full text-xs rounded-xl border-gray-700 bg-gray-800 text-white focus:border-indigo-400 focus:ring-indigo-400">
+                               class="w-full text-xs rounded-xl border-gray-700 bg-gray-900 text-white font-bold focus:border-white focus:ring-white">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase mb-2">Docente Entrevistador a Cargo</label>
-                        <div class="p-2.5 bg-gray-800/80 rounded-xl border border-gray-700 text-xs text-gray-300">
-                            👤 <strong>{{ Auth::user()->name }}</strong>
+                        <label class="block text-xs font-black uppercase tracking-wider mb-2 text-white">Docente Entrevistador a Cargo</label>
+                        <div class="p-2.5 bg-gray-900 rounded-xl border border-gray-700 text-xs text-white font-bold">
+                            <strong>{{ Auth::user()->name }}</strong>
                         </div>
                     </div>
 
                     <div class="md:col-span-3">
-                        <label class="block text-xs font-bold uppercase mb-2">Observaciones Adicionales de la Entrevista</label>
+                        <label class="block text-xs font-black uppercase tracking-wider mb-2 text-white">Observaciones Adicionales de la Entrevista</label>
                         <textarea x-model="observaciones" @input="triggerAutosave()" rows="2"
                                   placeholder="Notas o acuerdos particulares con la familia..."
-                                  class="w-full text-xs rounded-xl border-gray-700 bg-gray-800 text-white focus:border-indigo-400 focus:ring-indigo-400"></textarea>
+                                  class="w-full text-xs rounded-xl border-gray-700 bg-gray-900 text-white font-semibold focus:border-white focus:ring-white"></textarea>
                     </div>
                 </div>
 
                 <!-- BOTONES DE ACCIÓN FINAL -->
                 <div class="mt-6 pt-4 border-t border-gray-800 flex flex-wrap items-center justify-between gap-4">
-                    <span class="text-xs text-gray-400">
+                    <span class="text-xs text-gray-400 font-medium">
                         * Recuerde que puede guardar el progreso en cualquier momento y cerrar la ficha cuando esté completa.
                     </span>
 
                     <div class="flex items-center gap-3">
                         <button type="button" @click="guardarProgresoManual()" :disabled="isSaving"
-                                class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
-                            💾 Guardar Progreso
+                                class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-xl text-xs font-black transition shadow-sm">
+                            Guardar Progreso
                         </button>
 
                         <button type="button" @click="registrarYCerrar()" :disabled="isSaving || isClosing"
-                                :class="camposPendientesCount === 0 ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'bg-gray-700 text-gray-400 cursor-not-allowed'"
-                                class="px-6 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2">
-                            <span>🔒 Registrar y Cerrar Entrevista</span>
+                                :class="camposPendientesCount === 0 ? 'bg-white hover:bg-gray-100 text-black shadow-lg font-black border-2 border-white' : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'"
+                                class="px-6 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2">
+                            <span>Registrar y Cerrar Entrevista</span>
                         </button>
                     </div>
                 </div>
@@ -1164,23 +1172,23 @@
             fechaEntrevista: config.fechaEntrevista,
             observaciones: config.observaciones,
 
-            // Opciones Pregunta 19 (Con quién vive)
+            // Opciones Pregunta 19 (Con quién vive) - SIN EMOJIS
             opcionesConvivencia: [
-                { id: 'Papá', label: 'Papá', icon: '👨' },
-                { id: 'Mamá', label: 'Mamá', icon: '👩' },
-                { id: 'Hermanos', label: 'Hermanos', icon: '👦' },
-                { id: 'Abuelos', label: 'Abuelos', icon: '👵' },
-                { id: 'Tíos', label: 'Tíos', icon: '🧑' },
-                { id: 'Primos', label: 'Primos', icon: '🧒' },
-                { id: 'Padrastro', label: 'Padrastro', icon: '👤' },
-                { id: 'Madrastra', label: 'Madrastra', icon: '👤' },
-                { id: 'Tutor legal', label: 'Tutor legal', icon: '⚖️' },
-                { id: 'Otro', label: 'Otro(s)', icon: '➕' }
+                { id: 'Papá', label: 'Papá' },
+                { id: 'Mamá', label: 'Mamá' },
+                { id: 'Hermanos', label: 'Hermanos' },
+                { id: 'Abuelos', label: 'Abuelos' },
+                { id: 'Tíos', label: 'Tíos' },
+                { id: 'Primos', label: 'Primos' },
+                { id: 'Padrastro', label: 'Padrastro' },
+                { id: 'Madrastra', label: 'Madrastra' },
+                { id: 'Tutor legal', label: 'Tutor legal' },
+                { id: 'Otro', label: 'Otro(s)' }
             ],
             viveConSelected: [],
             viveConOtro: '',
 
-            // Opciones Pregunta 27.3 (Días Eucaristía)
+            // Opciones Pregunta 27.3 (Días Eucaristía) - SIN EMOJIS
             opcionesEucaristiaDias: ['Sábados', 'Domingos', 'Días de semana', 'Misas especiales', 'Otro'],
             eucaristiaDiasSelected: [],
             eucaristiaDiaOtro: '',
@@ -1357,17 +1365,32 @@
                 try {
                     const res = await fetch(`${config.buscarEstudiantesUrl}?q=${encodeURIComponent(q)}`);
                     const data = await res.json();
-                    this.searchHermanoResults = data;
+                    // FILTRAR PARA NO MOSTRAR AL MISMO ESTUDIANTE QUE SE ESTÁ ENTREVISTANDO
+                    const dniActual = (this.estudianteDni || '').trim();
+                    this.searchHermanoResults = data.filter(h => {
+                        if (dniActual && h.dni && h.dni.trim() === dniActual) {
+                            return false;
+                        }
+                        return true;
+                    });
                 } catch (e) {
                     console.error('Error buscando hermanos:', e);
                 }
             },
 
             anadirHermanoDesdeBusqueda(h) {
-                if (this.hermanosDatos.some(x => x.dni && x.dni === h.dni)) {
+                // VALIDACIÓN: NO PERMITIR AÑADIRSE AL MISMO ESTUDIANTE COMO HERMANO
+                const dniActual = (this.estudianteDni || '').trim();
+                if (dniActual && h.dni && h.dni.trim() === dniActual) {
+                    alert('No se puede agregar al mismo estudiante que se está entrevistando como su propio hermano.');
+                    return;
+                }
+
+                if (this.hermanosDatos.some(x => x.dni && x.dni.trim() === h.dni.trim())) {
                     alert('Este hermano ya ha sido añadido a la lista.');
                     return;
                 }
+
                 this.hermanosDatos.push({
                     id: h.id,
                     dni: h.dni,
@@ -1384,12 +1407,19 @@
                 const nombre = prompt('Ingrese nombres y apellidos del hermano(a):');
                 if (!nombre || !nombre.trim()) return;
                 const grado = prompt('Ingrese grado o nivel en que estudia (ej.: 3° Primaria):') || '';
-                const dni = prompt('Ingrese DNI del hermano (opcional):') || '';
+                const dni = (prompt('Ingrese DNI del hermano (opcional):') || '').trim();
+
+                // VALIDACIÓN: NO PERMITIR DNI DEL MISMO ESTUDIANTE
+                const dniActual = (this.estudianteDni || '').trim();
+                if (dni && dniActual && dni === dniActual) {
+                    alert('No se puede agregar al mismo estudiante como su propio hermano.');
+                    return;
+                }
 
                 this.hermanosDatos.push({
                     nombre: nombre.trim().toUpperCase(),
                     grado: grado.trim(),
-                    dni: dni.trim()
+                    dni: dni
                 });
                 this.respuestas.hermanos_en_ie = 'Sí';
                 this.triggerAutosave();
@@ -1516,9 +1546,9 @@
                     if (data.success) {
                         this.entrevistaId = data.entrevista_id;
                         this.lastSaved = data.saved_at || new Date().toLocaleTimeString();
-                        alert('✅ Progreso guardado con éxito. Puede seguir llenando o volver más tarde.');
+                        alert('Progreso guardado con éxito. Puede seguir llenando o volver más tarde.');
                     } else {
-                        alert('⚠️ ' + (data.mensaje || 'Error al guardar'));
+                        alert(data.mensaje || 'Error al guardar');
                     }
                 } catch (e) {
                     alert('Error de conexión al guardar progreso.');
@@ -1540,7 +1570,6 @@
                 this.isClosing = true;
                 try {
                     const payload = this.prepararPayload('completada');
-                    // Usar endpoint de cierre con el ID correspondiente
                     const cerrarUrl = this.entrevistaId
                         ? config.cerrarUrlTemplate.replace('__ID__', this.entrevistaId)
                         : config.storeUrl;
@@ -1557,10 +1586,10 @@
 
                     const data = await res.json();
                     if (data.success) {
-                        alert('🎉 ¡Entrevista registrada y cerrada exitosamente!');
+                        alert('Entrevista registrada y cerrada exitosamente.');
                         window.location.href = data.redirect || config.backUrl;
                     } else {
-                        alert('⚠️ ' + (data.mensaje || 'Error al cerrar entrevista'));
+                        alert(data.mensaje || 'Error al cerrar entrevista');
                         this.isClosing = false;
                     }
                 } catch (e) {
@@ -1572,4 +1601,3 @@
     }
     </script>
 </x-app-layout>
-

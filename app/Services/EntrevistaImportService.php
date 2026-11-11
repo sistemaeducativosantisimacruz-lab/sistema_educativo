@@ -472,7 +472,7 @@ class EntrevistaImportService
                     'apellido_materno' => $entrevista->estudiante_apellido_materno ?: '',
                     'nombres' => $entrevista->estudiante_nombres,
                     'fecha_nacimiento' => $entrevista->estudiante_fecha_nacimiento ?: now()->subYears(6)->toDateString(),
-                    'sexo' => 'M', // Por defecto si no viene especificado
+                    'sexo' => $entrevista->estudiante_sexo ?: 'M',
                     'nivel' => $gradoSeccion->grado->nivel,
                     'estado' => 'matriculado',
                     'colegio_inicial' => $entrevista->colegio_procedencia,
