@@ -62,7 +62,7 @@
             // Respuestas cuestionario
             respuestas: {{ json_encode($entrevista->respuestas_cuestionario ?? []) }},
             hermanosDatos: {{ json_encode($entrevista->hermanos_datos ?? []) }},
-            conformidad: '{{ $entrevista->resultado_conformidad ?? 'CONFORME' }}',
+            conformidad: '{{ $entrevista->resultado_conformidad ?? '' }}',
             fechaEntrevista: '{{ $entrevista->fecha_entrevista?->format('Y-m-d') ?? now()->toDateString() }}',
             observaciones: '{{ addslashes($entrevista->observaciones ?? '') }}',
 
@@ -645,6 +645,7 @@
                             <strong class="font-black">23. Axiología de la IE:</strong> La axiología de la institución educativa es promover la <strong class="underline">COMUNIÓN y PARTICIPACIÓN</strong> a la luz del evangelio y de la espiritualidad Agustiniana. ¿Acepta?
                         </div>
                         <select x-model="respuestas.acuerdo_comunion" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -673,6 +674,7 @@
                     <div>
                         <label class="block text-xs font-black text-black mb-1">26.1 Bautizo celebrado</label>
                         <select x-model="respuestas.sacramento_bautizo" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 focus:ring-black font-black text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -681,6 +683,7 @@
                     <div>
                         <label class="block text-xs font-black text-black mb-1">26.2 Eucaristía / Primera Comunión</label>
                         <select x-model="respuestas.sacramento_eucaristia" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 focus:ring-black font-black text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -690,6 +693,7 @@
                     <div x-show="nivel === 'secundaria'">
                         <label class="block text-xs font-black text-black mb-1">26.3 Sacramento de Confirmación</label>
                         <select x-model="respuestas.sacramento_confirmacion" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 focus:ring-black font-black text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -698,6 +702,7 @@
                     <div>
                         <label class="block text-xs font-black text-black mb-1">27.1 ¿Considera importante la Eucaristía?</label>
                         <select x-model="respuestas.eucaristia_importante" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 focus:ring-black font-black text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -747,6 +752,7 @@
                     <div>
                         <label class="block text-xs font-black text-black mb-1">28. ¿Padres Casados?</label>
                         <select x-model="respuestas.padres_casados" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -770,6 +776,7 @@
                     <div>
                         <label class="block text-xs font-black text-black mb-1">29. ¿Padece alguna enfermedad?</label>
                         <select x-model="respuestas.enfermedad" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="No">No</option>
                             <option value="Sí">Sí</option>
                         </select>
@@ -779,6 +786,7 @@
                         <div>
                             <label class="block text-xs font-black text-black mb-1">30. ¿Conoce el diagnóstico?</label>
                             <select x-model="respuestas.conoce_diagnostico" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
+                                <option value="">-- Seleccionar --</option>
                                 <option value="Sí">Sí</option>
                                 <option value="No">No</option>
                             </select>
@@ -824,6 +832,7 @@
                             <strong class="font-black text-black">Horario de entrada:</strong> Ingreso a la IE es 6:45 am. Puerta se cierra 7:00 am.
                         </span>
                         <select x-model="respuestas.norma_horario" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -846,6 +855,7 @@
                             <select x-model="respuestas.norma_corte_cabello" @change="triggerAutosave()"
                                     :disabled="estudianteSexo === 'F'"
                                     class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
+                                <option value="">-- Seleccionar --</option>
                                 <option value="Sí">Sí</option>
                                 <option value="No">No</option>
                                 <option value="No aplica">No aplica</option>
@@ -870,6 +880,7 @@
                             <select x-model="respuestas.norma_cabello_trenzado" @change="triggerAutosave()"
                                     :disabled="estudianteSexo === 'M'"
                                     class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
+                                <option value="">-- Seleccionar --</option>
                                 <option value="Sí">Sí</option>
                                 <option value="No">No</option>
                                 <option value="No aplica">No aplica</option>
@@ -883,6 +894,7 @@
                             <strong class="font-black text-black">Uso de uniforme completo</strong> según indicación en el RI.
                         </span>
                         <select x-model="respuestas.norma_uniforme" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -894,6 +906,7 @@
                             <strong class="font-black text-black">Asistencia y puntualidad</strong> diaria según horario establecido.
                         </span>
                         <select x-model="respuestas.norma_asistencia" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -905,6 +918,7 @@
                             <strong class="font-black text-black">Compromiso económico de pensiones</strong> en fechas establecidas.
                         </span>
                         <select x-model="respuestas.compromiso_pago" @change="triggerAutosave()" class="text-xs rounded-lg border-gray-400 font-black text-black ml-2">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -923,6 +937,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Reuniones de aula</span>
                         <select x-model="respuestas.oblig_reuniones_aula" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -931,6 +946,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Atención a Padres</span>
                         <select x-model="respuestas.oblig_atencion_padres" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -939,6 +955,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Escuela para Padres</span>
                         <select x-model="respuestas.oblig_escuela_padres" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -947,6 +964,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Conservación de ambientes</span>
                         <select x-model="respuestas.oblig_conservacion" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -955,6 +973,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Multa por inasistencia APAFA</span>
                         <select x-model="respuestas.oblig_multa_apafa" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -963,6 +982,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Integración de aulas</span>
                         <select x-model="respuestas.acuerdo_integracion_aulas" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -971,6 +991,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Comunicaciones WhatsApp / llamada</span>
                         <select x-model="respuestas.autoriza_comunicacion" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -979,6 +1000,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Uso de fotos y videos</span>
                         <select x-model="respuestas.autoriza_fotos_videos" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -987,6 +1009,7 @@
                     <div class="p-3 bg-gray-50 rounded-xl border border-gray-300 flex items-center justify-between text-xs font-bold text-black">
                         <span>Atención médica de emergencia</span>
                         <select x-model="respuestas.autoriza_atencion_medica" @change="triggerAutosave()" class="rounded-lg text-xs font-black py-1 border-gray-400 text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="Sí">Sí</option>
                             <option value="No">No</option>
                         </select>
@@ -998,6 +1021,7 @@
                     <div>
                         <label class="block text-xs font-black text-black mb-1">¿Autoriza que regrese solo a casa?</label>
                         <select x-model="respuestas.autoriza_regresa_solo" @change="triggerAutosave()" class="w-full text-xs rounded-xl border-gray-400 font-black text-black">
+                            <option value="">-- Seleccionar --</option>
                             <option value="No">No (Será recogido)</option>
                             <option value="Sí">Sí (Regresa solo)</option>
                         </select>
@@ -1028,17 +1052,23 @@
                             RESULTADO DE CONFORMIDAD <span class="text-rose-400">*</span>
                         </label>
                         <div class="grid grid-cols-2 gap-2">
-                            <button type="button" @click="conformidad = 'CONFORME'; triggerAutosave()"
-                                    :class="conformidad === 'CONFORME' ? 'bg-emerald-500 text-black shadow-lg font-black border-2 border-white' : 'bg-gray-800 text-gray-300 border-2 border-gray-700 font-bold hover:bg-gray-700'"
+                            <button type="button" @click="marcarConformidad('CONFORME')"
+                                    :title="puedeDarConformidad ? 'Marcar entrevista como CONFORME' : 'Bloqueado: debe completar todos los campos obligatorios antes de dar conformidad'"
+                                    :class="conformidad === 'CONFORME' ? 'bg-emerald-500 text-black shadow-lg font-black border-2 border-white' : (puedeDarConformidad ? 'bg-gray-800 text-emerald-400 border-2 border-emerald-600 hover:bg-gray-700 font-black' : 'bg-gray-900 text-gray-500 border-2 border-gray-800 opacity-60 cursor-not-allowed font-bold')"
                                     class="py-3 px-3 rounded-xl text-xs border transition text-center uppercase">
                                 CONFORME
                             </button>
-                            <button type="button" @click="conformidad = 'NO CONFORME'; triggerAutosave()"
+                            <button type="button" @click="marcarConformidad('NO CONFORME')"
                                     :class="conformidad === 'NO CONFORME' ? 'bg-rose-500 text-white shadow-lg font-black border-2 border-white' : 'bg-gray-800 text-gray-300 border-2 border-gray-700 font-bold hover:bg-gray-700'"
                                     class="py-3 px-3 rounded-xl text-xs border transition text-center uppercase">
                                 NO CONFORME
                             </button>
                         </div>
+                        <template x-if="!puedeDarConformidad">
+                            <p class="text-[11px] text-amber-400 font-semibold mt-2">
+                                Para marcar CONFORME debe responder todos los campos obligatorios pendientes (<span x-text="camposFaltantesSinConformidadCount"></span> faltantes).
+                            </p>
+                        </template>
                     </div>
 
                     <div>
@@ -1124,51 +1154,51 @@
             apoderadoParentesco: config.apoderadoParentesco,
 
             respuestas: Object.assign({
-                num_hermanos: 0,
+                num_hermanos: '',
                 vive_con: '',
-                hermanos_en_ie: 'No',
-                hermanos_en_ie_cantidad: 0,
+                hermanos_en_ie: '',
+                hermanos_en_ie_cantidad: '',
                 hermanos_en_ie_nombres: '',
-                acuerdo_comunion: 'Sí',
+                acuerdo_comunion: '',
                 parroquia: '',
                 comunidad_zonal: '',
-                sacramento_bautizo: 'Sí',
-                sacramento_eucaristia: 'Sí',
-                sacramento_confirmacion: 'No',
-                eucaristia_importante: 'Sí',
+                sacramento_bautizo: '',
+                sacramento_eucaristia: '',
+                sacramento_confirmacion: '',
+                eucaristia_importante: '',
                 eucaristia_por_que: '',
                 eucaristia_dia: '',
-                padres_casados: 'Sí',
+                padres_casados: '',
                 estado_conyugal: '',
-                enfermedad: 'No',
-                conoce_diagnostico: 'No aplica',
+                enfermedad: '',
+                conoce_diagnostico: '',
                 diagnostico_cual: '',
-                patria_potestad: 'Ambos padres',
+                patria_potestad: '',
                 persona_dispuesta: '',
-                oblig_reuniones_aula: 'Sí',
-                oblig_atencion_padres: 'Sí',
-                oblig_escuela_padres: 'Sí',
-                oblig_conservacion: 'Sí',
-                oblig_actividades_ie: 'Sí',
-                oblig_multa_apafa: 'Sí',
-                norma_horario: 'Sí',
-                norma_corte_cabello: 'Sí',
-                norma_cabello_trenzado: 'No aplica',
-                norma_uniforme: 'Sí',
-                norma_asistencia: 'Sí',
-                compromiso_pago: 'Sí',
-                autoriza_comunicacion: 'Sí',
-                autoriza_fotos_videos: 'Sí',
-                autoriza_actividades: 'Sí',
-                autoriza_atencion_medica: 'Sí',
-                autoriza_regresa_solo: 'No',
+                oblig_reuniones_aula: '',
+                oblig_atencion_padres: '',
+                oblig_escuela_padres: '',
+                oblig_conservacion: '',
+                oblig_actividades_ie: '',
+                oblig_multa_apafa: '',
+                norma_horario: '',
+                norma_corte_cabello: '',
+                norma_cabello_trenzado: '',
+                norma_uniforme: '',
+                norma_asistencia: '',
+                compromiso_pago: '',
+                autoriza_comunicacion: '',
+                autoriza_fotos_videos: '',
+                autoriza_actividades: '',
+                autoriza_atencion_medica: '',
+                autoriza_regresa_solo: '',
                 recoge_nombre: '',
                 recoge_dni: '',
-                acuerdo_integracion_aulas: 'Sí'
+                acuerdo_integracion_aulas: ''
             }, config.respuestas || {}),
 
             hermanosDatos: config.hermanosDatos || [],
-            conformidad: config.conformidad || 'CONFORME',
+            conformidad: config.conformidad || '',
             fechaEntrevista: config.fechaEntrevista,
             observaciones: config.observaciones,
 
@@ -1208,7 +1238,7 @@
             debounceTimer: null,
 
             initForm() {
-                // Parsear vive_con inicial
+                // Parsear vive_con inicial si existe
                 if (this.respuestas.vive_con) {
                     const partes = this.respuestas.vive_con.split(',').map(s => s.trim());
                     partes.forEach(p => {
@@ -1221,12 +1251,8 @@
                         }
                     });
                 }
-                if (this.viveConSelected.length === 0) {
-                    this.viveConSelected = ['Papá', 'Mamá'];
-                    this.actualizarViveCon();
-                }
 
-                // Parsear eucaristia_dia inicial
+                // Parsear eucaristia_dia inicial si existe
                 if (this.respuestas.eucaristia_dia) {
                     const dias = this.respuestas.eucaristia_dia.split(',').map(s => s.trim());
                     dias.forEach(d => {
@@ -1237,10 +1263,6 @@
                             this.eucaristiaDiaOtro = d;
                         }
                     });
-                }
-                if (this.eucaristiaDiasSelected.length === 0) {
-                    this.eucaristiaDiasSelected = ['Domingos'];
-                    this.actualizarEucaristiaDia();
                 }
 
                 // Ajustar regla de corte según sexo inicial
@@ -1262,10 +1284,14 @@
             setSexo(sexo, autosave = true) {
                 this.estudianteSexo = sexo;
                 if (sexo === 'M') {
-                    this.respuestas.norma_corte_cabello = (this.respuestas.norma_corte_cabello === 'No aplica') ? 'Sí' : this.respuestas.norma_corte_cabello;
+                    if (this.respuestas.norma_corte_cabello === 'No aplica') {
+                        this.respuestas.norma_corte_cabello = '';
+                    }
                     this.respuestas.norma_cabello_trenzado = 'No aplica';
                 } else if (sexo === 'F') {
-                    this.respuestas.norma_cabello_trenzado = (this.respuestas.norma_cabello_trenzado === 'No aplica') ? 'Sí' : this.respuestas.norma_cabello_trenzado;
+                    if (this.respuestas.norma_cabello_trenzado === 'No aplica') {
+                        this.respuestas.norma_cabello_trenzado = '';
+                    }
                     this.respuestas.norma_corte_cabello = 'No aplica';
                 }
                 if (autosave) this.triggerAutosave();
@@ -1433,16 +1459,146 @@
                 this.triggerAutosave();
             },
 
+            obtenerCamposFaltantes() {
+                const faltantes = [];
+
+                // 1. Datos del Estudiante
+                if (!this.estudianteDni || this.estudianteDni.length < 8) {
+                    faltantes.push('DNI del Estudiante (8 dígitos)');
+                }
+                if (!this.estudianteNombres || !this.estudianteNombres.trim()) {
+                    faltantes.push('Nombres del Estudiante');
+                }
+                if (!this.estudianteApellidoPaterno || !this.estudianteApellidoPaterno.trim()) {
+                    faltantes.push('Apellido Paterno del Estudiante');
+                }
+                if (!this.estudianteSexo) {
+                    faltantes.push('Género / Sexo del Estudiante');
+                }
+                if (!this.gradoPostula) {
+                    faltantes.push('Grado al que postula');
+                }
+
+                // 2. Datos de Padres o Apoderado
+                if (!this.padreNombres && !this.madreNombres && !this.apoderadoNombres) {
+                    faltantes.push('Datos de al menos un Padre, Madre o Apoderado');
+                }
+
+                // 3. Dinámica Familiar
+                if (!this.respuestas.vive_con || !this.respuestas.vive_con.trim()) {
+                    faltantes.push('Pregunta 19: ¿Con quién vive el estudiante?');
+                }
+                if (!this.respuestas.hermanos_en_ie) {
+                    faltantes.push('Pregunta 20: ¿Tiene hermanos en la IE?');
+                } else if (this.respuestas.hermanos_en_ie === 'Sí' && this.hermanosDatos.length === 0) {
+                    faltantes.push('Pregunta 20: Añadir al menos un hermano en la IE');
+                }
+                if (!this.respuestas.acuerdo_comunion) {
+                    faltantes.push('Pregunta 23: Axiología Institucional');
+                }
+
+                // 4. Fe y Sacramentos
+                if (!this.respuestas.sacramento_bautizo) {
+                    faltantes.push('Pregunta 26.1: Bautizo celebrado');
+                }
+                if (!this.respuestas.sacramento_eucaristia) {
+                    faltantes.push('Pregunta 26.2: Primera Comunión');
+                }
+                if (this.nivel === 'secundaria' && !this.respuestas.sacramento_confirmacion) {
+                    faltantes.push('Pregunta 26.3: Confirmación');
+                }
+                if (!this.respuestas.eucaristia_importante) {
+                    faltantes.push('Pregunta 27.1: Importancia de la Eucaristía');
+                }
+
+                // 5. Situación Conyugal y Salud
+                if (!this.respuestas.padres_casados) {
+                    faltantes.push('Pregunta 28: ¿Padres casados?');
+                }
+                if (!this.respuestas.enfermedad) {
+                    faltantes.push('Pregunta 29: ¿Padece alguna enfermedad?');
+                }
+
+                // 6. Normas Institucionales
+                if (!this.respuestas.norma_horario) {
+                    faltantes.push('Norma: Horario de entrada');
+                }
+                if (this.estudianteSexo === 'M' && (!this.respuestas.norma_corte_cabello || this.respuestas.norma_corte_cabello === 'No aplica')) {
+                    faltantes.push('Norma: Corte de cabello escolar');
+                }
+                if (this.estudianteSexo === 'F' && (!this.respuestas.norma_cabello_trenzado || this.respuestas.norma_cabello_trenzado === 'No aplica')) {
+                    faltantes.push('Norma: Cabello trenzado sin maquillaje');
+                }
+                if (!this.respuestas.norma_uniforme) {
+                    faltantes.push('Norma: Uso de uniforme completo');
+                }
+                if (!this.respuestas.norma_asistencia) {
+                    faltantes.push('Norma: Asistencia y puntualidad');
+                }
+                if (!this.respuestas.compromiso_pago) {
+                    faltantes.push('Compromiso económico de pensiones');
+                }
+
+                // 7. Obligaciones y Autorizaciones
+                if (!this.respuestas.oblig_reuniones_aula) {
+                    faltantes.push('Obligación: Reuniones de aula');
+                }
+                if (!this.respuestas.oblig_atencion_padres) {
+                    faltantes.push('Obligación: Atención a Padres');
+                }
+                if (!this.respuestas.oblig_escuela_padres) {
+                    faltantes.push('Obligación: Escuela para Padres');
+                }
+                if (!this.respuestas.oblig_conservacion) {
+                    faltantes.push('Obligación: Conservación de ambientes');
+                }
+                if (!this.respuestas.oblig_multa_apafa) {
+                    faltantes.push('Obligación: Multa APAFA');
+                }
+                if (!this.respuestas.acuerdo_integracion_aulas) {
+                    faltantes.push('Obligación: Integración de aulas');
+                }
+                if (!this.respuestas.autoriza_comunicacion) {
+                    faltantes.push('Autorización: Comunicaciones WhatsApp');
+                }
+                if (!this.respuestas.autoriza_fotos_videos) {
+                    faltantes.push('Autorización: Fotos y videos');
+                }
+                if (!this.respuestas.autoriza_atencion_medica) {
+                    faltantes.push('Autorización: Atención médica');
+                }
+                if (!this.respuestas.autoriza_regresa_solo) {
+                    faltantes.push('Autorización: Retiro de estudiante (¿Regresa solo?)');
+                } else if (this.respuestas.autoriza_regresa_solo === 'No' && (!this.respuestas.recoge_nombre || !this.respuestas.recoge_nombre.trim())) {
+                    faltantes.push('Nombre de la persona autorizada a recoger al estudiante');
+                }
+
+                return faltantes;
+            },
+
+            get camposFaltantesSinConformidadCount() {
+                return this.obtenerCamposFaltantes().length;
+            },
+
+            get puedeDarConformidad() {
+                return this.obtenerCamposFaltantes().length === 0;
+            },
+
             get camposPendientesCount() {
-                let pendientes = 0;
-                if (!this.estudianteDni || this.estudianteDni.length < 8) pendientes++;
-                if (!this.estudianteNombres || !this.estudianteNombres.trim()) pendientes++;
-                if (!this.estudianteApellidoPaterno || !this.estudianteApellidoPaterno.trim()) pendientes++;
-                if (!this.estudianteSexo) pendientes++;
-                if (!this.gradoPostula) pendientes++;
-                if (!this.conformidad) pendientes++;
-                if (!this.padreNombres && !this.madreNombres && !this.apoderadoNombres) pendientes++;
-                return pendientes;
+                const faltantes = this.obtenerCamposFaltantes();
+                return faltantes.length + (!this.conformidad ? 1 : 0);
+            },
+
+            marcarConformidad(tipo) {
+                if (tipo === 'CONFORME') {
+                    const faltantes = this.obtenerCamposFaltantes();
+                    if (faltantes.length > 0) {
+                        alert('No se puede dar CONFORMIDAD si aún hay ' + faltantes.length + ' campos obligatorios sin marcar o sin responder:\n\n• ' + faltantes.slice(0, 6).join('\n• ') + (faltantes.length > 6 ? '\n... y ' + (faltantes.length - 6) + ' campos más.' : '') + '\n\nPor favor complete dichos campos primero.');
+                        return;
+                    }
+                }
+                this.conformidad = tipo;
+                this.triggerAutosave();
             },
 
             triggerAutosave() {
@@ -1558,8 +1714,14 @@
             },
 
             async registrarYCerrar() {
-                if (this.camposPendientesCount > 0) {
-                    alert(`Faltan ${this.camposPendientesCount} campo(s) obligatorio(s). Por favor verifique DNI (8 dígitos), nombres, apellido paterno, género y datos de los padres.`);
+                const faltantes = this.obtenerCamposFaltantes();
+                if (faltantes.length > 0) {
+                    alert('No se puede registrar y cerrar la entrevista porque faltan responder ' + faltantes.length + ' campo(s) obligatorio(s):\n\n• ' + faltantes.slice(0, 6).join('\n• ') + (faltantes.length > 6 ? '\n... y ' + (faltantes.length - 6) + ' campos más.' : ''));
+                    return;
+                }
+
+                if (!this.conformidad) {
+                    alert('Debe seleccionar el Resultado de Conformidad (CONFORME o NO CONFORME) para poder cerrar la entrevista.');
                     return;
                 }
 

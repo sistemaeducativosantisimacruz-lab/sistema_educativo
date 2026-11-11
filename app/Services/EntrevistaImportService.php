@@ -693,56 +693,104 @@ class EntrevistaImportService
         $cabelloTrenzado = $datos['norma_cabello_trenzado'] ?? '';
         if ($sexo === 'M') {
             $cabelloTrenzado = 'No aplica';
-            if (empty($corteCabello)) $corteCabello = 'Sí';
         } elseif ($sexo === 'F') {
             $corteCabello = 'No aplica';
-            if (empty($cabelloTrenzado)) $cabelloTrenzado = 'Sí';
         }
 
-        // Armar array completo de respuestas del cuestionario
+        // Armar array de respuestas del cuestionario sin forzar valores por defecto
         $cuestionario = [
-            'num_hermanos' => $datos['num_hermanos'] ?? 0,
+            'num_hermanos' => isset($datos['num_hermanos']) && $datos['num_hermanos'] !== '' ? (int) $datos['num_hermanos'] : '',
             'vive_con' => $viveCon,
-            'hermanos_en_ie' => $tieneHermanosIE ? 'Sí' : 'No',
+            'hermanos_en_ie' => $datos['hermanos_en_ie'] ?? ($tieneHermanosIE ? 'Sí' : ''),
             'hermanos_en_ie_cantidad' => $cantHermanosIE,
             'hermanos_en_ie_nombres' => $nombresHermanosIE,
-            'acuerdo_comunion' => $datos['acuerdo_comunion'] ?? 'Sí',
+            'acuerdo_comunion' => $datos['acuerdo_comunion'] ?? '',
             'parroquia' => $datos['parroquia'] ?? '',
             'comunidad_zonal' => $datos['comunidad_zonal'] ?? '',
-            'sacramento_bautizo' => $datos['sacramento_bautizo'] ?? 'Sí',
-            'sacramento_eucaristia' => $datos['sacramento_eucaristia'] ?? 'Sí',
-            'sacramento_confirmacion' => $datos['sacramento_confirmacion'] ?? ($nivel === 'secundaria' ? 'No' : 'No aplica'),
-            'eucaristia_importante' => $datos['eucaristia_importante'] ?? 'Sí',
+            'sacramento_bautizo' => $datos['sacramento_bautizo'] ?? '',
+            'sacramento_eucaristia' => $datos['sacramento_eucaristia'] ?? '',
+            'sacramento_confirmacion' => $datos['sacramento_confirmacion'] ?? ($nivel === 'secundaria' ? '' : 'No aplica'),
+            'eucaristia_importante' => $datos['eucaristia_importante'] ?? '',
             'eucaristia_por_que' => $datos['eucaristia_por_que'] ?? '',
             'eucaristia_dia' => $eucaristiaDia,
-            'padres_casados' => $datos['padres_casados'] ?? 'Sí',
+            'padres_casados' => $datos['padres_casados'] ?? '',
             'estado_conyugal' => $datos['estado_conyugal'] ?? '',
-            'enfermedad' => $datos['enfermedad'] ?? 'No',
-            'conoce_diagnostico' => $datos['conoce_diagnostico'] ?? 'No aplica',
+            'enfermedad' => $datos['enfermedad'] ?? '',
+            'conoce_diagnostico' => $datos['conoce_diagnostico'] ?? '',
             'diagnostico_cual' => $datos['diagnostico_cual'] ?? '',
-            'patria_potestad' => $datos['patria_potestad'] ?? 'Ambos padres',
+            'patria_potestad' => $datos['patria_potestad'] ?? '',
             'persona_dispuesta' => $datos['persona_dispuesta'] ?? '',
-            'oblig_reuniones_aula' => $datos['oblig_reuniones_aula'] ?? 'Sí',
-            'oblig_atencion_padres' => $datos['oblig_atencion_padres'] ?? 'Sí',
-            'oblig_escuela_padres' => $datos['oblig_escuela_padres'] ?? 'Sí',
-            'oblig_conservacion' => $datos['oblig_conservacion'] ?? 'Sí',
-            'oblig_actividades_ie' => $datos['oblig_actividades_ie'] ?? 'Sí',
-            'oblig_multa_apafa' => $datos['oblig_multa_apafa'] ?? 'Sí',
-            'norma_horario' => $datos['norma_horario'] ?? 'Sí',
+            'oblig_reuniones_aula' => $datos['oblig_reuniones_aula'] ?? '',
+            'oblig_atencion_padres' => $datos['oblig_atencion_padres'] ?? '',
+            'oblig_escuela_padres' => $datos['oblig_escuela_padres'] ?? '',
+            'oblig_conservacion' => $datos['oblig_conservacion'] ?? '',
+            'oblig_actividades_ie' => $datos['oblig_actividades_ie'] ?? '',
+            'oblig_multa_apafa' => $datos['oblig_multa_apafa'] ?? '',
+            'norma_horario' => $datos['norma_horario'] ?? '',
             'norma_corte_cabello' => $corteCabello,
             'norma_cabello_trenzado' => $cabelloTrenzado,
-            'norma_uniforme' => $datos['norma_uniforme'] ?? 'Sí',
-            'norma_asistencia' => $datos['norma_asistencia'] ?? 'Sí',
-            'compromiso_pago' => $datos['compromiso_pago'] ?? 'Sí',
-            'autoriza_comunicacion' => $datos['autoriza_comunicacion'] ?? 'Sí',
-            'autoriza_fotos_videos' => $datos['autoriza_fotos_videos'] ?? 'Sí',
-            'autoriza_actividades' => $datos['autoriza_actividades'] ?? 'Sí',
-            'autoriza_atencion_medica' => $datos['autoriza_atencion_medica'] ?? 'Sí',
-            'autoriza_regresa_solo' => $datos['autoriza_regresa_solo'] ?? 'No',
+            'norma_uniforme' => $datos['norma_uniforme'] ?? '',
+            'norma_asistencia' => $datos['norma_asistencia'] ?? '',
+            'compromiso_pago' => $datos['compromiso_pago'] ?? '',
+            'autoriza_comunicacion' => $datos['autoriza_comunicacion'] ?? '',
+            'autoriza_fotos_videos' => $datos['autoriza_fotos_videos'] ?? '',
+            'autoriza_actividades' => $datos['autoriza_actividades'] ?? '',
+            'autoriza_atencion_medica' => $datos['autoriza_atencion_medica'] ?? '',
+            'autoriza_regresa_solo' => $datos['autoriza_regresa_solo'] ?? '',
             'recoge_nombre' => $datos['recoge_nombre'] ?? '',
             'recoge_dni' => $datos['recoge_dni'] ?? '',
-            'acuerdo_integracion_aulas' => $datos['acuerdo_integracion_aulas'] ?? 'Sí',
+            'acuerdo_integracion_aulas' => $datos['acuerdo_integracion_aulas'] ?? '',
         ];
+
+        $resultadoConformidad = !empty($datos['resultado_conformidad']) ? strtoupper(trim($datos['resultado_conformidad'])) : null;
+
+        // Validación estricta al cerrar la entrevista
+        if ($estadoEntrevista === 'completada') {
+            if (empty($resultadoConformidad)) {
+                throw new \Exception("Debe seleccionar el Resultado de Conformidad (CONFORME o NO CONFORME) para cerrar la entrevista.");
+            }
+
+            if ($resultadoConformidad === 'CONFORME') {
+                $faltantes = [];
+                if (empty($dniEstudiante) || strlen($dniEstudiante) < 8) $faltantes[] = 'DNI del Estudiante (8 dígitos)';
+                if (empty($nombres)) $faltantes[] = 'Nombres del Estudiante';
+                if (empty($paterno)) $faltantes[] = 'Apellido Paterno';
+                if (empty($sexo)) $faltantes[] = 'Género/Sexo del Estudiante';
+                if (empty($cuestionario['vive_con'])) $faltantes[] = 'Pregunta 19: Con quién vive el estudiante';
+                if (empty($cuestionario['hermanos_en_ie'])) $faltantes[] = 'Pregunta 20: Hermanos en la IE';
+                if (empty($cuestionario['acuerdo_comunion'])) $faltantes[] = 'Pregunta 23: Axiología Institucional';
+                if (empty($cuestionario['sacramento_bautizo'])) $faltantes[] = 'Pregunta 26.1: Bautizo';
+                if (empty($cuestionario['sacramento_eucaristia'])) $faltantes[] = 'Pregunta 26.2: Primera Comunión';
+                if ($nivel === 'secundaria' && empty($cuestionario['sacramento_confirmacion'])) $faltantes[] = 'Pregunta 26.3: Confirmación';
+                if (empty($cuestionario['eucaristia_importante'])) $faltantes[] = 'Pregunta 27.1: Importancia de la Eucaristía';
+                if (empty($cuestionario['padres_casados'])) $faltantes[] = 'Pregunta 28: ¿Padres casados?';
+                if (empty($cuestionario['enfermedad'])) $faltantes[] = 'Pregunta 29: Enfermedad';
+                if (empty($cuestionario['norma_horario'])) $faltantes[] = 'Norma: Horario de entrada';
+                if ($sexo === 'M' && (empty($cuestionario['norma_corte_cabello']) || $cuestionario['norma_corte_cabello'] === 'No aplica')) {
+                    $faltantes[] = 'Norma: Corte de cabello escolar';
+                }
+                if ($sexo === 'F' && (empty($cuestionario['norma_cabello_trenzado']) || $cuestionario['norma_cabello_trenzado'] === 'No aplica')) {
+                    $faltantes[] = 'Norma: Cabello trenzado';
+                }
+                if (empty($cuestionario['norma_uniforme'])) $faltantes[] = 'Norma: Uso de uniforme';
+                if (empty($cuestionario['norma_asistencia'])) $faltantes[] = 'Norma: Asistencia y puntualidad';
+                if (empty($cuestionario['compromiso_pago'])) $faltantes[] = 'Compromiso económico de pensiones';
+                if (empty($cuestionario['oblig_reuniones_aula'])) $faltantes[] = 'Obligación: Reuniones de aula';
+                if (empty($cuestionario['oblig_atencion_padres'])) $faltantes[] = 'Obligación: Atención a Padres';
+                if (empty($cuestionario['oblig_escuela_padres'])) $faltantes[] = 'Obligación: Escuela para Padres';
+                if (empty($cuestionario['oblig_conservacion'])) $faltantes[] = 'Obligación: Conservación de ambientes';
+                if (empty($cuestionario['oblig_multa_apafa'])) $faltantes[] = 'Obligación: Multa APAFA';
+                if (empty($cuestionario['acuerdo_integracion_aulas'])) $faltantes[] = 'Obligación: Integración de aulas';
+                if (empty($cuestionario['autoriza_comunicacion'])) $faltantes[] = 'Autorización: Comunicaciones WhatsApp';
+                if (empty($cuestionario['autoriza_fotos_videos'])) $faltantes[] = 'Autorización: Fotos y videos';
+                if (empty($cuestionario['autoriza_atencion_medica'])) $faltantes[] = 'Autorización: Atención médica';
+                if (empty($cuestionario['autoriza_regresa_solo'])) $faltantes[] = 'Autorización: Retiro del estudiante';
+
+                if (!empty($faltantes)) {
+                    throw new \Exception("No se puede dar CONFORMIDAD si aún hay campos obligatorios sin marcar: " . implode(', ', array_slice($faltantes, 0, 4)) . (count($faltantes) > 4 ? ' y otros más.' : '.'));
+                }
+            }
+        }
 
         $payload = [
             'ano_lectivo_postula' => $anoPostula,
@@ -785,7 +833,7 @@ class EntrevistaImportService
             'hermanos_datos' => $hermanosDatos,
             'docente_entrevistador_id' => $docenteId,
             'fecha_entrevista' => $this->parsearFecha($datos['fecha_entrevista'] ?? null) ?? now()->toDateString(),
-            'resultado_conformidad' => strtoupper(trim($datos['resultado_conformidad'] ?? 'CONFORME')),
+            'resultado_conformidad' => !empty($datos['resultado_conformidad']) ? strtoupper(trim($datos['resultado_conformidad'])) : null,
             'estado_entrevista' => $estadoEntrevista,
             'observaciones' => $datos['observaciones'] ?? null,
         ];

@@ -743,7 +743,30 @@ class EntrevistasAdmisionTest extends TestCase
             'ano_lectivo_postula' => 2026,
             'padre_nombres' => 'Juan Mendoza',
             'resultado_conformidad' => 'CONFORME',
+            'vive_con' => 'Papá, Mamá',
+            'hermanos_en_ie' => 'No',
+            'acuerdo_comunion' => 'Sí',
+            'sacramento_bautizo' => 'Sí',
+            'sacramento_eucaristia' => 'Sí',
+            'eucaristia_importante' => 'Sí',
+            'padres_casados' => 'Sí',
+            'enfermedad' => 'No',
+            'norma_horario' => 'Sí',
             'norma_cabello_trenzado' => 'Sí',
+            'norma_uniforme' => 'Sí',
+            'norma_asistencia' => 'Sí',
+            'compromiso_pago' => 'Sí',
+            'oblig_reuniones_aula' => 'Sí',
+            'oblig_atencion_padres' => 'Sí',
+            'oblig_escuela_padres' => 'Sí',
+            'oblig_conservacion' => 'Sí',
+            'oblig_multa_apafa' => 'Sí',
+            'acuerdo_integracion_aulas' => 'Sí',
+            'autoriza_comunicacion' => 'Sí',
+            'autoriza_fotos_videos' => 'Sí',
+            'autoriza_atencion_medica' => 'Sí',
+            'autoriza_regresa_solo' => 'No',
+            'recoge_nombre' => 'Rosa Flores',
         ];
 
         $response = $this->actingAs($this->docenteUser1)->postJson(
@@ -758,6 +781,40 @@ class EntrevistasAdmisionTest extends TestCase
         // Para mujeres: cabello trenzado 'Sí', y corte escolar 'No aplica'
         $this->assertEquals('Sí', $entrevista->respuestas_cuestionario['norma_cabello_trenzado']);
         $this->assertEquals('No aplica', $entrevista->respuestas_cuestionario['norma_corte_cabello']);
+    }
+
+    public function test_no_permite_conformidad_si_hay_campos_sin_marcar(): void
+    {
+        $entrevista = EntrevistaAdmision::create([
+            'ano_lectivo_postula' => 2026,
+            'nivel' => 'primaria',
+            'grado_postula' => '1° Primaria',
+            'estudiante_dni' => '78889900',
+            'estudiante_nombres' => 'Lucas',
+            'estudiante_apellido_paterno' => 'Paredes',
+            'estudiante_sexo' => 'M',
+            'estado_entrevista' => 'en_progreso',
+            'docente_entrevistador_id' => $this->docenteUser1->id,
+        ]);
+
+        $payloadIncompleto = [
+            'entrevista_id' => $entrevista->id,
+            'estudiante_dni' => '78889900',
+            'estudiante_nombres' => 'Lucas',
+            'estudiante_apellido_paterno' => 'Paredes',
+            'estudiante_sexo' => 'M',
+            'resultado_conformidad' => 'CONFORME',
+            // Omitimos intencionalmente el resto de campos
+        ];
+
+        $response = $this->actingAs($this->docenteUser1)->postJson(
+            route('docente.admision.cerrar', $entrevista),
+            $payloadIncompleto
+        );
+
+        $response->assertStatus(422);
+        $response->assertJson(['success' => false]);
+        $this->assertStringContainsString('No se puede dar CONFORMIDAD si aún hay campos obligatorios sin marcar', $response->json('mensaje'));
     }
 
     public function test_matricular_postulante_respeta_sexo_y_promocion(): void

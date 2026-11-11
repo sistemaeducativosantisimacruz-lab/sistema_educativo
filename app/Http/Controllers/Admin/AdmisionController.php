@@ -284,7 +284,7 @@ class AdmisionController extends Controller
             'nivel' => $nivel,
             'grado_postula' => $nivel === 'secundaria' ? '1° Secundaria' : '1° Primaria',
             'fecha_entrevista' => now()->toDateString(),
-            'resultado_conformidad' => 'CONFORME',
+            'resultado_conformidad' => null,
             'estado_entrevista' => 'en_progreso',
             'docente_entrevistador_id' => auth()->id(),
         ]);
