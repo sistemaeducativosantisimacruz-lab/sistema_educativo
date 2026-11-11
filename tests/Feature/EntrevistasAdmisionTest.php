@@ -703,7 +703,11 @@ class EntrevistasAdmisionTest extends TestCase
 
         $response = $this->actingAs($this->adminUser)->postJson(route('admin.admision.guardar-en-linea'), $payload);
         $response->assertStatus(200);
-        $response->assertJson(['success' => true]);
+        $response->assertJson([
+            'success' => true,
+            'ano_lectivo_postula' => 2026,
+        ]);
+        $response->assertSessionHas('filtro_ano_postula', '2026');
 
         $entrevista = EntrevistaAdmision::where('estudiante_dni', '79998877')->first();
         $this->assertNotNull($entrevista);
@@ -876,7 +880,11 @@ class EntrevistasAdmisionTest extends TestCase
 
         $response = $this->actingAs($this->adminUser)->postJson(route('admin.admision.guardar-en-linea'), $payload);
         $response->assertStatus(200);
-        $response->assertJson(['success' => true]);
+        $response->assertJson([
+            'success' => true,
+            'ano_lectivo_postula' => 2026,
+        ]);
+        $response->assertSessionHas('filtro_ano_postula', '2026');
 
         $entrevista = EntrevistaAdmision::where('estudiante_dni', '79991122')->first();
         $this->assertNotNull($entrevista);

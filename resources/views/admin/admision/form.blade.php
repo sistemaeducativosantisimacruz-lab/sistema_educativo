@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <a href="{{ $routeBack }}" class="p-2 bg-white rounded-lg border border-gray-300 text-gray-700 hover:text-black hover:bg-gray-100 transition shadow-sm" title="Volver al listado">
+                <a href="{{ $routeBack }}?ano_postula={{ $entrevista->ano_lectivo_postula ?? $anoActual }}" class="p-2 bg-white rounded-lg border border-gray-300 text-gray-700 hover:text-black hover:bg-gray-100 transition shadow-sm" title="Volver al listado">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
@@ -125,7 +125,16 @@
             </div>
 
             <!-- BOTONES DE GUARDADO -->
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-2">
+                <a :href="`${config.backUrl}?ano_postula=${anoLectivo}`"
+                   class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-400 text-black rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5"
+                   title="Volver a la vista de admisión">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span>Volver</span>
+                </a>
+
                 <button type="button" @click="guardarProgresoManual()" :disabled="isSaving"
                         class="px-4 py-2 bg-white border border-gray-400 text-black hover:bg-gray-100 rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 disabled:opacity-50">
                     <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1412,6 +1421,9 @@
         </div>
     </div>
 
+    <!-- SWEETALERT2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- SCRIPT ALPINE DEL FORMULARIO -->
     <script>
     function entrevistaForm(config) {
@@ -1611,7 +1623,17 @@
                 const dni = (this.nuevaPersonaRecoge.dni || '').trim();
 
                 if (!nombre) {
-                    alert('Debe ingresar los nombres y apellidos de la persona autorizada.');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Campo Requerido',
+                            text: 'Debe ingresar los nombres y apellidos de la persona autorizada.',
+                            confirmButtonColor: '#000000',
+                            confirmButtonText: 'Entendido'
+                        });
+                    } else {
+                        alert('Debe ingresar los nombres y apellidos de la persona autorizada.');
+                    }
                     return;
                 }
 
@@ -1793,12 +1815,32 @@
                 // VALIDACIÓN: NO PERMITIR AÑADIRSE AL MISMO ESTUDIANTE COMO HERMANO
                 const dniActual = (this.estudianteDni || '').trim();
                 if (dniActual && h.dni && h.dni.trim() === dniActual) {
-                    alert('No se puede agregar al mismo estudiante que se está entrevistando como su propio hermano.');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Acción no permitida',
+                            text: 'No se puede agregar al mismo estudiante que se está entrevistando como su propio hermano.',
+                            confirmButtonColor: '#000000',
+                            confirmButtonText: 'Entendido'
+                        });
+                    } else {
+                        alert('No se puede agregar al mismo estudiante que se está entrevistando como su propio hermano.');
+                    }
                     return;
                 }
 
                 if (this.hermanosDatos.some(x => x.dni && x.dni.trim() === h.dni.trim())) {
-                    alert('Este hermano ya ha sido añadido a la lista.');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Hermano ya añadido',
+                            text: 'Este hermano ya ha sido añadido a la lista.',
+                            confirmButtonColor: '#000000',
+                            confirmButtonText: 'Entendido'
+                        });
+                    } else {
+                        alert('Este hermano ya ha sido añadido a la lista.');
+                    }
                     return;
                 }
 
@@ -2014,7 +2056,21 @@
                 if (tipo === 'CONFORME') {
                     const faltantes = this.obtenerCamposFaltantes();
                     if (faltantes.length > 0) {
-                        alert('No se puede dar CONFORMIDAD si aún hay ' + faltantes.length + ' campos obligatorios sin marcar o sin responder:\n\n• ' + faltantes.slice(0, 6).join('\n• ') + (faltantes.length > 6 ? '\n... y ' + (faltantes.length - 6) + ' campos más.' : '') + '\n\nPor favor complete dichos campos primero.');
+                        const listaHtml = '<ul style="text-align: left; font-size: 13px; line-height: 1.6; margin-top: 10px; max-height: 220px; overflow-y: auto; padding-left: 12px;">' +
+                            faltantes.map(f => `<li style="margin-bottom: 4px;">• <strong>${f}</strong></li>`).join('') +
+                            '</ul>';
+
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Campos obligatorios incompletos',
+                                html: `<p style="font-size: 14px;">No se puede otorgar <strong>CONFORMIDAD</strong> mientras queden <strong>${faltantes.length}</strong> campo(s) obligatorio(s) sin marcar o responder:</p>${listaHtml}<p style="margin-top: 12px; font-weight: bold; font-size: 13px; color: #b91c1c;">Por favor complete los campos faltantes antes de seleccionar Conforme.</p>`,
+                                confirmButtonText: 'Revisar campos pendientes',
+                                confirmButtonColor: '#000000'
+                            });
+                        } else {
+                            alert('No se puede dar CONFORMIDAD si aún hay ' + faltantes.length + ' campos obligatorios sin marcar:\n\n• ' + faltantes.slice(0, 6).join('\n• '));
+                        }
                         return;
                     }
                 }
@@ -2125,12 +2181,42 @@
                     if (data.success) {
                         this.entrevistaId = data.entrevista_id;
                         this.lastSaved = data.saved_at || new Date().toLocaleTimeString();
-                        alert('Progreso guardado con éxito. Puede seguir llenando o volver más tarde.');
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Progreso Guardado!',
+                                html: `<p style="font-size: 14px;">La ficha ha sido guardada en progreso para el <strong>Año ${this.anoLectivo}</strong>.</p><p style="font-size: 12px; color: #6b7280; margin-top: 6px;">Puede continuar completando la ficha o volver a la vista de admisión cuando desee.</p>`,
+                                confirmButtonColor: '#000000',
+                                confirmButtonText: 'Continuar llenando'
+                            });
+                        } else {
+                            alert('Progreso guardado con éxito. Puede seguir llenando o volver más tarde.');
+                        }
                     } else {
-                        alert(data.mensaje || 'Error al guardar');
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error al Guardar',
+                                text: data.mensaje || 'Error al guardar progreso',
+                                confirmButtonColor: '#000000',
+                                confirmButtonText: 'Entendido'
+                            });
+                        } else {
+                            alert(data.mensaje || 'Error al guardar');
+                        }
                     }
                 } catch (e) {
-                    alert('Error de conexión al guardar progreso.');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error de Conexión',
+                            text: 'No se pudo conectar con el servidor para guardar el progreso.',
+                            confirmButtonColor: '#000000',
+                            confirmButtonText: 'Entendido'
+                        });
+                    } else {
+                        alert('Error de conexión al guardar progreso.');
+                    }
                 } finally {
                     this.isSaving = false;
                 }
@@ -2139,17 +2225,55 @@
             async registrarYCerrar() {
                 const faltantes = this.obtenerCamposFaltantes();
                 if (faltantes.length > 0) {
-                    alert('No se puede registrar y cerrar la entrevista porque faltan responder ' + faltantes.length + ' campo(s) obligatorio(s):\n\n• ' + faltantes.slice(0, 6).join('\n• ') + (faltantes.length > 6 ? '\n... y ' + (faltantes.length - 6) + ' campos más.' : ''));
+                    const listaHtml = '<ul style="text-align: left; font-size: 13px; line-height: 1.6; margin-top: 10px; max-height: 220px; overflow-y: auto; padding-left: 12px;">' +
+                        faltantes.map(f => `<li style="margin-bottom: 4px;">• <strong>${f}</strong></li>`).join('') +
+                        '</ul>';
+
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'No se puede registrar y cerrar',
+                            html: `<p style="font-size: 14px;">Faltan responder <strong>${faltantes.length}</strong> campo(s) obligatorio(s):</p>${listaHtml}`,
+                            confirmButtonColor: '#000000',
+                            confirmButtonText: 'Completar campos faltantes'
+                        });
+                    } else {
+                        alert('No se puede registrar y cerrar la entrevista porque faltan responder ' + faltantes.length + ' campo(s) obligatorio(s):\n\n• ' + faltantes.slice(0, 6).join('\n• '));
+                    }
                     return;
                 }
 
                 if (!this.conformidad) {
-                    alert('Debe seleccionar el Resultado de Conformidad (CONFORME o NO CONFORME) para poder cerrar la entrevista.');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Conformidad Requerida',
+                            text: 'Debe seleccionar el Resultado de Conformidad (CONFORME o NO CONFORME) para poder cerrar la entrevista.',
+                            confirmButtonColor: '#000000',
+                            confirmButtonText: 'Entendido'
+                        });
+                    } else {
+                        alert('Debe seleccionar el Resultado de Conformidad (CONFORME o NO CONFORME) para poder cerrar la entrevista.');
+                    }
                     return;
                 }
 
-                if (!confirm('¿Confirma que desea registrar y cerrar esta entrevista? Una vez cerrada quedará registrada en el sistema de admisión.')) {
-                    return;
+                if (typeof Swal !== 'undefined') {
+                    const result = await Swal.fire({
+                        title: '¿Registrar y Cerrar Entrevista?',
+                        text: 'Una vez cerrada, la entrevista quedará registrada y pasará al estado completada en el sistema de admisión.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#000000',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Sí, registrar y cerrar',
+                        cancelButtonText: 'Seguir revisando'
+                    });
+                    if (!result.isConfirmed) return;
+                } else {
+                    if (!confirm('¿Confirma que desea registrar y cerrar esta entrevista? Una vez cerrada quedará registrada en el sistema de admisión.')) {
+                        return;
+                    }
                 }
 
                 this.isClosing = true;
@@ -2171,14 +2295,44 @@
 
                     const data = await res.json();
                     if (data.success) {
-                        alert('Entrevista registrada y cerrada exitosamente.');
-                        window.location.href = data.redirect || config.backUrl;
+                        if (typeof Swal !== 'undefined') {
+                            await Swal.fire({
+                                icon: 'success',
+                                title: '¡Entrevista Completada!',
+                                text: data.mensaje || 'Entrevista registrada y cerrada exitosamente.',
+                                confirmButtonColor: '#000000',
+                                confirmButtonText: 'Ir al Listado de Admisión'
+                            });
+                        } else {
+                            alert('Entrevista registrada y cerrada exitosamente.');
+                        }
+                        window.location.href = data.redirect || `${config.backUrl}?ano_postula=${this.anoLectivo}`;
                     } else {
-                        alert(data.mensaje || 'Error al cerrar entrevista');
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error al Cerrar',
+                                text: data.mensaje || 'Error al cerrar entrevista',
+                                confirmButtonColor: '#000000',
+                                confirmButtonText: 'Entendido'
+                            });
+                        } else {
+                            alert(data.mensaje || 'Error al cerrar entrevista');
+                        }
                         this.isClosing = false;
                     }
                 } catch (e) {
-                    alert('Error de conexión al registrar y cerrar entrevista.');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error de Conexión',
+                            text: 'No se pudo conectar con el servidor para registrar y cerrar la entrevista.',
+                            confirmButtonColor: '#000000',
+                            confirmButtonText: 'Entendido'
+                        });
+                    } else {
+                        alert('Error de conexión al registrar y cerrar entrevista.');
+                    }
                     this.isClosing = false;
                 }
             }

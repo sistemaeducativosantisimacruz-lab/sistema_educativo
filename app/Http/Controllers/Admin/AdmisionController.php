@@ -20,7 +20,33 @@ class AdmisionController extends Controller
     public function index(Request $request)
     {
         $anoActual = AnoLectivo::where('activo', true)->value('anio') ?? (int) date('Y');
-        $anoPostula = $request->filled('ano_postula') ? (int) $request->get('ano_postula') : $anoActual;
+
+        $anosEnEntrevistas = EntrevistaAdmision::select('ano_lectivo_postula')
+            ->distinct()
+            ->pluck('ano_lectivo_postula')
+            ->toArray();
+        $anosLectivosIds = AnoLectivo::pluck('anio')->toArray();
+        $todosLosAnos = array_values(array_unique(array_merge($anosLectivosIds, $anosEnEntrevistas, [$anoActual, $anoActual + 1])));
+        rsort($todosLosAnos);
+
+        // Resolver año a filtrar
+        if ($request->has('ano_postula')) {
+            $val = $request->get('ano_postula');
+            $anoPostula = ($val === 'todos' || $val === '') ? null : (int) $val;
+            session(['filtro_ano_postula' => $val]);
+        } elseif (session()->has('filtro_ano_postula')) {
+            $val = session('filtro_ano_postula');
+            $anoPostula = ($val === 'todos' || $val === '') ? null : (int) $val;
+        } else {
+            // Priorizar el año que tenga entrevistas registradas si el año actual no tiene
+            $tieneAnoSiguiente = in_array($anoActual + 1, $anosEnEntrevistas);
+            $tieneAnoActual = in_array($anoActual, $anosEnEntrevistas);
+            if ($tieneAnoSiguiente && !$tieneAnoActual) {
+                $anoPostula = $anoActual + 1;
+            } else {
+                $anoPostula = $anoActual;
+            }
+        }
 
         $query = EntrevistaAdmision::with([
             'docenteEntrevistador',
@@ -71,8 +97,11 @@ class AdmisionController extends Controller
             $query->where('docente_entrevistador_id', $docenteId);
         }
 
-        // Métricas / KPIs calculadas sobre el año seleccionado
-        $baseMetrics = EntrevistaAdmision::where('ano_lectivo_postula', $anoPostula);
+        // Métricas / KPIs calculadas sobre el año seleccionado (o global si se filtran todos)
+        $baseMetrics = EntrevistaAdmision::query();
+        if ($anoPostula) {
+            $baseMetrics->where('ano_lectivo_postula', $anoPostula);
+        }
         $totalPostulantes = (clone $baseMetrics)->count();
         $totalConformes = (clone $baseMetrics)->where('resultado_conformidad', 'CONFORME')->count();
         $totalNoConformes = (clone $baseMetrics)->where('resultado_conformidad', 'NO CONFORME')->count();
@@ -123,7 +152,8 @@ class AdmisionController extends Controller
             'gradoSecciones',
             'docentes',
             'docentesParaAsignar',
-            'gradosPostulaDisponibles'
+            'gradosPostulaDisponibles',
+            'todosLosAnos'
         ));
     }
 
@@ -335,9 +365,13 @@ class AdmisionController extends Controller
         try {
             $entrevista = $service->guardarEntrevistaEnLinea($request->all(), $docenteId, $entrevistaId, 'en_progreso');
 
+            // Recordar año de postulación en la sesión
+            session(['filtro_ano_postula' => (string) $entrevista->ano_lectivo_postula]);
+
             return response()->json([
                 'success' => true,
                 'entrevista_id' => $entrevista->id,
+                'ano_lectivo_postula' => $entrevista->ano_lectivo_postula,
                 'estado_entrevista' => $entrevista->estado_entrevista,
                 'saved_at' => now()->format('H:i:s'),
                 'mensaje' => 'Progreso guardado automáticamente.',
@@ -359,6 +393,9 @@ class AdmisionController extends Controller
 
         try {
             $entrevista = $service->guardarEntrevistaEnLinea($request->all(), $docenteId, $entrevista->id, 'completada');
+
+            // Recordar año de postulación en la sesión
+            session(['filtro_ano_postula' => (string) $entrevista->ano_lectivo_postula]);
 
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([

@@ -6,7 +6,7 @@
                     <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    <span>Mis Entrevistas de Admisión {{ $anoPostula }}</span>
+                    <span>Mis Entrevistas de Admisión {{ $anoPostula ? $anoPostula : '(Todos los Años)' }}</span>
                 </h2>
                 <p class="text-sm text-gray-500 mt-1">
                     Descargue el formato oficial, realice las entrevistas a los padres de familia y suba los archivos procesados.
@@ -159,7 +159,12 @@
                 <form method="GET" action="{{ route('docente.admision.index') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">Año Postulación</label>
-                        <input type="number" name="ano_postula" value="{{ $anoPostula }}" class="w-full text-xs rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <select name="ano_postula" onchange="this.form.submit()" class="w-full text-xs rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 font-semibold">
+                            <option value="todos" {{ $anoPostula === null ? 'selected' : '' }}>Todos los Años</option>
+                            @foreach($todosLosAnos as $anio)
+                                <option value="{{ $anio }}" {{ $anoPostula == $anio ? 'selected' : '' }}>{{ $anio }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div>
@@ -216,18 +221,22 @@
                                 <tr class="hover:bg-gray-50/75 transition">
                                     <td class="px-5 py-4">
                                         <div class="font-bold text-gray-900">
-                                            {{ $entrevista->nombre_completo_estudiante }}
+                                            {{ trim(str_replace(',', '', $entrevista->nombre_completo_estudiante ?? '')) ? $entrevista->nombre_completo_estudiante : '(Borrador sin nombre)' }}
                                         </div>
                                         <div class="flex items-center gap-2 mt-1">
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-gray-100 text-gray-800">
-                                                DNI: {{ $entrevista->estudiante_dni }}
+                                                DNI: {{ $entrevista->estudiante_dni && !str_starts_with($entrevista->estudiante_dni, 'BORRADOR') ? $entrevista->estudiante_dni : 'Pendiente' }}
                                             </span>
                                         </div>
                                     </td>
 
                                     <td class="px-5 py-4">
                                         <div class="font-semibold text-gray-800">{{ $entrevista->grado_postula }}</div>
-                                        <div class="text-xs text-gray-500 capitalize">{{ $entrevista->nivel }}</div>
+                                        <div class="text-xs text-gray-500 capitalize flex items-center gap-1.5 mt-0.5">
+                                            <span>{{ $entrevista->nivel }}</span>
+                                            <span class="text-gray-300">·</span>
+                                            <span class="font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Año {{ $entrevista->ano_lectivo_postula }}</span>
+                                        </div>
                                     </td>
 
                                     <td class="px-5 py-4">
@@ -252,10 +261,15 @@
                                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                 CONFORME
                                             </span>
-                                        @else
+                                        @elseif($entrevista->resultado_conformidad === 'NO CONFORME')
                                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                                                 NO CONFORME
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                                Pendiente
                                             </span>
                                         @endif
                                     </td>
