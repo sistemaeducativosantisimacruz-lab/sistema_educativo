@@ -594,8 +594,11 @@
                                     </div>
                                 </div>
 
-                                <button type="button" @click="anadirHermanoManual()"
-                                        class="px-4 py-2 bg-black text-white rounded-lg text-xs font-black hover:bg-gray-800 transition flex items-center justify-center gap-1">
+                                <button type="button" @click="abrirModalManualHermano()"
+                                        class="px-4 py-2 bg-black text-white rounded-lg text-xs font-black hover:bg-gray-800 transition flex items-center justify-center gap-1.5 shadow-sm">
+                                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
                                     <span>+ Añadir Manualmente</span>
                                 </button>
                             </div>
@@ -1113,6 +1116,160 @@
                 </div>
             </div>
         </form>
+
+        <!-- MODAL PARA AÑADIR HERMANO MANUALMENTE -->
+        <div x-show="showManualHermanoModal" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto"
+             aria-labelledby="modal-title" role="dialog" aria-modal="true"
+             @keydown.escape.window="cerrarModalManualHermano()">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
+                <!-- Fondo oscuro con desenfoque -->
+                <div x-show="showManualHermanoModal"
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     @click="cerrarModalManualHermano()"
+                     class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+                     aria-hidden="true"></div>
+
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <!-- Tarjeta Modal -->
+                <div x-show="showManualHermanoModal"
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-2 border-black z-10">
+
+                    <!-- Cabecera -->
+                    <div class="px-6 py-4 bg-black text-white flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-white text-black flex items-center justify-center text-xs font-black">20</span>
+                            <div>
+                                <h3 class="text-sm font-black uppercase tracking-wider text-white">
+                                    Registrar Hermano(a) en la IE
+                                </h3>
+                                <p class="text-[11px] text-gray-300 font-bold">
+                                    Añadir registro familiar para asociar a los hermanos
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" @click="cerrarModalManualHermano()"
+                                class="text-gray-400 hover:text-white p-1 rounded-lg transition"
+                                title="Cerrar ventana">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Mensaje de error si falla validación -->
+                    <template x-if="nuevoHermano.error">
+                        <div class="mx-6 mt-4 p-3 rounded-xl bg-rose-50 border-2 border-rose-300 text-rose-800 text-xs font-black flex items-center gap-2">
+                            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span x-text="nuevoHermano.error"></span>
+                        </div>
+                    </template>
+
+                    <!-- Formulario -->
+                    <div class="p-6 space-y-4">
+                        <!-- NOMBRES Y APELLIDOS -->
+                        <div>
+                            <label class="block text-xs font-black text-black uppercase tracking-wider mb-1">
+                                Nombres y Apellidos del Hermano(a) <span class="text-rose-600 font-black">*</span>
+                            </label>
+                            <input type="text" id="manual-hermano-nombre"
+                                   x-model="nuevoHermano.nombre"
+                                   @keydown.enter.prevent="guardarHermanoManual()"
+                                   placeholder="Ej.: LUCAS GABRIEL MENDOZA FLORES"
+                                   class="w-full text-xs rounded-xl border-2 border-gray-400 focus:ring-black focus:border-black font-black text-black uppercase py-2.5 px-3">
+                        </div>
+
+                        <!-- GRADO / NIVEL -->
+                        <div>
+                            <label class="block text-xs font-black text-black uppercase tracking-wider mb-1">
+                                Grado o Nivel en que Estudia
+                            </label>
+                            <div class="space-y-2">
+                                <input type="text"
+                                       x-model="nuevoHermano.grado"
+                                       @keydown.enter.prevent="guardarHermanoManual()"
+                                       placeholder="Ej.: 3° Primaria / 1° Secundaria / Inicial 5 años"
+                                       class="w-full text-xs rounded-xl border-2 border-gray-400 focus:ring-black focus:border-black font-bold text-black py-2.5 px-3">
+                                
+                                <!-- Atajos rápidos de grados -->
+                                <div class="flex flex-wrap gap-1.5 pt-1">
+                                    <span class="text-[10px] text-gray-500 font-bold self-center mr-1">Rápido:</span>
+                                    <button type="button" @click="nuevoHermano.grado = 'Inicial 5 años'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">Inicial</button>
+                                    <button type="button" @click="nuevoHermano.grado = '1° Primaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">1° Prim.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '2° Primaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">2° Prim.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '3° Primaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">3° Prim.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '4° Primaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">4° Prim.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '5° Primaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">5° Prim.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '6° Primaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">6° Prim.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '1° Secundaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">1° Sec.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '2° Secundaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">2° Sec.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '3° Secundaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">3° Sec.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '4° Secundaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">4° Sec.</button>
+                                    <button type="button" @click="nuevoHermano.grado = '5° Secundaria'"
+                                            class="text-[10px] px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white rounded-md font-bold text-black border border-gray-300 transition">5° Sec.</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DNI DEL HERMANO (OPCIONAL) -->
+                        <div>
+                            <label class="block text-xs font-black text-black uppercase tracking-wider mb-1">
+                                D.N.I. del Hermano(a) <span class="text-gray-600 font-bold lowercase">(opcional)</span>
+                            </label>
+                            <input type="text"
+                                   x-model="nuevoHermano.dni"
+                                   @keydown.enter.prevent="guardarHermanoManual()"
+                                   maxlength="8"
+                                   placeholder="8 dígitos numéricos"
+                                   class="w-full text-xs rounded-xl border-2 border-gray-400 focus:ring-black focus:border-black font-mono font-bold text-black py-2.5 px-3">
+                            <p class="text-[11px] text-gray-600 font-bold mt-1">
+                                No puede ingresar el mismo DNI del estudiante que está siendo entrevistado.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="bg-gray-100 px-6 py-4 flex items-center justify-end gap-3 border-t-2 border-gray-300">
+                        <button type="button" @click="cerrarModalManualHermano()"
+                                class="px-4 py-2.5 bg-white text-black border-2 border-gray-400 font-black rounded-xl text-xs hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="button" @click="guardarHermanoManual()"
+                                class="px-5 py-2.5 bg-black text-white border-2 border-black font-black rounded-xl text-xs hover:bg-gray-800 transition flex items-center gap-1.5 shadow-md">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <span>Añadir Hermano</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- SCRIPT ALPINE DEL FORMULARIO -->
@@ -1230,6 +1387,15 @@
             // Búsqueda hermano
             searchHermanoQuery: '',
             searchHermanoResults: [],
+
+            // Modal para añadir hermano manualmente
+            showManualHermanoModal: false,
+            nuevoHermano: {
+                dni: '',
+                nombre: '',
+                grado: '',
+                error: ''
+            },
 
             // Estados de guardado
             isSaving: false,
@@ -1429,26 +1595,62 @@
                 this.triggerAutosave();
             },
 
-            anadirHermanoManual() {
-                const nombre = prompt('Ingrese nombres y apellidos del hermano(a):');
-                if (!nombre || !nombre.trim()) return;
-                const grado = prompt('Ingrese grado o nivel en que estudia (ej.: 3° Primaria):') || '';
-                const dni = (prompt('Ingrese DNI del hermano (opcional):') || '').trim();
+            abrirModalManualHermano() {
+                this.nuevoHermano = {
+                    dni: '',
+                    nombre: '',
+                    grado: '',
+                    error: ''
+                };
+                this.showManualHermanoModal = true;
+                setTimeout(() => {
+                    const input = document.getElementById('manual-hermano-nombre');
+                    if (input) input.focus();
+                }, 100);
+            },
+
+            cerrarModalManualHermano() {
+                this.showManualHermanoModal = false;
+                this.nuevoHermano = {
+                    dni: '',
+                    nombre: '',
+                    grado: '',
+                    error: ''
+                };
+            },
+
+            guardarHermanoManual() {
+                this.nuevoHermano.error = '';
+                const nombre = (this.nuevoHermano.nombre || '').trim();
+                const grado = (this.nuevoHermano.grado || '').trim();
+                const dni = (this.nuevoHermano.dni || '').trim();
+
+                if (!nombre) {
+                    this.nuevoHermano.error = 'Debe ingresar los nombres y apellidos del hermano(a).';
+                    return;
+                }
 
                 // VALIDACIÓN: NO PERMITIR DNI DEL MISMO ESTUDIANTE
                 const dniActual = (this.estudianteDni || '').trim();
                 if (dni && dniActual && dni === dniActual) {
-                    alert('No se puede agregar al mismo estudiante como su propio hermano.');
+                    this.nuevoHermano.error = 'No se puede agregar al mismo estudiante que se está entrevistando como su propio hermano.';
+                    return;
+                }
+
+                if (dni && this.hermanosDatos.some(x => x.dni && x.dni.trim() === dni)) {
+                    this.nuevoHermano.error = 'Este hermano ya se encuentra registrado con el DNI ' + dni + '.';
                     return;
                 }
 
                 this.hermanosDatos.push({
-                    nombre: nombre.trim().toUpperCase(),
-                    grado: grado.trim(),
-                    dni: dni
+                    id: null,
+                    dni: dni,
+                    nombre: nombre.toUpperCase(),
+                    grado: grado
                 });
                 this.respuestas.hermanos_en_ie = 'Sí';
                 this.triggerAutosave();
+                this.cerrarModalManualHermano();
             },
 
             eliminarHermano(index) {
