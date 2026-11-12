@@ -69,6 +69,10 @@
         showDetailModal: false,
         showEntrevistadoresModal: false,
         searchDocente: '',
+        puedeMatricular: {{ $puedeMatricular ? 'true' : 'false' }},
+        bimestresCerrados: {{ $bimestresCerrados }},
+        bimestresTotal: {{ $bimestresTotal }},
+        anoActivoAnio: '{{ $anoActivo ? $anoActivo->anio : '' }}',
         docentesList: {{ json_encode($docentesParaAsignar->map(fn($d) => [
             'id' => $d->id,
             'dni' => $d->dni ?: '',
@@ -94,9 +98,13 @@
                 }
             } catch (e) {
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire('Error', 'No se pudo actualizar el rol de entrevistador', 'error');
-                } else {
-                    alert('No se pudo actualizar el rol de entrevistador');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo actualizar el rol de entrevistador',
+                        confirmButtonColor: '#000000',
+                        confirmButtonText: 'Entendido'
+                    });
                 }
             } finally {
                 docente.updating = false;
@@ -115,12 +123,60 @@
         },
         selectedEntrevista: null,
         openAssign(entrevista) {
+            if (!this.puedeMatricular) {
+                this.mostrarAvisoMatriculaBloqueada();
+                return;
+            }
             this.selectedEntrevista = entrevista;
             this.showAssignModal = true;
         },
         openDetail(entrevista) {
             this.selectedEntrevista = entrevista;
             this.showDetailModal = true;
+        },
+        mostrarAvisoMatriculaBloqueada() {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Matrícula Bloqueada',
+                html: `
+                    <div class='text-left text-sm space-y-3'>
+                        <p>La opción de formalizar la matrícula se encuentra <strong>bloqueada</strong> en este momento.</p>
+                        <div class='p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs leading-relaxed'>
+                            <strong>Requisito del Sistema:</strong> Para iniciar el proceso de matrícula, es necesario que los <strong>4 bimestres</strong> del año lectivo activo (${this.anoActivoAnio || 'actual'}) estén completamente cerrados en el sistema y el año escolar concluido.
+                        </div>
+                        <div class='text-xs text-gray-700 font-semibold flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200'>
+                            <span>Progreso de bimestres cerrados:</span>
+                            <span class='px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold'>${this.bimestresCerrados} de 4 cerrados</span>
+                        </div>
+                    </div>
+                `,
+                confirmButtonColor: '#000000',
+                confirmButtonText: 'Entendido'
+            });
+        },
+        confirmarEliminarEntrevista(url, nombre) {
+            Swal.fire({
+                title: '¿Eliminar ficha de entrevista?',
+                html: `<p class='text-sm text-gray-600'>¿Está seguro de eliminar permanentemente la ficha de entrevista de <strong>${nombre}</strong>?</p><p class='text-xs text-rose-600 mt-2 font-medium'>Esta acción no se puede revertir.</p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#b91c1c',
+                cancelButtonColor: '#4b5563',
+                confirmButtonText: 'Sí, eliminar ficha',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = url;
+                    form.innerHTML = `
+                        <input type='hidden' name='_token' value='${document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')}'>
+                        <input type='hidden' name='_method' value='DELETE'>
+                    `;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         }
     }" @open-import-modal.window="showImportModal = true"
        @open-entrevistadores-modal.window="showEntrevistadoresModal = true">
@@ -160,6 +216,28 @@
                         <span class="font-medium text-sm">{{ session('error') }}</span>
                     </div>
                     <button type="button" @click="$el.parentElement.remove()" class="text-rose-500 hover:text-rose-700">&times;</button>
+                </div>
+            @endif
+
+            <!-- Banner informativo si la matrícula se encuentra bloqueada por bimestres pendientes -->
+            @if(!$puedeMatricular)
+                <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3.5 text-amber-950 shadow-sm">
+                    <div class="p-2 bg-amber-100 text-amber-800 rounded-lg shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 text-sm">
+                        <div class="font-bold text-amber-950 flex flex-wrap items-center gap-2">
+                            <span>Opción de Matrícula Bloqueada</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-200 text-amber-900 border border-amber-300">
+                                {{ $bimestresCerrados }}/4 Bimestres Cerrados en {{ $anoActivo ? $anoActivo->anio : 'Año Actual' }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-amber-800 mt-1 leading-relaxed">
+                            Para formalizar la matrícula y asignación de aula de un postulante, es requisito que el año lectivo en curso esté finalizado y los <strong>4 bimestres</strong> estén formalmente cerrados en el sistema.
+                        </p>
+                    </div>
                 </div>
             @endif
 
@@ -463,23 +541,28 @@
 
                                         <!-- Asignar Sección / Matricular -->
                                         @if($entrevista->estado === 'nuevo_ingresante')
-                                            <button type="button" @click="openAssign({{ json_encode($entrevista) }})" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition" title="Asignar Sección y Matricular">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-                                                </svg>
-                                                Matricular
-                                            </button>
-
-                                            <!-- Eliminar Ficha -->
-                                            <form method="POST" action="{{ route('admin.admision.destroy', $entrevista) }}" class="inline" onsubmit="return confirm('¿Está seguro de eliminar esta ficha de entrevista?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar Ficha">
-                                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            @if($puedeMatricular)
+                                                <button type="button" @click="openAssign({{ json_encode($entrevista) }})" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition" title="Asignar Sección y Matricular">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                                                     </svg>
+                                                    Matricular
                                                 </button>
-                                            </form>
+                                            @else
+                                                <button type="button" @click="mostrarAvisoMatriculaBloqueada()" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 border border-gray-300 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-200 hover:text-gray-800 shadow-sm transition cursor-pointer" title="Matrícula bloqueada: requiere que los 4 bimestres del año lectivo estén cerrados">
+                                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                                    </svg>
+                                                    Matricular
+                                                </button>
+                                            @endif
+
+                                            <!-- Eliminar Ficha con SweetAlert2 -->
+                                            <button type="button" @click="confirmarEliminarEntrevista('{{ route('admin.admision.destroy', $entrevista) }}', '{{ addslashes($entrevista->nombre_completo_estudiante) }}')" class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar Ficha">
+                                                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
                                         @endif
                                     </td>
                                 </tr>

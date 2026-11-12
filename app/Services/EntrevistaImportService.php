@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AnoLectivo;
 use App\Models\Apoderado;
+use App\Models\Bimestre;
 use App\Models\EntrevistaAdmision;
 use App\Models\Estudiante;
 use App\Models\Grado;
@@ -445,6 +446,16 @@ class EntrevistaImportService
     {
         if ($entrevista->estado === 'matriculado') {
             throw new \Exception("Este estudiante ya ha sido matriculado previamente.");
+        }
+
+        // Validar que los 4 bimestres del año lectivo activo estén formalmente cerrados en el sistema
+        $anoActivo = AnoLectivo::where('activo', true)->first();
+        $bimestresTotal = $anoActivo ? Bimestre::where('ano_lectivo_id', $anoActivo->id)->count() : 0;
+        $bimestresCerrados = $anoActivo ? Bimestre::where('ano_lectivo_id', $anoActivo->id)->where('estado', 'cerrado')->count() : 0;
+
+        if (!$anoActivo || $bimestresTotal < 4 || $bimestresCerrados < 4) {
+            $anoStr = $anoActivo ? $anoActivo->anio : 'actual';
+            throw new \Exception("La opción de matricular está bloqueada. Para habilitar la matrícula, deben estar cerrados los 4 bimestres del año lectivo {$anoStr} en el sistema (Actualmente: {$bimestresCerrados}/4 cerrados).");
         }
 
         $gradoSeccion = GradoSeccion::with('grado', 'seccion')->findOrFail($gradoSeccionId);

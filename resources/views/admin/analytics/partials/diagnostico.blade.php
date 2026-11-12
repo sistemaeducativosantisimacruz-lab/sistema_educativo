@@ -436,7 +436,13 @@
 
             abrirModalExportar() {
                 if (!this.estudianteSeleccionado) {
-                    alert('Por favor seleccione un estudiante de la lista antes de exportar su informe.');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Selección requerida',
+                        text: 'Por favor seleccione un estudiante de la lista antes de exportar su informe.',
+                        confirmButtonColor: '#000000',
+                        confirmButtonText: 'Entendido'
+                    });
                     return;
                 }
                 this.modalExportar = true;

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AnoLectivo;
 use App\Models\Apoderado;
+use App\Models\Bimestre;
 use App\Models\Docente;
 use App\Models\EntrevistaAdmision;
 use App\Models\Estudiante;
@@ -70,6 +71,16 @@ class EntrevistasAdmisionTest extends TestCase
             $table->id();
             $table->integer('anio');
             $table->boolean('activo')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('bimestres', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('ano_lectivo_id');
+            $table->integer('numero');
+            $table->string('estado')->default('cerrado');
+            $table->date('fecha_inicio')->nullable();
+            $table->date('fecha_fin')->nullable();
             $table->timestamps();
         });
 
@@ -238,6 +249,14 @@ class EntrevistasAdmisionTest extends TestCase
             'anio' => 2027,
             'activo' => true,
         ]);
+
+        for ($i = 1; $i <= 4; $i++) {
+            Bimestre::create([
+                'ano_lectivo_id' => $this->anoLectivo->id,
+                'numero' => $i,
+                'estado' => 'cerrado',
+            ]);
+        }
 
         $grado = Grado::create([
             'nombre' => '1° Primaria',
@@ -894,5 +913,34 @@ class EntrevistasAdmisionTest extends TestCase
         $this->assertStringContainsString('CARLOS MENDOZA', $entrevista->respuestas_cuestionario['recoge_nombre']);
         $this->assertStringContainsString('11223344', $entrevista->respuestas_cuestionario['recoge_dni']);
         $this->assertStringContainsString('55667788', $entrevista->respuestas_cuestionario['recoge_dni']);
+    }
+
+    public function test_no_se_puede_matricular_si_los_cuatro_bimestres_del_ano_activo_no_estan_cerrados(): void
+    {
+        // Reabrir el 4to bimestre del año activo para simular año lectivo aún en curso
+        Bimestre::where('ano_lectivo_id', $this->anoLectivo->id)->where('numero', 4)->update(['estado' => 'abierto']);
+
+        $entrevista = EntrevistaAdmision::create([
+            'ano_lectivo_postula' => 2027,
+            'nivel' => 'primaria',
+            'grado_postula' => '1° Primaria',
+            'estudiante_dni' => '99887766',
+            'estudiante_nombres' => 'POSTULANTE PRUEBA',
+            'estado' => 'nuevo_ingresante',
+        ]);
+
+        // 1. Intentar matricular mediante controlador: debe ser bloqueado y redirigir con error
+        $response = $this->actingAs($this->adminUser)->from(route('admin.admision.index'))->post(route('admin.admision.matricular', $entrevista), [
+            'grado_seccion_id' => $this->gradoSeccion->id,
+        ]);
+
+        $response->assertRedirect(route('admin.admision.index'));
+        $response->assertSessionHas('error');
+        $this->assertEquals('nuevo_ingresante', $entrevista->fresh()->estado);
+
+        // 2. Intentar matricular mediante servicio: debe lanzar excepción impidiendo la operación
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('La opción de matricular está bloqueada');
+        app(EntrevistaImportService::class)->matricularPostulante($entrevista, $this->gradoSeccion->id, $this->anoLectivo->id);
     }
 }

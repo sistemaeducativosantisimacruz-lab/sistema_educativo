@@ -342,11 +342,23 @@
 
             async submitConValidacion() {
                 if (this.seleccionados.length === 0) {
-                    alert('Debes seleccionar al menos una sección.');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Selección requerida',
+                        text: 'Debes seleccionar al menos una sección.',
+                        confirmButtonColor: '#000000',
+                        confirmButtonText: 'Entendido'
+                    });
                     return;
                 }
                 if (this.esEspecialista && !this.cursoId) {
-                    alert('Debes seleccionar el curso antes de asignar.');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Curso requerido',
+                        text: 'Debes seleccionar el curso antes de asignar.',
+                        confirmButtonColor: '#000000',
+                        confirmButtonText: 'Entendido'
+                    });
                     return;
                 }
 

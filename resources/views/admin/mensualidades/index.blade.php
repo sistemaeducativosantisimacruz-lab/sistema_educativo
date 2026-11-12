@@ -25,6 +25,22 @@
         toggleOne(id, checked) {
             if (checked) { this.selectedIds.push(id); }
             else { this.selectedIds = this.selectedIds.filter(i => i !== id); }
+        },
+        confirmarActualizarMasivo(form) {
+            Swal.fire({
+                title: '¿Actualizar estado?',
+                text: '¿Desea actualizar el estado de los ' + this.selectedIds.length + ' registro(s) seleccionados?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#16a34a',
+                cancelButtonColor: '#4b5563',
+                confirmButtonText: 'Sí, aplicar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
         }
     }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-5">
@@ -306,9 +322,9 @@
                             <option value="EXONERADO">EXONERADO</option>
                             <option value="BENEFICIADO">BENEFICIADO</option>
                         </select>
-                        <button type="submit"
+                        <button type="button"
                             class="bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-1 px-4 rounded-lg shadow transition"
-                            onclick="return confirm('¿Actualizar el estado de todos los seleccionados?')">
+                            @click="confirmarActualizarMasivo($el.closest('form'))">
                             Aplicar
                         </button>
                     </form>

@@ -194,8 +194,14 @@ function importWizard() {
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: payload,
             })
-            .then(() => {
-                alert('Importación completada');
+            .then(async () => {
+                await Swal.fire({
+                    icon: 'success',
+                    title: '¡Completado!',
+                    text: 'Importación completada con éxito.',
+                    confirmButtonColor: '#000000',
+                    confirmButtonText: 'Aceptar'
+                });
                 window.location.reload();
             })
             .catch(err => console.error(err));

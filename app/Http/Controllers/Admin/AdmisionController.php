@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AnoLectivo;
+use App\Models\Bimestre;
 use App\Models\Docente;
 use App\Models\EntrevistaAdmision;
 use App\Models\GradoSeccion;
@@ -114,6 +115,11 @@ class AdmisionController extends Controller
         // Opciones para filtros y modal de asignación
         $anosLectivos = AnoLectivo::orderByDesc('anio')->get();
         $anoActivo = AnoLectivo::where('activo', true)->first();
+
+        // Control de bloqueo de matrícula: requiere que el año lectivo activo tenga sus 4 bimestres cerrados
+        $bimestresTotal = $anoActivo ? Bimestre::where('ano_lectivo_id', $anoActivo->id)->count() : 0;
+        $bimestresCerrados = $anoActivo ? Bimestre::where('ano_lectivo_id', $anoActivo->id)->where('estado', 'cerrado')->count() : 0;
+        $puedeMatricular = ($anoActivo && $bimestresTotal >= 4 && $bimestresCerrados >= 4);
         
         $gradoSecciones = GradoSeccion::with(['grado', 'seccion', 'anoLectivo'])
             ->where('activo', true)
@@ -149,6 +155,9 @@ class AdmisionController extends Controller
             'totalMatriculados',
             'anosLectivos',
             'anoActivo',
+            'puedeMatricular',
+            'bimestresTotal',
+            'bimestresCerrados',
             'gradoSecciones',
             'docentes',
             'docentesParaAsignar',
@@ -249,6 +258,16 @@ class AdmisionController extends Controller
             'grado_seccion_id' => 'required|exists:grado_secciones,id',
             'ano_lectivo_id' => 'nullable|exists:anos_lectivos,id',
         ]);
+
+        // Validar que los 4 bimestres del año lectivo activo estén cerrados
+        $anoActivo = AnoLectivo::where('activo', true)->first();
+        $bimestresTotal = $anoActivo ? Bimestre::where('ano_lectivo_id', $anoActivo->id)->count() : 0;
+        $bimestresCerrados = $anoActivo ? Bimestre::where('ano_lectivo_id', $anoActivo->id)->where('estado', 'cerrado')->count() : 0;
+
+        if (!$anoActivo || $bimestresTotal < 4 || $bimestresCerrados < 4) {
+            $anoStr = $anoActivo ? $anoActivo->anio : 'actual';
+            return back()->with('error', "La opción de matricular está bloqueada. Para habilitar la matrícula, deben estar cerrados los 4 bimestres del año lectivo {$anoStr} en el sistema (Actualmente: {$bimestresCerrados}/4 cerrados).");
+        }
 
         $gradoSeccion = GradoSeccion::findOrFail($request->grado_seccion_id);
         $anoLectivoId = $request->ano_lectivo_id ?: $gradoSeccion->ano_lectivo_id;

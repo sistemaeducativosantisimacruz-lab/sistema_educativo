@@ -76,9 +76,9 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 @if(!$ano->activo)
-                                                    <form action="{{ route('admin.anos-lectivos.activar', $ano) }}" method="POST" class="inline" onsubmit="return confirm('¿Seguro que deseas activar el Año Lectivo {{ $ano->anio }}? Esto cambiará el año activo y desactivará el actual.');">
+                                                    <form id="form-activar-{{ $ano->id }}" action="{{ route('admin.anos-lectivos.activar', $ano) }}" method="POST" class="inline">
                                                         @csrf
-                                                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded shadow-sm transition">
+                                                        <button type="button" onclick="confirmarActivarAno({{ $ano->id }}, '{{ $ano->anio }}')" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded shadow-sm transition">
                                                             Activar Año
                                                         </button>
                                                     </form>
@@ -155,6 +155,25 @@
         </div>
 
     </div>
+
+    <script>
+        function confirmarActivarAno(id, anio) {
+            Swal.fire({
+                title: '¿Activar Año Lectivo ' + anio + '?',
+                text: 'Esto cambiará el año activo y desactivará el actual en todo el sistema escolar.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d97706',
+                cancelButtonColor: '#4b5563',
+                confirmButtonText: 'Sí, activar año',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('form-activar-' + id).submit();
+                }
+            });
+        }
+    </script>
 
     @if($errors->any())
         <script>

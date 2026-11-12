@@ -115,7 +115,13 @@
                     });
                     this.isEditingDocentes = false;
                 } catch(e) {
-                    alert('Ocurrió un error al guardar los docentes.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Ocurrió un error al guardar los docentes.',
+                        confirmButtonColor: '#000000',
+                        confirmButtonText: 'Entendido'
+                    });
                     console.error(e);
                 } finally {
                     this.savingDocentes = false;
