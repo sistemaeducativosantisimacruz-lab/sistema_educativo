@@ -35,14 +35,32 @@ class AdmisionController extends Controller
         } elseif (session()->has('filtro_ano_postula_docente')) {
             $val = session('filtro_ano_postula_docente');
             $anoPostula = ($val === 'todos' || $val === '') ? null : (int) $val;
+
+            // Auto-corrección si el año guardado en sesión no tiene entrevistas para este docente
+            if ($anoPostula !== null) {
+                $totalEnEseAno = EntrevistaAdmision::where('docente_entrevistador_id', $docenteId)
+                    ->where('ano_lectivo_postula', $anoPostula)
+                    ->count();
+                if ($totalEnEseAno === 0 && count($anosEnEntrevistas) > 0) {
+                    $anoPostula = in_array($anoActual + 1, $anosEnEntrevistas)
+                        ? $anoActual + 1
+                        : (in_array($anoActual, $anosEnEntrevistas) ? $anoActual : reset($anosEnEntrevistas));
+                    session(['filtro_ano_postula_docente' => (string) $anoPostula]);
+                }
+            }
         } else {
             $tieneAnoSiguiente = in_array($anoActual + 1, $anosEnEntrevistas);
             $tieneAnoActual = in_array($anoActual, $anosEnEntrevistas);
-            if ($tieneAnoSiguiente && !$tieneAnoActual) {
+            if ($tieneAnoActual) {
+                $anoPostula = $anoActual;
+            } elseif ($tieneAnoSiguiente) {
                 $anoPostula = $anoActual + 1;
+            } elseif (!empty($anosEnEntrevistas)) {
+                $anoPostula = reset($anosEnEntrevistas);
             } else {
                 $anoPostula = $anoActual;
             }
+            session(['filtro_ano_postula_docente' => (string) $anoPostula]);
         }
 
         $query = EntrevistaAdmision::with([
@@ -56,22 +74,35 @@ class AdmisionController extends Controller
         }
 
         if ($search = trim($request->get('search', ''))) {
-            $query->where(function ($q) use ($search) {
+            $likeOp = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($q) use ($search, $likeOp) {
                 $q->where('estudiante_dni', 'like', "%{$search}%")
-                  ->orWhere('estudiante_nombres', 'ilike', "%{$search}%")
-                  ->orWhere('estudiante_apellido_paterno', 'ilike', "%{$search}%")
-                  ->orWhere('estudiante_apellido_materno', 'ilike', "%{$search}%")
-                  ->orWhere('padre_nombres', 'ilike', "%{$search}%")
-                  ->orWhere('madre_nombres', 'ilike', "%{$search}%");
+                  ->orWhere('estudiante_nombres', $likeOp, "%{$search}%")
+                  ->orWhere('estudiante_apellido_paterno', $likeOp, "%{$search}%")
+                  ->orWhere('estudiante_apellido_materno', $likeOp, "%{$search}%")
+                  ->orWhere('padre_nombres', $likeOp, "%{$search}%")
+                  ->orWhere('madre_nombres', $likeOp, "%{$search}%");
             });
         }
 
         if ($conformidad = $request->get('resultado_conformidad')) {
-            $query->where('resultado_conformidad', $conformidad);
+            if ($conformidad === 'PENDIENTE') {
+                $query->whereNull('resultado_conformidad');
+            } else {
+                $query->where('resultado_conformidad', $conformidad);
+            }
         }
 
         if ($estado = $request->get('estado')) {
-            $query->where('estado', $estado);
+            if ($estado === 'en_progreso') {
+                $query->where('estado_entrevista', 'en_progreso');
+            } elseif ($estado === 'completada') {
+                $query->where('estado_entrevista', 'completada')->where('estado', '!=', 'matriculado');
+            } elseif ($estado === 'matriculado') {
+                $query->where('estado', 'matriculado');
+            } elseif ($estado === 'nuevo_ingresante') {
+                $query->where('estado', 'nuevo_ingresante');
+            }
         }
 
         // Métricas del docente

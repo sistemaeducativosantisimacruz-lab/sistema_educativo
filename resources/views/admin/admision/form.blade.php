@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <a href="{{ $routeBack }}?ano_postula={{ $entrevista->ano_lectivo_postula ?? $anoActual }}" class="p-2 bg-white rounded-lg border border-gray-300 text-gray-700 hover:text-black hover:bg-gray-100 transition shadow-sm" title="Volver al listado">
+                <a href="{{ $routeBack }}" onclick="event.preventDefault(); window.location.href = '{{ $routeBack }}?ano_postula=' + (window.entrevistaFormAnoLectivo || '{{ $entrevista->ano_lectivo_postula ?? $anoActual }}');" class="p-2 bg-white rounded-lg border border-gray-300 text-gray-700 hover:text-black hover:bg-gray-100 transition shadow-sm" title="Volver al listado">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
@@ -1428,6 +1428,10 @@
     <script>
     function entrevistaForm(config) {
         return {
+            init() {
+                window.entrevistaFormAnoLectivo = this.anoLectivo;
+                this.$watch('anoLectivo', val => { window.entrevistaFormAnoLectivo = val; });
+            },
             entrevistaId: config.entrevistaId,
             anoLectivo: config.anoLectivo,
             nivel: config.nivel,
