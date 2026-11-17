@@ -818,10 +818,12 @@ class RendimientoController extends Controller
             );
         }
 
-        $fileName = 'Consolidado_B' . $bimestre->numero . '_' . ucfirst($nivel) . '_' . date('Ymd_His') . '.xlsx';
+        $separarSecciones = $request->boolean('separar_secciones');
+        $prefix = $separarSecciones ? 'Consolidado_Secciones_' : 'Consolidado_';
+        $fileName = $prefix . 'B' . $bimestre->numero . '_' . ucfirst($nivel) . '_' . date('Ymd_His') . '.xlsx';
 
         return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\ConsolidadoNivelExport($nivel, $anoActivo->id, $anoActivo->anio, $bimestre),
+            new \App\Exports\ConsolidadoNivelExport($nivel, $anoActivo->id, $anoActivo->anio, $bimestre, $separarSecciones),
             $fileName
         );
     }

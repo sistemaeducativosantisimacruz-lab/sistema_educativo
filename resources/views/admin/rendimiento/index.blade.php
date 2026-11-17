@@ -367,6 +367,13 @@
 
                                     <div class="mt-4">
                                         <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="separar_secciones" value="1" class="rounded border-gray-300 text-yellow-600 shadow-sm focus:border-yellow-500 focus:ring focus:ring-yellow-200">
+                                            <span class="ml-2 text-sm font-semibold text-gray-700">Separar por secciones cada grado</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <label class="inline-flex items-center cursor-pointer">
                                             <input type="checkbox" name="generar_grafico" value="1" class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-200">
                                             <span class="ml-2 text-sm font-semibold text-gray-700">Generar archivo para gráfico</span>
                                         </label>

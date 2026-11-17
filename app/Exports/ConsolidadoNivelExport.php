@@ -14,13 +14,15 @@ class ConsolidadoNivelExport implements WithMultipleSheets
     protected $anoLectivoId;
     protected $anio;
     protected $bimestre;
+    protected $separarSecciones;
 
-    public function __construct($nivel, $anoLectivoId, $anio, $bimestre)
+    public function __construct($nivel, $anoLectivoId, $anio, $bimestre, $separarSecciones = false)
     {
         $this->nivel = $nivel;
         $this->anoLectivoId = $anoLectivoId;
         $this->anio = $anio;
         $this->bimestre = $bimestre;
+        $this->separarSecciones = $separarSecciones;
     }
 
     public function sheets(): array
@@ -36,7 +38,7 @@ class ConsolidadoNivelExport implements WithMultipleSheets
             ->get();
 
         foreach ($cursos as $curso) {
-            $sheets[] = new ConsolidadoCursoSheetExport($curso, $this->nivel, $this->anoLectivoId, $this->anio, $this->bimestre);
+            $sheets[] = new ConsolidadoCursoSheetExport($curso, $this->nivel, $this->anoLectivoId, $this->anio, $this->bimestre, $this->separarSecciones);
         }
 
         return $sheets;
