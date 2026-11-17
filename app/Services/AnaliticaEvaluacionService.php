@@ -465,7 +465,13 @@ class AnaliticaEvaluacionService
                 'grado_nombre' => '',
                 'bimestre_id' => $bimestreId,
                 'categories' => [],
-                'series' => []
+                'series' => [],
+                'cantidades' => [
+                    'C' => [],
+                    'B' => [],
+                    'A' => [],
+                    'AD' => [],
+                ],
             ];
         }
 
@@ -486,6 +492,10 @@ class AnaliticaEvaluacionService
         $dataB = [];
         $dataA = [];
         $dataAD = [];
+        $cantC = [];
+        $cantB = [];
+        $cantA = [];
+        $cantAD = [];
 
         foreach ($secciones as $sec) {
             $label = $numGrado ? "{$numGrado}.° {$sec->seccion_nombre}" : "{$sec->grado_nombre} {$sec->seccion_nombre}";
@@ -503,6 +513,11 @@ class AnaliticaEvaluacionService
             $dataB[] = $res['B']['porcentaje'] ?? 0.0;
             $dataA[] = $res['A']['porcentaje'] ?? 0.0;
             $dataAD[] = $res['AD']['porcentaje'] ?? 0.0;
+
+            $cantC[] = $res['C']['cantidad'] ?? 0;
+            $cantB[] = $res['B']['cantidad'] ?? 0;
+            $cantA[] = $res['A']['cantidad'] ?? 0;
+            $cantAD[] = $res['AD']['cantidad'] ?? 0;
         }
 
         return [
@@ -511,10 +526,16 @@ class AnaliticaEvaluacionService
             'bimestre_id' => $bimestreId,
             'categories' => $categories,
             'series' => [
-                ['name' => 'C · En inicio', 'data' => $dataC],
-                ['name' => 'B · En proceso', 'data' => $dataB],
-                ['name' => 'A · Logro esperado', 'data' => $dataA],
-                ['name' => 'AD · Logro destacado', 'data' => $dataAD],
+                ['name' => 'C · En inicio', 'data' => $dataC, 'cantidades' => $cantC],
+                ['name' => 'B · En proceso', 'data' => $dataB, 'cantidades' => $cantB],
+                ['name' => 'A · Logro esperado', 'data' => $dataA, 'cantidades' => $cantA],
+                ['name' => 'AD · Logro destacado', 'data' => $dataAD, 'cantidades' => $cantAD],
+            ],
+            'cantidades' => [
+                'C' => $cantC,
+                'B' => $cantB,
+                'A' => $cantA,
+                'AD' => $cantAD,
             ]
         ];
     }
@@ -534,7 +555,13 @@ class AnaliticaEvaluacionService
                 'grado_seccion_id' => null,
                 'seccion_nombre' => '',
                 'categories' => [],
-                'series' => []
+                'series' => [],
+                'cantidades' => [
+                    'C' => [],
+                    'B' => [],
+                    'A' => [],
+                    'AD' => [],
+                ],
             ];
         }
 
@@ -559,6 +586,10 @@ class AnaliticaEvaluacionService
         $dataB = [];
         $dataA = [];
         $dataAD = [];
+        $cantC = [];
+        $cantB = [];
+        $cantA = [];
+        $cantAD = [];
 
         foreach ($bimestres as $b) {
             $numRomano = $romanos[$b->numero] ?? $b->numero;
@@ -576,6 +607,11 @@ class AnaliticaEvaluacionService
             $dataB[] = $res['B']['porcentaje'] ?? 0.0;
             $dataA[] = $res['A']['porcentaje'] ?? 0.0;
             $dataAD[] = $res['AD']['porcentaje'] ?? 0.0;
+
+            $cantC[] = $res['C']['cantidad'] ?? 0;
+            $cantB[] = $res['B']['cantidad'] ?? 0;
+            $cantA[] = $res['A']['cantidad'] ?? 0;
+            $cantAD[] = $res['AD']['cantidad'] ?? 0;
         }
 
         return [
@@ -583,10 +619,16 @@ class AnaliticaEvaluacionService
             'seccion_nombre' => $seccionNombre,
             'categories' => $categories,
             'series' => [
-                ['name' => 'C · En inicio', 'data' => $dataC],
-                ['name' => 'B · En proceso', 'data' => $dataB],
-                ['name' => 'A · Logro esperado', 'data' => $dataA],
-                ['name' => 'AD · Logro destacado', 'data' => $dataAD],
+                ['name' => 'C · En inicio', 'data' => $dataC, 'cantidades' => $cantC],
+                ['name' => 'B · En proceso', 'data' => $dataB, 'cantidades' => $cantB],
+                ['name' => 'A · Logro esperado', 'data' => $dataA, 'cantidades' => $cantA],
+                ['name' => 'AD · Logro destacado', 'data' => $dataAD, 'cantidades' => $cantAD],
+            ],
+            'cantidades' => [
+                'C' => $cantC,
+                'B' => $cantB,
+                'A' => $cantA,
+                'AD' => $cantAD,
             ]
         ];
     }

@@ -72,6 +72,7 @@
         const elSecciones = document.querySelector("#chart-entre-secciones");
         const categoriasSecciones = @json($comparativaSecciones['categories'] ?? []);
         const seriesSecciones = @json($comparativaSecciones['series'] ?? []);
+        const cantidadesSecciones = @json($comparativaSecciones['cantidades'] ?? []);
 
         if (elSecciones && categoriasSecciones.length > 0) {
             const optionsSecciones = {
@@ -127,8 +128,26 @@
                 legend: { show: false },
                 tooltip: {
                     y: {
-                        formatter: function(val) {
-                            return (val || 0) + "% de estudiantes";
+                        formatter: function(val, opts) {
+                            let cantidad = null;
+                            if (opts && typeof opts.seriesIndex !== 'undefined' && typeof opts.dataPointIndex !== 'undefined') {
+                                const seriesConf = opts.w?.config?.series?.[opts.seriesIndex];
+                                if (seriesConf && Array.isArray(seriesConf.cantidades) && typeof seriesConf.cantidades[opts.dataPointIndex] !== 'undefined') {
+                                    cantidad = seriesConf.cantidades[opts.dataPointIndex];
+                                } else if (cantidadesSecciones) {
+                                    const keys = ['C', 'B', 'A', 'AD'];
+                                    const key = keys[opts.seriesIndex];
+                                    if (key && cantidadesSecciones[key] && typeof cantidadesSecciones[key][opts.dataPointIndex] !== 'undefined') {
+                                        cantidad = cantidadesSecciones[key][opts.dataPointIndex];
+                                    }
+                                }
+                            }
+                            const pct = (val || 0) + '%';
+                            if (cantidad !== null && typeof cantidad !== 'undefined') {
+                                const txt = cantidad === 1 ? 'estudiante' : 'estudiantes';
+                                return `${cantidad} ${txt} (${pct})`;
+                            }
+                            return pct + ' de estudiantes';
                         }
                     }
                 }
@@ -142,6 +161,7 @@
         const elBimestres = document.querySelector("#chart-entre-bimestres");
         const categoriasBimestres = @json($comparativaBimestres['categories'] ?? []);
         const seriesBimestres = @json($comparativaBimestres['series'] ?? []);
+        const cantidadesBimestres = @json($comparativaBimestres['cantidades'] ?? []);
 
         if (elBimestres && categoriasBimestres.length > 0) {
             const optionsBimestres = {
@@ -197,8 +217,26 @@
                 legend: { show: false },
                 tooltip: {
                     y: {
-                        formatter: function(val) {
-                            return (val || 0) + "% de estudiantes";
+                        formatter: function(val, opts) {
+                            let cantidad = null;
+                            if (opts && typeof opts.seriesIndex !== 'undefined' && typeof opts.dataPointIndex !== 'undefined') {
+                                const seriesConf = opts.w?.config?.series?.[opts.seriesIndex];
+                                if (seriesConf && Array.isArray(seriesConf.cantidades) && typeof seriesConf.cantidades[opts.dataPointIndex] !== 'undefined') {
+                                    cantidad = seriesConf.cantidades[opts.dataPointIndex];
+                                } else if (cantidadesBimestres) {
+                                    const keys = ['C', 'B', 'A', 'AD'];
+                                    const key = keys[opts.seriesIndex];
+                                    if (key && cantidadesBimestres[key] && typeof cantidadesBimestres[key][opts.dataPointIndex] !== 'undefined') {
+                                        cantidad = cantidadesBimestres[key][opts.dataPointIndex];
+                                    }
+                                }
+                            }
+                            const pct = (val || 0) + '%';
+                            if (cantidad !== null && typeof cantidad !== 'undefined') {
+                                const txt = cantidad === 1 ? 'estudiante' : 'estudiantes';
+                                return `${cantidad} ${txt} (${pct})`;
+                            }
+                            return pct + ' de estudiantes';
                         }
                     }
                 }
