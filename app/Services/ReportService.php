@@ -162,7 +162,11 @@ class ReportService
             });
         }
 
-        return $docentesQuery->get();
+        return $docentesQuery->orderBy('docentes.apellido_paterno')
+                             ->orderBy('docentes.apellido_materno')
+                             ->orderBy('docentes.nombres')
+                             ->paginate(10)
+                             ->withQueryString();
     }
 
     public function getSeccionesReport(AnoLectivo $anoActivo, Request $request)

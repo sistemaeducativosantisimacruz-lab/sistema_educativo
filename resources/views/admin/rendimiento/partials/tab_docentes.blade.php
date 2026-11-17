@@ -2,7 +2,7 @@
                         @if($tab === 'docentes')
                             <div class="flex items-center justify-between border-b pb-4 mb-6">
                                 <h3 class="text-lg font-bold text-gray-800">Directorio y Asignaciones de Docentes</h3>
-                                <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Total: {{ $docentesReport->count() }}</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Total: {{ method_exists($docentesReport, 'total') ? $docentesReport->total() : $docentesReport->count() }}</span>
                             </div>
 
                             @if($docentesReport->isEmpty())
@@ -28,7 +28,7 @@
                                             @foreach($docentesReport as $docente)
                                                 <tr class="hover:bg-gray-50 transition-colors">
                                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold text-center w-16">
-                                                        {{ $loop->iteration }}
+                                                        {{ method_exists($docentesReport, 'firstItem') && $docentesReport->firstItem() ? ($docentesReport->firstItem() + $loop->index) : $loop->iteration }}
                                                     </td>
                                                     <td class="px-6 py-4 whitespace-nowrap">
                                                         <div class="text-sm font-bold text-gray-900">
@@ -87,6 +87,9 @@
                                             @endforeach
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="p-4 border-t">
+                                    {{ $docentesReport->links() }}
                                 </div>
                             @endif
                         @endif
