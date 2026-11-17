@@ -14,46 +14,46 @@
                                     <table class="min-w-full divide-y divide-gray-200">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">N°</th>
-                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Docente</th>
-                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">DNI / Celular</th>
-                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Correo Electrónico</th>
-                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo Docente</th>
-                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Cursos & Carga Horaria</th>
-                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Secciones Asignadas</th>
-                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sección Tutorada</th>
+                                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-14">N°</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-44 sm:w-52">Docente</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">DNI / Celular</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Correo Electrónico</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Tipo Docente</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[200px]">Cursos & Carga Horaria</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Secciones Asignadas</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sección Tutorada</th>
                                             </tr>
                                         </thead>
                                         <tbody class="bg-white divide-y divide-gray-200">
                                             @foreach($docentesReport as $docente)
                                                 <tr class="hover:bg-gray-50 transition-colors">
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold text-center w-16">
+                                                    <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 font-semibold text-center w-14">
                                                         {{ method_exists($docentesReport, 'firstItem') && $docentesReport->firstItem() ? ($docentesReport->firstItem() + $loop->index) : $loop->iteration }}
                                                     </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap">
-                                                        <div class="text-sm font-bold text-gray-900">
+                                                    <td class="px-4 py-3.5 whitespace-normal break-words max-w-[200px]">
+                                                        <div class="text-sm font-bold text-gray-900 leading-snug">
                                                             {{ $docente->apellido_paterno }} {{ $docente->apellido_materno }}, {{ $docente->nombres }}
                                                         </div>
                                                     </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                    <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600">
                                                         <div class="font-medium">DNI: {{ $docente->dni ?? '—' }}</div>
                                                         <div class="text-xs text-gray-500">Cel: {{ $docente->celular ?? '—' }}</div>
                                                     </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
+                                                    <td class="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 font-mono">
                                                         {{ $docente->user->email ?? '—' }}
                                                     </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <td class="px-4 py-3.5 whitespace-nowrap text-sm">
                                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold 
                                                             {{ $docente->esPolidocente() ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
                                                             {{ ucfirst($docente->tipo) }}
                                                         </span>
                                                     </td>
-                                                    <td class="px-6 py-4 text-sm text-gray-600 max-w-xs">
-                                                        <div class="font-medium truncate" title="{{ $docente->nombresCursos() }}">
+                                                    <td class="px-4 py-3.5 text-sm text-gray-700 whitespace-normal break-words min-w-[200px]">
+                                                        <div class="font-medium text-gray-800 leading-relaxed">
                                                             {{ $docente->nombresCursos() }}
                                                         </div>
                                                     </td>
-                                                    <td class="px-6 py-4 text-sm text-gray-600 font-medium">
+                                                    <td class="px-4 py-3.5 text-sm text-gray-600 font-medium">
                                                         @php
                                                             $seccionesDocente = $docente->asignaciones->pluck('gradoSeccion')->unique('id');
                                                         @endphp
@@ -69,7 +69,7 @@
                                                             </div>
                                                         @endif
                                                     </td>
-                                                    <td class="px-6 py-4 text-sm text-gray-600 font-medium font-semibold">
+                                                    <td class="px-4 py-3.5 text-sm text-gray-600 font-medium font-semibold">
                                                          @php
                                                              $tutorSecc = $docente->tutoriaSecciones->map(function($ts) {
                                                                  return ($ts->grado->nombre ?? '') . ' - ' . ($ts->seccion->nombre ?? '');
