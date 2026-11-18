@@ -141,20 +141,9 @@ class EstudiantesCriticosSeccionSheetExport implements FromArray, WithTitle, Wit
                         $sheet->setCellValue("B{$r}", $this->seccion->short_section ?? '');
                         $sheet->setCellValue("C{$r}", $st->full_name);
 
-                        $sheet->getStyle("A{$r}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
-                        $sheet->getStyle("A{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-
-                        $sheet->getStyle("B{$r}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
-                        $sheet->getStyle("B{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-
-                        $sheet->getStyle("C{$r}")->getFont()->setSize(10)->setName('Calibri');
-                        $sheet->getStyle("C{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER);
-
                         foreach ($compColMap as $compId => $colLetter) {
                             if (isset($st->notas[$compId])) {
                                 $sheet->setCellValue("{$colLetter}{$r}", $st->notas[$compId]);
-                                $sheet->getStyle("{$colLetter}{$r}")->getFont()->setSize(10)->setName('Calibri');
-                                $sheet->getStyle("{$colLetter}{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
                             }
                         }
 
@@ -163,10 +152,28 @@ class EstudiantesCriticosSeccionSheetExport implements FromArray, WithTitle, Wit
                         } else {
                             $sheet->setCellValue("{$totalCol}{$r}", 0);
                         }
-                        $sheet->getStyle("{$totalCol}{$r}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
-                        $sheet->getStyle("{$totalCol}{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
 
                         $r++;
+                    }
+
+                    $lastR = $r - 1;
+                    if ($lastR >= 5) {
+                        $sheet->getStyle("A5:A{$lastR}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                        $sheet->getStyle("A5:A{$lastR}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                        $sheet->getStyle("B5:B{$lastR}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                        $sheet->getStyle("B5:B{$lastR}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+                        $sheet->getStyle("C5:C{$lastR}")->getFont()->setSize(10)->setName('Calibri');
+                        $sheet->getStyle("C5:C{$lastR}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER);
+
+                        if ($hasCompetencies) {
+                            $sheet->getStyle("{$firstCompCol}5:{$lastCompCol}{$lastR}")->getFont()->setSize(10)->setName('Calibri');
+                            $sheet->getStyle("{$firstCompCol}5:{$lastCompCol}{$lastR}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+                        }
+
+                        $sheet->getStyle("{$totalCol}5:{$totalCol}{$lastR}")->getFont()->setBold(true)->setSize(10)->setName('Calibri');
+                        $sheet->getStyle("{$totalCol}5:{$totalCol}{$lastR}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
                     }
                 }
 

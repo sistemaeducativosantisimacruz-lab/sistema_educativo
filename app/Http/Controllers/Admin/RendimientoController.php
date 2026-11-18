@@ -354,37 +354,83 @@ class RendimientoController extends Controller
         $notasSeleccionadas = $request->notas_seleccionadas;
         $archivosGenerados = [];
 
-        foreach ($notasSeleccionadas as $notaActual) {
-            if ($dividirSecciones) {
-                // Obtener secciones del año activo filtradas por nivel
-                $querySecciones = DB::table('grado_secciones')
-                    ->join('grados', 'grado_secciones.grado_id', '=', 'grados.id')
-                    ->join('secciones', 'grado_secciones.seccion_id', '=', 'secciones.id')
-                    ->where('grado_secciones.ano_lectivo_id', $anoActivo->id);
+        if ($dividirSecciones) {
+            // 1. Obtener secciones del año activo filtradas por nivel una sola vez
+            $querySecciones = DB::table('grado_secciones')
+                ->join('grados', 'grado_secciones.grado_id', '=', 'grados.id')
+                ->join('secciones', 'grado_secciones.seccion_id', '=', 'secciones.id')
+                ->where('grado_secciones.ano_lectivo_id', $anoActivo->id);
 
-                if ($request->filled('nivel')) {
-                    $querySecciones->where('grados.nivel', $request->nivel);
+            if ($request->filled('nivel')) {
+                $querySecciones->where('grados.nivel', $request->nivel);
+            }
+
+            $secciones = $querySecciones->select(
+                    'grado_secciones.id as grado_seccion_id',
+                    'grados.id as grado_id',
+                    'grados.nombre as grado_nombre',
+                    'grados.nivel as grado_nivel',
+                    'grados.orden as grado_orden',
+                    'secciones.id as seccion_id',
+                    'secciones.nombre as seccion_nombre'
+                )
+                ->orderBy('grados.orden')
+                ->orderBy('secciones.nombre')
+                ->get();
+
+            if ($secciones->isEmpty()) {
+                return back()->with('error', 'No se encontraron secciones para los filtros seleccionados.');
+            }
+
+            $seccionIds = $secciones->pluck('grado_seccion_id')->toArray();
+            $multipleNiveles = $secciones->pluck('grado_nivel')->unique()->count() > 1;
+
+            // 2. Pre-cargar TODOS los estudiantes activos de estas secciones en una sola consulta
+            $alumnosRaw = DB::table('matriculas')
+                ->join('estudiantes', 'matriculas.estudiante_id', '=', 'estudiantes.id')
+                ->whereIn('matriculas.grado_seccion_id', $seccionIds)
+                ->where('matriculas.ano_lectivo_id', $anoActivo->id)
+                ->where('matriculas.estado', '!=', 'retirado')
+                ->select(
+                    'matriculas.grado_seccion_id',
+                    'estudiantes.id',
+                    'estudiantes.apellido_paterno',
+                    'estudiantes.apellido_materno',
+                    'estudiantes.nombres'
+                )
+                ->orderBy('estudiantes.apellido_paterno')
+                ->orderBy('estudiantes.apellido_materno')
+                ->orderBy('estudiantes.nombres')
+                ->get();
+
+            $alumnosPorSeccion = $alumnosRaw->groupBy('grado_seccion_id');
+            $todosStudentIds = $alumnosRaw->pluck('id')->unique()->toArray();
+
+            // 3. Pre-cargar TODAS las notas bimestrales requeridas en una sola consulta
+            $notasIndexadasPorNotaYEstudiante = [];
+            if (!empty($todosStudentIds)) {
+                $queryNotas = DB::table('notas_bimestrales')
+                    ->whereIn('estudiante_id', $todosStudentIds)
+                    ->whereIn('curso_id', $cursosData->pluck('id'))
+                    ->whereIn('nota', $notasSeleccionadas);
+
+                if ($request->filled('bimestre_id')) {
+                    $queryNotas->where('bimestre_id', $request->bimestre_id);
                 }
 
-                $secciones = $querySecciones->select(
-                        'grado_secciones.id as grado_seccion_id',
-                        'grados.id as grado_id',
-                        'grados.nombre as grado_nombre',
-                        'grados.nivel as grado_nivel',
-                        'grados.orden as grado_orden',
-                        'secciones.id as seccion_id',
-                        'secciones.nombre as seccion_nombre'
-                    )
-                    ->orderBy('grados.orden')
-                    ->orderBy('secciones.nombre')
-                    ->get();
+                $notasRaw = $queryNotas->select('estudiante_id', 'competencia_id', 'nota')->get();
 
-                $multipleNiveles = $secciones->pluck('grado_nivel')->unique()->count() > 1;
+                foreach ($notasRaw as $nr) {
+                    $notasIndexadasPorNotaYEstudiante[$nr->nota][$nr->estudiante_id][$nr->competencia_id] = $nr->nota;
+                }
+            }
+
+            foreach ($notasSeleccionadas as $notaActual) {
                 $seccionesData = collect();
                 $hayEstudiantesEnReporte = false;
+                $notasDeEstaNota = $notasIndexadasPorNotaYEstudiante[$notaActual] ?? [];
 
                 foreach ($secciones as $sec) {
-                    // Nombre corto de pestaña (e.g. "1A", "5B")
                     preg_match('/\d+/', $sec->grado_nombre, $matches);
                     $num = $matches[0] ?? substr(trim($sec->grado_nombre), 0, 1);
                     $shortSection = $num . trim($sec->seccion_nombre);
@@ -395,62 +441,25 @@ class RendimientoController extends Controller
                         $sheetTitle .= ' ' . $suffix;
                     }
 
-                    // Estudiantes matriculados activos en esta sección ordenados por apellidos y nombres
-                    $alumnosSeccion = DB::table('matriculas')
-                        ->join('estudiantes', 'matriculas.estudiante_id', '=', 'estudiantes.id')
-                        ->where('matriculas.grado_seccion_id', $sec->grado_seccion_id)
-                        ->where('matriculas.ano_lectivo_id', $anoActivo->id)
-                        ->where('matriculas.estado', '!=', 'retirado')
-                        ->select(
-                            'estudiantes.id',
-                            'estudiantes.apellido_paterno',
-                            'estudiantes.apellido_materno',
-                            'estudiantes.nombres'
-                        )
-                        ->orderBy('estudiantes.apellido_paterno')
-                        ->orderBy('estudiantes.apellido_materno')
-                        ->orderBy('estudiantes.nombres')
-                        ->get();
-
-                    $estudiantesIndexados = [];
-                    $studentIds = [];
+                    $alumnosSeccion = $alumnosPorSeccion->get($sec->grado_seccion_id, collect());
+                    $estudiantesConNota = [];
                     $idx = 1;
+
                     foreach ($alumnosSeccion as $al) {
                         $nombreCompleto = trim("{$al->apellido_paterno} {$al->apellido_materno}, {$al->nombres}");
-                        $estudiantesIndexados[$al->id] = (object) [
-                            'id' => $al->id,
-                            'order_num' => $idx++,
-                            'full_name' => mb_strtoupper($nombreCompleto, 'UTF-8'),
-                            'notas' => []
-                        ];
-                        $studentIds[] = $al->id;
+                        $estNotas = $notasDeEstaNota[$al->id] ?? [];
+                        if (!empty($estNotas)) {
+                            $estudiantesConNota[] = (object) [
+                                'id' => $al->id,
+                                'order_num' => $idx,
+                                'full_name' => mb_strtoupper($nombreCompleto, 'UTF-8'),
+                                'notas' => $estNotas
+                            ];
+                        }
+                        $idx++;
                     }
 
-                    if (!empty($studentIds)) {
-                        $queryNotas = DB::table('notas_bimestrales')
-                            ->whereIn('estudiante_id', $studentIds)
-                            ->whereIn('curso_id', $cursosData->pluck('id'))
-                            ->where('nota', $notaActual);
-
-                        if ($request->filled('bimestre_id')) {
-                            $queryNotas->where('bimestre_id', $request->bimestre_id);
-                        }
-
-                        $notasRaw = $queryNotas->select('estudiante_id', 'competencia_id', 'nota')->get();
-
-                        foreach ($notasRaw as $nr) {
-                            if (isset($estudiantesIndexados[$nr->estudiante_id])) {
-                                $estudiantesIndexados[$nr->estudiante_id]->notas[$nr->competencia_id] = $nr->nota;
-                            }
-                        }
-                    }
-
-                    // Filtrar solo los estudiantes que tienen al menos una calificación de la nota solicitada
-                    $estudiantesConNota = collect($estudiantesIndexados)->filter(function ($est) {
-                        return !empty($est->notas);
-                    })->values();
-
-                    if ($estudiantesConNota->isNotEmpty()) {
+                    if (!empty($estudiantesConNota)) {
                         $hayEstudiantesEnReporte = true;
                     }
 
@@ -461,7 +470,7 @@ class RendimientoController extends Controller
                         'sheet_title' => $sheetTitle,
                         'short_section' => $shortSection,
                         'cursos' => $cursosData,
-                        'estudiantes' => $estudiantesConNota
+                        'estudiantes' => collect($estudiantesConNota)
                     ]);
                 }
 
@@ -472,8 +481,19 @@ class RendimientoController extends Controller
                 $fileName = 'REPORTE CRITICO ' . $notaActual . '.xlsx';
                 $exportObj = new \App\Exports\EstudiantesCriticosSeccionExport($seccionesData, $notaActual);
 
-            } else {
-                // Modo antiguo agrupado por cursos (si no se marca dividir en secciones)
+                if (count($notasSeleccionadas) > 1) {
+                    \Maatwebsite\Excel\Facades\Excel::store($exportObj, $fileName, 'local');
+                    $archivosGenerados[] = [
+                        'path' => \Illuminate\Support\Facades\Storage::disk('local')->path($fileName),
+                        'name' => $fileName
+                    ];
+                } else {
+                    return \Maatwebsite\Excel\Facades\Excel::download($exportObj, $fileName);
+                }
+            }
+        } else {
+            // Modo antiguo agrupado por cursos (si no se marca dividir en secciones)
+            foreach ($notasSeleccionadas as $notaActual) {
                 $queryCriticos = DB::table('notas_bimestrales')
                     ->join('estudiantes', 'notas_bimestrales.estudiante_id', '=', 'estudiantes.id')
                     ->join('matriculas', 'estudiantes.id', '=', 'matriculas.estudiante_id')
@@ -553,16 +573,16 @@ class RendimientoController extends Controller
 
                 $fileName = 'REPORTE CRITICO ' . $notaActual . '.xlsx';
                 $exportObj = new \App\Exports\EstudiantesCriticosExport($dataExport);
-            }
 
-            if (count($notasSeleccionadas) > 1) {
-                \Maatwebsite\Excel\Facades\Excel::store($exportObj, $fileName, 'local');
-                $archivosGenerados[] = [
-                    'path' => \Illuminate\Support\Facades\Storage::disk('local')->path($fileName),
-                    'name' => $fileName
-                ];
-            } else {
-                return \Maatwebsite\Excel\Facades\Excel::download($exportObj, $fileName);
+                if (count($notasSeleccionadas) > 1) {
+                    \Maatwebsite\Excel\Facades\Excel::store($exportObj, $fileName, 'local');
+                    $archivosGenerados[] = [
+                        'path' => \Illuminate\Support\Facades\Storage::disk('local')->path($fileName),
+                        'name' => $fileName
+                    ];
+                } else {
+                    return \Maatwebsite\Excel\Facades\Excel::download($exportObj, $fileName);
+                }
             }
         }
 

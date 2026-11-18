@@ -18,82 +18,123 @@ class ConsolidadoResumenNivelSheetExport implements FromView, WithTitle, WithCol
     protected $anoLectivoId;
     protected $anio;
     protected $bimestre;
+    protected $prefetchedCursos;
+    protected $prefetchedEstudiantesNivel;
+    protected $prefetchedNotasIndexadas;
 
-    public function __construct($nivel, $anoLectivoId, $anio, $bimestre)
-    {
+    public function __construct(
+        $nivel,
+        $anoLectivoId,
+        $anio,
+        $bimestre,
+        $prefetchedCursos = null,
+        $prefetchedEstudiantesNivel = null,
+        $prefetchedNotasIndexadas = null
+    ) {
         $this->nivel = $nivel;
         $this->anoLectivoId = $anoLectivoId;
         $this->anio = $anio;
         $this->bimestre = $bimestre;
+        $this->prefetchedCursos = $prefetchedCursos;
+        $this->prefetchedEstudiantesNivel = $prefetchedEstudiantesNivel;
+        $this->prefetchedNotasIndexadas = $prefetchedNotasIndexadas;
     }
 
     public function view(): View
     {
-        $cursos = Curso::where('activo', true)
-            ->paraNivel($this->nivel)
-            ->soloCursos()
-            ->orderBy('nombre')
-            ->get();
+        $cursos = $this->prefetchedCursos;
+        $estudiantesNivel = $this->prefetchedEstudiantesNivel;
+        $notasIndexadas = $this->prefetchedNotasIndexadas;
 
-        $grados = Grado::where('nivel', $this->nivel)->pluck('id')->toArray();
+        // Fallback optimizado si no se suministran datos pre-cargados
+        if ($cursos === null) {
+            $grados = Grado::where('nivel', $this->nivel)->pluck('id')->toArray();
+
+            $cursos = Curso::where('activo', true)
+                ->paraNivel($this->nivel)
+                ->soloCursos()
+                ->with(['competencias' => function ($q) {
+                    $q->orderBy('orden');
+                }])
+                ->orderBy('nombre')
+                ->get();
+
+            $matriculasTotal = DB::table('matriculas')
+                ->join('grado_secciones', 'matriculas.grado_seccion_id', '=', 'grado_secciones.id')
+                ->whereIn('grado_secciones.grado_id', $grados)
+                ->where('matriculas.ano_lectivo_id', $this->anoLectivoId)
+                ->select('matriculas.estudiante_id', 'matriculas.estado')
+                ->get();
+
+            $estudiantesNivel = [];
+            $estudianteIds = [];
+            foreach ($matriculasTotal as $m) {
+                $estudiantesNivel[] = ['id' => $m->estudiante_id, 'estado' => $m->estado];
+                $estudianteIds[$m->estudiante_id] = true;
+            }
+
+            $notasIndexadas = [];
+            $cursoIds = $cursos->pluck('id')->toArray();
+            if (!empty($estudianteIds) && !empty($cursoIds)) {
+                $notasRaw = DB::table('notas_bimestrales')
+                    ->where('bimestre_id', $this->bimestre->id)
+                    ->whereIn('curso_id', $cursoIds)
+                    ->whereIn('estudiante_id', array_keys($estudianteIds))
+                    ->whereNotNull('nota')
+                    ->select('curso_id', 'competencia_id', 'estudiante_id', 'nota')
+                    ->get();
+
+                foreach ($notasRaw as $nr) {
+                    if (!isset($notasIndexadas[$nr->curso_id][$nr->competencia_id][$nr->estudiante_id])) {
+                        $notasIndexadas[$nr->curso_id][$nr->competencia_id][$nr->estudiante_id] = $nr->nota;
+                    }
+                }
+            }
+        }
+
+        // Mapear estudiantes del nivel
+        $matriculadosActivos = 0;
+        $retiradosMap = [];
+        $todosNivelMap = [];
+        if (!empty($estudiantesNivel)) {
+            foreach ($estudiantesNivel as $e) {
+                $todosNivelMap[$e['id']] = true;
+                if ($e['estado'] === 'retirado') {
+                    $retiradosMap[$e['id']] = true;
+                } else {
+                    $matriculadosActivos++;
+                }
+            }
+        }
 
         $datosPorCurso = [];
 
         foreach ($cursos as $curso) {
-            $competencias = $curso->competencias()->orderBy('orden')->get();
-
+            $competencias = $curso->competencias;
             $datosCompetencias = [];
 
             foreach ($competencias as $comp) {
-                
-                $matriculasQuery = DB::table('matriculas')
-                    ->join('grado_secciones', 'matriculas.grado_seccion_id', '=', 'grado_secciones.id')
-                    ->whereIn('grado_secciones.grado_id', $grados)
-                    ->where('matriculas.ano_lectivo_id', $this->anoLectivoId);
-                
-                $matriculasTotal = $matriculasQuery->select('matriculas.estudiante_id', 'matriculas.estado')->get();
-                $matriculadosActivos = $matriculasTotal->where('estado', '!=', 'retirado')->count();
-                $estudiantesRetirados = $matriculasTotal->where('estado', 'retirado')->pluck('estudiante_id')->toArray();
-
-                $notasRaw = DB::table('notas_bimestrales')
-                    ->join('matriculas', 'notas_bimestrales.estudiante_id', '=', 'matriculas.estudiante_id')
-                    ->join('grado_secciones', 'matriculas.grado_seccion_id', '=', 'grado_secciones.id')
-                    ->whereIn('grado_secciones.grado_id', $grados)
-                    ->where('matriculas.ano_lectivo_id', $this->anoLectivoId)
-                    ->where('notas_bimestrales.curso_id', $curso->id)
-                    ->where('notas_bimestrales.competencia_id', $comp->id)
-                    ->where('notas_bimestrales.bimestre_id', $this->bimestre->id)
-                    ->whereNotNull('notas_bimestrales.nota')
-                    ->select('notas_bimestrales.estudiante_id', 'notas_bimestrales.nota')
-                    ->orderBy('notas_bimestrales.bimestre_id', 'desc')
-                    ->get();
-                
+                $compNotas = $notasIndexadas[$curso->id][$comp->id] ?? [];
                 $notasEstudiantes = [];
-                foreach ($notasRaw as $nr) {
-                    if (!isset($notasEstudiantes[$nr->estudiante_id])) {
-                        $notasEstudiantes[$nr->estudiante_id] = $nr->nota;
-                    }
-                }
-                
-                $evaluados = count($notasEstudiantes);
-                
                 $retiradosEvaluados = 0;
-                foreach ($notasEstudiantes as $estudianteId => $nota) {
-                    if (in_array($estudianteId, $estudiantesRetirados)) {
-                        $retiradosEvaluados++;
+                $conteo = ['AD' => 0, 'A' => 0, 'B' => 0, 'C' => 0];
+
+                foreach ($compNotas as $estId => $nota) {
+                    if (isset($todosNivelMap[$estId])) {
+                        $notasEstudiantes[$estId] = $nota;
+                        if (isset($retiradosMap[$estId])) {
+                            $retiradosEvaluados++;
+                        }
+                        if (isset($conteo[$nota])) {
+                            $conteo[$nota]++;
+                        }
                     }
                 }
-                
+
+                $evaluados = count($notasEstudiantes);
                 $matriculados = $matriculadosActivos + $retiradosEvaluados;
                 $sinEvaluar = max(0, $matriculados - $evaluados);
-                
-                $conteo = ['AD' => 0, 'A' => 0, 'B' => 0, 'C' => 0];
-                foreach ($notasEstudiantes as $nota) {
-                    if (isset($conteo[$nota])) {
-                        $conteo[$nota]++;
-                    }
-                }
-                
+
                 $datosCompetencias[] = [
                     'nombre' => $comp->nombre,
                     'matriculados' => $matriculados,

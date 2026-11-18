@@ -20,21 +20,97 @@ class ConsolidadoCursoSheetExport implements FromView, WithTitle, WithColumnWidt
     protected $bimestre;
     protected $separarSecciones;
 
-    public function __construct($curso, $nivel, $anoLectivoId, $anio, $bimestre, $separarSecciones = false)
-    {
+    protected $prefetchedGrados;
+    protected $prefetchedSeccionesPorGrado;
+    protected $prefetchedEstudiantesPorGrado;
+    protected $prefetchedEstudiantesPorSeccion;
+    protected $prefetchedNotasCurso;
+
+    public function __construct(
+        $curso,
+        $nivel,
+        $anoLectivoId,
+        $anio,
+        $bimestre,
+        $separarSecciones = false,
+        $prefetchedGrados = null,
+        $prefetchedSeccionesPorGrado = null,
+        $prefetchedEstudiantesPorGrado = null,
+        $prefetchedEstudiantesPorSeccion = null,
+        $prefetchedNotasCurso = null
+    ) {
         $this->curso = $curso;
         $this->nivel = $nivel;
         $this->anoLectivoId = $anoLectivoId;
         $this->anio = $anio;
         $this->bimestre = $bimestre;
         $this->separarSecciones = $separarSecciones;
+
+        $this->prefetchedGrados = $prefetchedGrados;
+        $this->prefetchedSeccionesPorGrado = $prefetchedSeccionesPorGrado;
+        $this->prefetchedEstudiantesPorGrado = $prefetchedEstudiantesPorGrado;
+        $this->prefetchedEstudiantesPorSeccion = $prefetchedEstudiantesPorSeccion;
+        $this->prefetchedNotasCurso = $prefetchedNotasCurso;
     }
 
     public function view(): View
     {
-        $grados = Grado::where('nivel', $this->nivel)->orderBy('orden')->get();
-        $competencias = $this->curso->competencias()->orderBy('orden')->get();
+        // Fallback optimizado si no se suministran datos pre-cargados
+        if ($this->prefetchedGrados === null) {
+            $this->prefetchedGrados = Grado::where('nivel', $this->nivel)->orderBy('orden')->get();
+            $gradoIds = $this->prefetchedGrados->pluck('id')->toArray();
 
+            $seccionesRaw = DB::table('grado_secciones as gs')
+                ->join('secciones as s', 'gs.seccion_id', '=', 's.id')
+                ->whereIn('gs.grado_id', $gradoIds)
+                ->where('gs.ano_lectivo_id', $this->anoLectivoId)
+                ->orderBy('s.nombre')
+                ->select('gs.grado_id', 'gs.id as grado_seccion_id', 's.nombre as seccion_nombre')
+                ->get();
+            $this->prefetchedSeccionesPorGrado = $seccionesRaw->groupBy('grado_id');
+
+            $matriculas = DB::table('matriculas')
+                ->join('grado_secciones', 'matriculas.grado_seccion_id', '=', 'grado_secciones.id')
+                ->where('matriculas.ano_lectivo_id', $this->anoLectivoId)
+                ->whereIn('grado_secciones.grado_id', $gradoIds)
+                ->select(
+                    'matriculas.estudiante_id',
+                    'matriculas.estado',
+                    'grado_secciones.grado_id',
+                    'matriculas.grado_seccion_id'
+                )
+                ->get();
+
+            $this->prefetchedEstudiantesPorGrado = [];
+            $this->prefetchedEstudiantesPorSeccion = [];
+            $estudianteIds = [];
+            foreach ($matriculas as $m) {
+                $item = ['id' => $m->estudiante_id, 'estado' => $m->estado];
+                $this->prefetchedEstudiantesPorGrado[$m->grado_id][] = $item;
+                $this->prefetchedEstudiantesPorSeccion[$m->grado_seccion_id][] = $item;
+                $estudianteIds[$m->estudiante_id] = true;
+            }
+
+            $this->prefetchedNotasCurso = [];
+            if (!empty($estudianteIds)) {
+                $notasRaw = DB::table('notas_bimestrales')
+                    ->where('bimestre_id', $this->bimestre->id)
+                    ->where('curso_id', $this->curso->id)
+                    ->whereIn('estudiante_id', array_keys($estudianteIds))
+                    ->whereNotNull('nota')
+                    ->select('competencia_id', 'estudiante_id', 'nota')
+                    ->get();
+
+                foreach ($notasRaw as $nr) {
+                    if (!isset($this->prefetchedNotasCurso[$nr->competencia_id][$nr->estudiante_id])) {
+                        $this->prefetchedNotasCurso[$nr->competencia_id][$nr->estudiante_id] = $nr->nota;
+                    }
+                }
+            }
+        }
+
+        $grados = $this->prefetchedGrados;
+        $competencias = $this->curso->competencias;
         $datosPorGrado = [];
 
         foreach ($grados as $grado) {
@@ -55,13 +131,7 @@ class ConsolidadoCursoSheetExport implements FromView, WithTitle, WithColumnWidt
                 }
 
                 // 2. Tablas individuales por cada sección del grado
-                $secciones = DB::table('grado_secciones as gs')
-                    ->join('secciones as s', 'gs.seccion_id', '=', 's.id')
-                    ->where('gs.grado_id', $grado->id)
-                    ->where('gs.ano_lectivo_id', $this->anoLectivoId)
-                    ->orderBy('s.nombre')
-                    ->select('gs.id as grado_seccion_id', 's.nombre as seccion_nombre')
-                    ->get();
+                $secciones = $this->prefetchedSeccionesPorGrado->get($grado->id, collect());
 
                 foreach ($secciones as $sec) {
                     $competenciasSec = $this->calcularDatosCompetencias($competencias, $grado->id, $sec->grado_seccion_id);
@@ -95,71 +165,50 @@ class ConsolidadoCursoSheetExport implements FromView, WithTitle, WithColumnWidt
 
     private function calcularDatosCompetencias($competencias, int $gradoId, ?int $gradoSeccionId = null): array
     {
-        $matriculasQuery = DB::table('matriculas')
-            ->join('grado_secciones', 'matriculas.grado_seccion_id', '=', 'grado_secciones.id')
-            ->where('matriculas.ano_lectivo_id', $this->anoLectivoId);
+        $estudiantes = $gradoSeccionId
+            ? ($this->prefetchedEstudiantesPorSeccion[$gradoSeccionId] ?? [])
+            : ($this->prefetchedEstudiantesPorGrado[$gradoId] ?? []);
 
-        if ($gradoSeccionId) {
-            $matriculasQuery->where('matriculas.grado_seccion_id', $gradoSeccionId);
-        } else {
-            $matriculasQuery->where('grado_secciones.grado_id', $gradoId);
-        }
-
-        $matriculas = $matriculasQuery->select('matriculas.estudiante_id', 'matriculas.estado')->get();
-        if ($matriculas->isEmpty()) {
+        if (empty($estudiantes)) {
             return [];
         }
 
-        $matriculadosActivos = $matriculas->where('estado', '!=', 'retirado')->count();
-        $estudiantesRetirados = $matriculas->where('estado', 'retirado')->pluck('estudiante_id')->toArray();
+        $matriculadosActivos = 0;
+        $retiradosMap = [];
+        $estudiantesScopeMap = [];
+
+        foreach ($estudiantes as $e) {
+            $estudiantesScopeMap[$e['id']] = true;
+            if ($e['estado'] === 'retirado') {
+                $retiradosMap[$e['id']] = true;
+            } else {
+                $matriculadosActivos++;
+            }
+        }
 
         $datosCompetencias = [];
 
         foreach ($competencias as $comp) {
-            $notasQuery = DB::table('notas_bimestrales')
-                ->join('matriculas', 'notas_bimestrales.estudiante_id', '=', 'matriculas.estudiante_id')
-                ->join('grado_secciones', 'matriculas.grado_seccion_id', '=', 'grado_secciones.id')
-                ->where('matriculas.ano_lectivo_id', $this->anoLectivoId)
-                ->where('notas_bimestrales.curso_id', $this->curso->id)
-                ->where('notas_bimestrales.competencia_id', $comp->id)
-                ->where('notas_bimestrales.bimestre_id', $this->bimestre->id)
-                ->whereNotNull('notas_bimestrales.nota');
-
-            if ($gradoSeccionId) {
-                $notasQuery->where('matriculas.grado_seccion_id', $gradoSeccionId);
-            } else {
-                $notasQuery->where('grado_secciones.grado_id', $gradoId);
-            }
-
-            $notasRaw = $notasQuery->select('notas_bimestrales.estudiante_id', 'notas_bimestrales.nota')
-                ->orderBy('notas_bimestrales.bimestre_id', 'desc')
-                ->get();
-
+            $compNotas = $this->prefetchedNotasCurso[$comp->id] ?? [];
             $notasEstudiantes = [];
-            foreach ($notasRaw as $nr) {
-                if (!isset($notasEstudiantes[$nr->estudiante_id])) {
-                    $notasEstudiantes[$nr->estudiante_id] = $nr->nota;
+            $retiradosEvaluados = 0;
+            $conteo = ['AD' => 0, 'A' => 0, 'B' => 0, 'C' => 0];
+
+            foreach ($compNotas as $estId => $nota) {
+                if (isset($estudiantesScopeMap[$estId])) {
+                    $notasEstudiantes[$estId] = $nota;
+                    if (isset($retiradosMap[$estId])) {
+                        $retiradosEvaluados++;
+                    }
+                    if (isset($conteo[$nota])) {
+                        $conteo[$nota]++;
+                    }
                 }
             }
 
             $evaluados = count($notasEstudiantes);
-
-            $retiradosEvaluados = 0;
-            foreach ($notasEstudiantes as $estudianteId => $nota) {
-                if (in_array($estudianteId, $estudiantesRetirados)) {
-                    $retiradosEvaluados++;
-                }
-            }
-
             $matriculados = $matriculadosActivos + $retiradosEvaluados;
             $sinEvaluar = max(0, $matriculados - $evaluados);
-
-            $conteo = ['AD' => 0, 'A' => 0, 'B' => 0, 'C' => 0];
-            foreach ($notasEstudiantes as $nota) {
-                if (isset($conteo[$nota])) {
-                    $conteo[$nota]++;
-                }
-            }
 
             $datosCompetencias[] = [
                 'nombre' => $comp->nombre,
@@ -182,9 +231,8 @@ class ConsolidadoCursoSheetExport implements FromView, WithTitle, WithColumnWidt
 
     public function title(): string
     {
-        // Max title length in Excel is 31 characters
+        // Longitud máxima de título en Excel: 31 caracteres
         $title = substr($this->curso->nombre, 0, 31);
-        // Remove invalid characters for excel sheets
         $title = str_replace(['*', ':', '?', '[', ']', '\\', '/'], '', $title);
         return $title;
     }
@@ -211,9 +259,7 @@ class ConsolidadoCursoSheetExport implements FromView, WithTitle, WithColumnWidt
 
     public function styles(Worksheet $sheet)
     {
-        // Habilitar ajuste de texto en toda la hoja para que competencias y cabeceras largas se adapten
         $sheet->getStyle($sheet->calculateWorksheetDimension())->getAlignment()->setWrapText(true);
-        
         return [];
     }
 }
