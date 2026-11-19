@@ -258,7 +258,7 @@
                                                     class="text-indigo-600 hover:text-indigo-900 font-bold">Editar</button>
                                                 
                                                 @if($matricula->estado === 'matriculado')
-                                                    <button type="button" @click="$dispatch('open-mover', {{ json_encode([
+                                                    <button type="button" onclick="openRawMoverModal({{ json_encode([
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                         'grado_id' => $matricula->gradoSeccion->grado_id,
@@ -677,40 +677,26 @@
             </div>
         </div>
 
-        <!-- Ventana Modal para Mover Estudiante -->
-        <div x-show="showMoverModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-mover" role="dialog" aria-modal="true" x-cloak>
+        <!-- Ventana Modal para Mover Estudiante (Raw JS version) -->
+        <div id="raw-mover-modal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-mover" role="dialog" aria-modal="true" style="display: {{ (count($errors) > 0 && old('_method') === 'PATCH') ? 'block' : 'none' }}; opacity: 1 !important; visibility: visible !important;">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div x-show="showMoverModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showMoverModal = false" aria-hidden="true"></div>
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeRawMoverModal()" aria-hidden="true" style="z-index: 10;"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div x-show="showMoverModal" class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" style="position: relative; z-index: 9999999;">
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b">
                         <div class="sm:flex sm:items-start">
                             <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                                 <h3 class="text-xl leading-6 font-bold text-gray-900 mb-2">Mover Estudiante de Sección</h3>
-                                <p class="text-sm text-gray-500 mb-4">Mueva a <span class="font-bold text-indigo-700" x-text="selectedMatricula ? selectedMatricula.nombre : ''"></span> a otra sección de su mismo grado.</p>
+                                <p class="text-sm text-gray-500 mb-4">Mueva a <span class="font-bold text-indigo-700" id="raw-mover-nombre">{{ old('estudiante_nombre', '') }}</span> a otra sección de su mismo grado.</p>
                                 
-                                <form :action="selectedMatricula ? '/admin/estudiantes/' + selectedMatricula.estudiante_id + '/mover' : '#'" method="POST" id="moverEstudianteForm">
+                                <form action="" method="POST" id="rawMoverEstudianteForm">
                                     @csrf
                                     @method('PATCH')
-                                    <div class="mb-4" x-data="{
-                                        gradoSecciones: {{ $gradoSecciones->map(function($gs) {
-                                            return [
-                                                'id' => $gs->id,
-                                                'grado_id' => $gs->grado_id,
-                                                'seccion_nombre' => $gs->seccion->nombre
-                                            ];
-                                        })->toJson() }},
-                                        get seccionesMismoGrado() {
-                                            if (!selectedMatricula) return [];
-                                            return this.gradoSecciones.filter(gs => gs.grado_id === selectedMatricula.grado_id && gs.id !== selectedMatricula.seccion_actual_id);
-                                        }
-                                    }">
-                                        <label class="block text-sm font-bold text-gray-700">Nueva Sección</label>
-                                        <select name="grado_seccion_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-yellow-500 rounded-md shadow-sm bg-gray-50" required>
+                                    <input type="hidden" name="estudiante_nombre" id="raw-mover-estudiante-nombre" value="{{ old('estudiante_nombre') }}">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-bold text-gray-700">Nueva Sección *</label>
+                                        <select name="grado_seccion_id" id="raw-mover-seccion-select" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-yellow-500 rounded-md shadow-sm bg-gray-50" required>
                                             <option value="">-- Seleccione Sección --</option>
-                                            <template x-for="gs in seccionesMismoGrado" :key="gs.id">
-                                                <option :value="gs.id" x-text="'Sección ' + gs.seccion_nombre"></option>
-                                            </template>
                                         </select>
                                     </div>
                                 </form>
@@ -718,10 +704,10 @@
                         </div>
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t">
-                        <button type="submit" form="moverEstudianteForm" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
+                        <button type="submit" form="rawMoverEstudianteForm" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
                             Mover Estudiante
                         </button>
-                        <button type="button" @click="showMoverModal = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        <button type="button" onclick="closeRawMoverModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                             Cancelar
                         </button>
                     </div>
@@ -925,6 +911,59 @@
         @endif
     </script>
     <script>
+        const todasGradoSecciones = @json($gradoSecciones->map(function($gs) {
+            return [
+                'id' => $gs->id,
+                'grado_id' => $gs->grado_id,
+                'seccion_nombre' => $gs->seccion->nombre
+            ];
+        }));
+
+        function openRawMoverModal(data) {
+            var modal = document.getElementById('raw-mover-modal');
+            if (!modal) {
+                console.error('El modal raw-mover-modal no existe en el DOM.');
+                return;
+            }
+            if (modal.parentNode !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.style.setProperty('display', 'block', 'important');
+            modal.style.setProperty('z-index', '999999', 'important');
+            
+            document.getElementById('raw-mover-nombre').innerText = data.nombre;
+            var nombreInput = document.getElementById('raw-mover-estudiante-nombre');
+            if (nombreInput) nombreInput.value = data.nombre;
+            
+            var form = document.getElementById('rawMoverEstudianteForm');
+            form.action = '/admin/estudiantes/' + data.estudiante_id + '/mover';
+            
+            var select = document.getElementById('raw-mover-seccion-select');
+            select.innerHTML = '<option value="">-- Seleccione Sección --</option>';
+            
+            var filtradas = todasGradoSecciones.filter(function(gs) {
+                return gs.grado_id == data.grado_id && gs.id != data.seccion_actual_id;
+            });
+            
+            filtradas.forEach(function(gs) {
+                var opt = document.createElement('option');
+                opt.value = gs.id;
+                opt.textContent = 'Sección ' + gs.seccion_nombre;
+                select.appendChild(opt);
+            });
+        }
+
+        function closeRawMoverModal() {
+            var modal = document.getElementById('raw-mover-modal');
+            if (modal) {
+                modal.style.setProperty('display', 'none', 'important');
+            }
+        }
+
+        window.addEventListener('open-mover', function(e) {
+            if (e.detail) openRawMoverModal(e.detail);
+        });
+
         function openRawRetirarModal(data) {
             var modal = document.getElementById('raw-retirar-modal');
             
