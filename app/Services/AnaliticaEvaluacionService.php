@@ -501,23 +501,28 @@ class AnaliticaEvaluacionService
             $label = $numGrado ? "{$numGrado}.° {$sec->seccion_nombre}" : "{$sec->grado_nombre} {$sec->seccion_nombre}";
             $categories[] = $label;
 
-            $dist = $this->getDistribucionBimestral($anoLectivoId, [
-                'bimestre_id' => $bimestreId,
-                'grado_seccion_id' => $sec->id,
-                'curso_id' => $cursoId,
-            ]);
+            $estudiantesNivel = $this->getEstudiantesSeccionConNivel($anoLectivoId, $sec->id, $bimestreId, $cursoId);
 
-            $res = $this->calcularResumenGlobal($dist);
+            $conteo = ['C' => 0, 'B' => 0, 'A' => 0, 'AD' => 0];
+            $totalEvaluados = 0;
 
-            $dataC[] = $res['C']['porcentaje'] ?? 0.0;
-            $dataB[] = $res['B']['porcentaje'] ?? 0.0;
-            $dataA[] = $res['A']['porcentaje'] ?? 0.0;
-            $dataAD[] = $res['AD']['porcentaje'] ?? 0.0;
+            foreach ($estudiantesNivel as $est) {
+                $lvl = $est['nivel_global'] ?? null;
+                if ($lvl && isset($conteo[$lvl])) {
+                    $conteo[$lvl]++;
+                    $totalEvaluados++;
+                }
+            }
 
-            $cantC[] = $res['C']['cantidad'] ?? 0;
-            $cantB[] = $res['B']['cantidad'] ?? 0;
-            $cantA[] = $res['A']['cantidad'] ?? 0;
-            $cantAD[] = $res['AD']['cantidad'] ?? 0;
+            $dataC[] = $this->calcularPorcentaje($conteo['C'], $totalEvaluados);
+            $dataB[] = $this->calcularPorcentaje($conteo['B'], $totalEvaluados);
+            $dataA[] = $this->calcularPorcentaje($conteo['A'], $totalEvaluados);
+            $dataAD[] = $this->calcularPorcentaje($conteo['AD'], $totalEvaluados);
+
+            $cantC[] = $conteo['C'];
+            $cantB[] = $conteo['B'];
+            $cantA[] = $conteo['A'];
+            $cantAD[] = $conteo['AD'];
         }
 
         return [
@@ -595,23 +600,28 @@ class AnaliticaEvaluacionService
             $numRomano = $romanos[$b->numero] ?? $b->numero;
             $categories[] = "{$numRomano} Bimestre";
 
-            $dist = $this->getDistribucionBimestral($anoLectivoId, [
-                'bimestre_id' => $b->id,
-                'grado_seccion_id' => $gradoSeccionId,
-                'curso_id' => $cursoId,
-            ]);
+            $estudiantesNivel = $this->getEstudiantesSeccionConNivel($anoLectivoId, $gradoSeccionId, $b->id, $cursoId);
 
-            $res = $this->calcularResumenGlobal($dist);
+            $conteo = ['C' => 0, 'B' => 0, 'A' => 0, 'AD' => 0];
+            $totalEvaluados = 0;
 
-            $dataC[] = $res['C']['porcentaje'] ?? 0.0;
-            $dataB[] = $res['B']['porcentaje'] ?? 0.0;
-            $dataA[] = $res['A']['porcentaje'] ?? 0.0;
-            $dataAD[] = $res['AD']['porcentaje'] ?? 0.0;
+            foreach ($estudiantesNivel as $est) {
+                $lvl = $est['nivel_global'] ?? null;
+                if ($lvl && isset($conteo[$lvl])) {
+                    $conteo[$lvl]++;
+                    $totalEvaluados++;
+                }
+            }
 
-            $cantC[] = $res['C']['cantidad'] ?? 0;
-            $cantB[] = $res['B']['cantidad'] ?? 0;
-            $cantA[] = $res['A']['cantidad'] ?? 0;
-            $cantAD[] = $res['AD']['cantidad'] ?? 0;
+            $dataC[] = $this->calcularPorcentaje($conteo['C'], $totalEvaluados);
+            $dataB[] = $this->calcularPorcentaje($conteo['B'], $totalEvaluados);
+            $dataA[] = $this->calcularPorcentaje($conteo['A'], $totalEvaluados);
+            $dataAD[] = $this->calcularPorcentaje($conteo['AD'], $totalEvaluados);
+
+            $cantC[] = $conteo['C'];
+            $cantB[] = $conteo['B'];
+            $cantA[] = $conteo['A'];
+            $cantAD[] = $conteo['AD'];
         }
 
         return [

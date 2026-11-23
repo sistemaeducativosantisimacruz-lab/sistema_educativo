@@ -55,6 +55,14 @@ class AnaliticaDatabaseAggregationTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('estudiantes', function (Blueprint $table) {
+            $table->id();
+            $table->string('apellido_paterno')->default('Paterno');
+            $table->string('apellido_materno')->default('Materno');
+            $table->string('nombres')->default('Nombre');
+            $table->timestamps();
+        });
+
         Schema::create('matriculas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('estudiante_id');
@@ -88,6 +96,7 @@ class AnaliticaDatabaseAggregationTest extends TestCase
         Schema::dropIfExists('notas_bimestrales');
         Schema::dropIfExists('bimestres');
         Schema::dropIfExists('matriculas');
+        Schema::dropIfExists('estudiantes');
         Schema::dropIfExists('competencias');
         Schema::dropIfExists('cursos');
         Schema::dropIfExists('grado_secciones');
@@ -225,6 +234,11 @@ class AnaliticaDatabaseAggregationTest extends TestCase
             'orden' => 1
         ]);
 
+        DB::table('estudiantes')->insert([
+            ['id' => 201, 'apellido_paterno' => 'Perez', 'apellido_materno' => 'Gomez', 'nombres' => 'Juan'],
+            ['id' => 202, 'apellido_paterno' => 'Lopez', 'apellido_materno' => 'Diaz', 'nombres' => 'Carlos'],
+        ]);
+
         // Nota en Sección A: AD
         DB::table('matriculas')->insert([
             'estudiante_id' => 201,
@@ -261,6 +275,12 @@ class AnaliticaDatabaseAggregationTest extends TestCase
         $this->assertContains('1.° A', $res['categories']);
         $this->assertContains('1.° B', $res['categories']);
         $this->assertCount(4, $res['series']);
+        // Sección A: 1 estudiante con AD
+        $this->assertEquals(1, $res['cantidades']['AD'][0]);
+        $this->assertEquals(0, $res['cantidades']['C'][0]);
+        // Sección B: 1 estudiante con C
+        $this->assertEquals(1, $res['cantidades']['C'][1]);
+        $this->assertEquals(0, $res['cantidades']['AD'][1]);
     }
 
     public function test_get_comparativa_entre_bimestres_retorna_bimestres_del_ano(): void
