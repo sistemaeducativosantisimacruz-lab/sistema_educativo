@@ -43,8 +43,8 @@
                         @endif
                     @endif
 
-                    <!-- ADMINISTRADOR -->
-                    @if(auth()->user()->role?->nombre === 'admin')
+                    <!-- ADMINISTRADOR Y DIRECTIVOS ACTIVOS -->
+                    @if(auth()->user()->isAdmin() || (auth()->user()->isDirectivo() && auth()->user()->directivoActivo()))
                         <!-- 1. Admisión 2027 (Directo y destacado) -->
                         <x-nav-link :href="route('admin.admision.index')" :active="request()->routeIs('admin.admision.*')">
                             <span class="inline-flex items-center gap-1.5">
@@ -110,10 +110,12 @@
                                     <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                     {{ __('Rendimiento Escolar') }}
                                 </a>
-                                <a href="{{ route('admin.importar') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('admin.importar') ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                    {{ __('Importar Notas SIAGIE') }}
-                                </a>
+                                @if(auth()->user()->isAdmin())
+                                    <a href="{{ route('admin.importar') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('admin.importar') ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                        {{ __('Importar Notas SIAGIE') }}
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -156,7 +158,14 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+                            <div class="flex items-center gap-2">
+                                <span>{{ Auth::user()->name }}</span>
+                                @if(Auth::user()->isDirectivo() && Auth::user()->cargoDirectivo())
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
+                                        {{ Auth::user()->cargoDirectivo() }}
+                                    </span>
+                                @endif
+                            </div>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -228,7 +237,7 @@
                 @endif
             @endif
 
-            @if(auth()->user()->role?->nombre === 'admin')
+            @if(auth()->user()->isAdmin() || (auth()->user()->isDirectivo() && auth()->user()->directivoActivo()))
                 <!-- Admisión 2027 -->
                 <x-responsive-nav-link :href="route('admin.admision.index')" :active="request()->routeIs('admin.admision.*')">
                     <span class="flex items-center justify-between">
@@ -261,9 +270,11 @@
                 <x-responsive-nav-link :href="route('admin.rendimiento.index')" :active="request()->routeIs('admin.rendimiento.*')">
                     {{ __('Rendimiento Escolar') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.importar')" :active="request()->routeIs('admin.importar')">
-                    {{ __('Importar Notas SIAGIE') }}
-                </x-responsive-nav-link>
+                @if(auth()->user()->isAdmin())
+                    <x-responsive-nav-link :href="route('admin.importar')" :active="request()->routeIs('admin.importar')">
+                        {{ __('Importar Notas SIAGIE') }}
+                    </x-responsive-nav-link>
+                @endif
 
                 <!-- Mensualidades -->
                 <div class="pt-2 pb-1 px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
@@ -288,7 +299,14 @@
 
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
+                <div class="flex items-center gap-2">
+                    <span class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</span>
+                    @if(Auth::user()->isDirectivo() && Auth::user()->cargoDirectivo())
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
+                            {{ Auth::user()->cargoDirectivo() }}
+                        </span>
+                    @endif
+                </div>
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
             </div>
 

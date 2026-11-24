@@ -25,6 +25,7 @@ class GradoSeccionController extends Controller
     public function index(Request $request)
     {
         $anoActivo = AnoLectivo::where('activo', true)->first();
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
         
         $gradoSecciones = collect();
         if ($anoActivo) {
@@ -32,7 +33,11 @@ class GradoSeccionController extends Controller
                 ->withCount('matriculas')
                 ->where('ano_lectivo_id', $anoActivo->id);
 
-            if ($request->filled('nivel')) {
+            if ($nivelPermitido) {
+                $query->whereHas('grado', function ($q) use ($nivelPermitido) {
+                    $q->where('nivel', $nivelPermitido);
+                });
+            } elseif ($request->filled('nivel')) {
                 $query->whereHas('grado', function ($q) use ($request) {
                     $q->where('nivel', $request->nivel);
                 });
@@ -55,9 +60,17 @@ class GradoSeccionController extends Controller
                 ->get();
         }
 
-        $grados = Grado::orderBy('orden')->get();
+        $gradosQuery = Grado::orderBy('orden');
+        if ($nivelPermitido) {
+            $gradosQuery->where('nivel', $nivelPermitido);
+        }
+        $grados = $gradosQuery->get();
         $secciones = Seccion::orderBy('nombre')->get();
-        $docentes = Docente::where('activo', true)->orderBy('apellido_paterno')->get();
+        $docentesQuery = Docente::where('activo', true)->orderBy('apellido_paterno');
+        if ($nivelPermitido) {
+            $docentesQuery->where('nivel', $nivelPermitido);
+        }
+        $docentes = $docentesQuery->get();
 
         $assignedTutors = [];
         if ($anoActivo) {
@@ -124,6 +137,11 @@ class GradoSeccionController extends Controller
      */
     public function getTutores(GradoSeccion $gradoSeccione)
     {
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
+        if ($nivelPermitido && $gradoSeccione->grado->nivel !== $nivelPermitido) {
+            abort(403, 'No tiene acceso a la información de este nivel.');
+        }
+
         $gradoSeccione->load(['tutor', 'cotutor']);
 
         return response()->json([
@@ -168,6 +186,11 @@ class GradoSeccionController extends Controller
 
     public function detalle(GradoSeccion $gradoSeccion)
     {
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
+        if ($nivelPermitido && $gradoSeccion->grado->nivel !== $nivelPermitido) {
+            abort(403, 'No tiene acceso a la información de este nivel.');
+        }
+
         $gradoSeccion->load([
             'grado',
             'seccion',

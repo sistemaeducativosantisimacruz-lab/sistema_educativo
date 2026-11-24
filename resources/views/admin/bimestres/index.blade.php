@@ -13,7 +13,7 @@
                     <h3 class="text-2xl font-bold text-gray-800">Bimestres del Año {{ $anoActivo ? $anoActivo->anio : '' }}</h3>
                     <p class="text-gray-600">Apertura y cierra los bimestres para habilitar el registro de calificaciones de los docentes.</p>
                 </div>
-                @if($anoActivo && $bimestres->count() < 4)
+                @if($anoActivo && $bimestres->count() < 4 && auth()->user()->puedeEditar())
                 <button @click="showModal = true" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded shadow transition flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Aperturar Bimestre {{ $bimestres->count() + 1 }}
@@ -99,28 +99,32 @@
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div class="flex items-center justify-end gap-2 flex-wrap">
-                                                    <button @click="showEditModal = true; editNumero = '{{ $bimestre->numero }}'; editFechaInicio = '{{ $bimestre->fecha_inicio }}'; editFechaFin = '{{ $bimestre->fecha_fin }}'; editRoute = '{{ route('admin.bimestres.update', $bimestre) }}'" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded shadow-sm border border-gray-300 transition flex items-center gap-1">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                                        Fechas
-                                                    </button>
-                                                    <button @click="showPublishModal = true; publishBimestre = '{{ $bimestre->numero }}'; publishRoute = '{{ route('admin.bimestres.toggle_publicacion', $bimestre) }}'" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow-sm transition flex items-center gap-1">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                        Notas
-                                                    </button>
-                                                    @if($bimestre->estado === 'abierto')
-                                                        <a href="{{ route('admin.bimestres.confirmar_cierre', $bimestre) }}" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-sm transition inline-block">
-                                                            Cerrar
-                                                        </a>
-                                                    @else
-                                                        <form action="{{ route('admin.bimestres.abrir', $bimestre) }}" method="POST" class="inline form-reabrir">
-                                                            @csrf
-                                                            <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded shadow-sm transition">
-                                                                Reabrir
-                                                            </button>
-                                                        </form>
-                                                    @endif
-                                                </div>
+                                                @if(auth()->user()->puedeEditar())
+                                                    <div class="flex items-center justify-end gap-2 flex-wrap">
+                                                        <button @click="showEditModal = true; editNumero = '{{ $bimestre->numero }}'; editFechaInicio = '{{ $bimestre->fecha_inicio }}'; editFechaFin = '{{ $bimestre->fecha_fin }}'; editRoute = '{{ route('admin.bimestres.update', $bimestre) }}'" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded shadow-sm border border-gray-300 transition flex items-center gap-1">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                            Fechas
+                                                        </button>
+                                                        <button @click="showPublishModal = true; publishBimestre = '{{ $bimestre->numero }}'; publishRoute = '{{ route('admin.bimestres.toggle_publicacion', $bimestre) }}'" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow-sm transition flex items-center gap-1">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                            Notas
+                                                        </button>
+                                                        @if($bimestre->estado === 'abierto')
+                                                            <a href="{{ route('admin.bimestres.confirmar_cierre', $bimestre) }}" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-sm transition inline-block">
+                                                                Cerrar
+                                                            </a>
+                                                        @else
+                                                            <form action="{{ route('admin.bimestres.abrir', $bimestre) }}" method="POST" class="inline form-reabrir">
+                                                                @csrf
+                                                                <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded shadow-sm transition">
+                                                                    Reabrir
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <span class="text-xs text-gray-400 italic">Solo lectura</span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach

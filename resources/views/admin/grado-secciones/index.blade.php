@@ -203,10 +203,12 @@
                     <h3 class="text-2xl font-bold text-gray-800">Apertura de Secciones</h3>
                     <p class="text-gray-600">Combina los grados con las letras de sección disponibles para el año escolar activo.</p>
                 </div>
+                @if(auth()->user()->puedeEditar())
                 <button @click="showModal = true" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded shadow transition flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Añadir Nueva Sección
                 </button>
+                @endif
             </div>
 
             @if(session('success'))
@@ -287,7 +289,7 @@
                         </div>
                     @elseif($gradoSeccionesAgrupadas->isEmpty())
                         <div class="text-center py-12 text-gray-500 bg-gray-50">
-                            No hay secciones aperturadas para el año lectivo activo. Haz clic en "Añadir Nueva Sección".
+                            No hay secciones aperturadas para el año lectivo activo.@if(auth()->user()->puedeEditar()) Haz clic en "Añadir Nueva Sección".@endif
                         </div>
                     @else
                         {{-- Agrupar por nivel para mostrar encabezados --}}
@@ -402,14 +404,16 @@
                                                                 </div>
 
                                                                 <div class="grid grid-cols-2 gap-1.5 mt-2.5">
-                                                                    <button @click="abrirTutorModal({{ json_encode([
-                                                                        'id'     => $gs->id,
-                                                                        'nombre' => $gs->grado->nombre . ' - Sección ' . $gs->seccion->nombre,
-                                                                        'nivel'  => $gs->grado->nivel,
-                                                                    ]) }})"
-                                                                        class="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1.5 rounded-lg transition text-center">
-                                                                        Tutores
-                                                                    </button>
+                                                                    @if(auth()->user()->puedeEditar())
+                                                                        <button @click="abrirTutorModal({{ json_encode([
+                                                                            'id'     => $gs->id,
+                                                                            'nombre' => $gs->grado->nombre . ' - Sección ' . $gs->seccion->nombre,
+                                                                            'nivel'  => $gs->grado->nivel,
+                                                                        ]) }})"
+                                                                            class="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1.5 rounded-lg transition text-center">
+                                                                            Tutores
+                                                                        </button>
+                                                                    @endif
 
                                                                     <button @click="abrirDetalle({{ $gs->id }})"
                                                                         class="text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-2 py-1.5 rounded-lg transition text-center">
@@ -421,14 +425,16 @@
                                                                         Nómina
                                                                     </button>
 
-                                                                    <form id="deleteForm_{{ $gs->id }}" action="{{ route('admin.grado-secciones.destroy', $gs) }}" method="POST">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" @click="abrirDeleteModal({{ $gs->id }}, '{{ $gs->grado->nombre }} - {{ $gs->seccion->nombre }}', {{ $gs->matriculas_count ?? 0 }})"
-                                                                            class="w-full text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-1.5 rounded-lg transition text-center">
-                                                                            ✕ Cerrar
-                                                                        </button>
-                                                                    </form>
+                                                                    @if(auth()->user()->puedeEditar())
+                                                                        <form id="deleteForm_{{ $gs->id }}" action="{{ route('admin.grado-secciones.destroy', $gs) }}" method="POST">
+                                                                            @csrf
+                                                                            @method('DELETE')
+                                                                            <button type="button" @click="abrirDeleteModal({{ $gs->id }}, '{{ $gs->grado->nombre }} - {{ $gs->seccion->nombre }}', {{ $gs->matriculas_count ?? 0 }})"
+                                                                                class="w-full text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-1.5 rounded-lg transition text-center">
+                                                                                ✕ Cerrar
+                                                                            </button>
+                                                                        </form>
+                                                                    @endif
                                                                 </div>
                                                             </div>
                                                         @endforeach
@@ -765,6 +771,7 @@
                                     <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full"
                                           x-text="(detalleData.cursos_con_docentes ? detalleData.cursos_con_docentes.length : 0) + ' cursos'"></span>
                                     
+                                    @if(auth()->user()->puedeEditar())
                                     <button @click="toggleEditDocentes()"
                                             class="ml-auto flex items-center justify-center w-9 h-9 rounded-lg transition-colors shadow-sm"
                                             :style="isEditingDocentes ? 'background-color: #059669; color: white;' : 'background-color: #16a34a; color: white;'"
@@ -774,6 +781,7 @@
                                         <svg x-show="!isEditingDocentes" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                         <svg x-show="isEditingDocentes" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                                     </button>
+                                    @endif
                                 </div>
                                 <div class="rounded-lg border border-gray-200 overflow-hidden relative">
                                     <div>

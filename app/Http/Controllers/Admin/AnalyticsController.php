@@ -42,9 +42,14 @@ class AnalyticsController extends Controller
         }
 
         // Resolver nivel predeterminado ('secundaria' por defecto)
-        $nivel = $request->input('nivel', 'secundaria');
-        if (!in_array($nivel, ['primaria', 'secundaria', ''])) {
-            $nivel = 'secundaria';
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
+        if ($nivelPermitido) {
+            $nivel = $nivelPermitido;
+        } else {
+            $nivel = $request->input('nivel', 'secundaria');
+            if (!in_array($nivel, ['primaria', 'secundaria', ''])) {
+                $nivel = 'secundaria';
+            }
         }
 
         $seccionesQuery = GradoSeccion::with('grado', 'seccion')
@@ -219,6 +224,14 @@ class AnalyticsController extends Controller
      */
     public function diagnosticoEstudiante(int $id, EstudianteDiagnosticoRequest $request)
     {
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
+        if ($nivelPermitido) {
+            $gs = GradoSeccion::with('grado')->find((int) $request->validated('grado_seccion_id'));
+            if ($gs && $gs->grado && $gs->grado->nivel !== $nivelPermitido) {
+                abort(403, 'No tienes permiso para consultar información de este nivel educativo.');
+            }
+        }
+
         $resultado = $this->analiticaService->getDetalleDiagnosticoEstudiante(
             $id,
             (int) $request->validated('grado_seccion_id'),
@@ -251,6 +264,14 @@ class AnalyticsController extends Controller
         $estudianteId = (int) $request->estudiante_id;
         $gradoSeccionId = (int) $request->grado_seccion_id;
         $incluirComparativa = $request->boolean('incluir_comparativa', true);
+
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
+        if ($nivelPermitido) {
+            $gs = GradoSeccion::with('grado')->find($gradoSeccionId);
+            if ($gs && $gs->grado && $gs->grado->nivel !== $nivelPermitido) {
+                abort(403, 'No tienes permiso para consultar este nivel.');
+            }
+        }
 
         // Validar matrícula del estudiante en la sección y año activo (excluyendo retirados)
         $matricula = DB::table('matriculas')
@@ -461,6 +482,11 @@ class AnalyticsController extends Controller
         $anoActivo = AnoLectivo::where('activo', true)->firstOrFail();
         $gradoSeccionId = (int) $request->grado_seccion_id;
         $gradoSeccion = GradoSeccion::with('grado', 'seccion')->findOrFail($gradoSeccionId);
+
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
+        if ($nivelPermitido && $gradoSeccion->grado && $gradoSeccion->grado->nivel !== $nivelPermitido) {
+            abort(403, 'No tienes permiso para consultar este nivel.');
+        }
 
         $bIds = $request->input('bimestres', $request->input('bimestre_ids', []));
         if (empty($bIds) || count((array) $bIds) < 2) {

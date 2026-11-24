@@ -9,9 +9,13 @@ Route::get('/', function () {
 
 // Redirección post-login según rol
 Route::get('/dashboard', function () {
-    $role = auth()->user()?->role?->nombre;
+    $user = auth()->user();
+    $role = $user?->role?->nombre;
     return match($role) {
         'admin'      => redirect()->route('admin.dashboard'),
+        'directivo'  => $user->directivoActivo()
+                            ? redirect()->route('admin.dashboard')
+                            : redirect()->route('profile.edit')->with('warning', 'Tu cargo directivo se encuentra inactivo o desvinculado. Solo tienes acceso a tu perfil de usuario.'),
         'docente'    => redirect()->route('docente.dashboard'),
         'estudiante' => redirect()->route('estudiante.dashboard'),
         default      => redirect()->route('login'),

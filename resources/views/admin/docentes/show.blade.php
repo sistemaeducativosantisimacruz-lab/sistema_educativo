@@ -128,6 +128,7 @@
                     </div>
                 @endif
 
+                @if(auth()->user()->puedeEditar())
                 <div class="bg-white shadow-sm sm:rounded-lg border border-gray-200">
                     <div class="bg-gray-50 px-6 py-4 border-b">
                         <h3 class="text-lg font-bold text-gray-800">Añadir Secciones a Cargo</h3>
@@ -269,6 +270,7 @@
                         @endif
                     </div>
                 </div>
+                @endif
 
                 {{-- Asignaciones actuales --}}
                 <div class="bg-white shadow-sm sm:rounded-lg border border-gray-200">
@@ -299,13 +301,15 @@
                                                     </span>
                                                 </div>
                                             </div>
-                                            <form action="{{ route('admin.docentes.desasignar', [$docente->id, $asignacion->id]) }}"
-                                                  method="POST" class="form-desasignar">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold py-1.5 px-3 rounded transition">
-                                                    Remover
-                                                </button>
-                                            </form>
+                                            @if(auth()->user()->puedeEditar())
+                                                <form action="{{ route('admin.docentes.desasignar', [$docente->id, $asignacion->id]) }}"
+                                                      method="POST" class="form-desasignar">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold py-1.5 px-3 rounded transition">
+                                                        Remover
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </li>
                                     @endforeach
                                 </ul>

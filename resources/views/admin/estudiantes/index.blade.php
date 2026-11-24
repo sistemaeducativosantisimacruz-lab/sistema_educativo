@@ -68,10 +68,12 @@
                     <h3 class="text-2xl font-bold text-gray-800">Listado de Estudiantes</h3>
                     <p class="text-gray-600">Administra la información de los estudiantes matriculados en el sistema.</p>
                 </div>
+                @if(auth()->user()->puedeEditar())
                 <button @click="showModal = true" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded shadow transition flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Registrar Estudiante
                 </button>
+                @endif
             </div>
 
             @if(session('success'))
@@ -225,6 +227,7 @@
                                                 </span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                                @if(auth()->user()->puedeEditar())
                                                 <button @click="showEditModal = true; 
                                                     editEstudiante = {{ json_encode($matricula->estudiante) }}; 
                                                     editApoderado = {{ json_encode($matricula->estudiante->apoderado) }};
@@ -282,6 +285,18 @@
                                                         'estudiante_id' => $matricula->estudiante->id,
                                                         'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
                                                     ]) }})" class="text-green-600 hover:text-green-900 font-bold">Reincorporar</button>
+                                                @endif
+                                                @else
+                                                    @if($matricula->estado === 'retirado')
+                                                        <button type="button" onclick="openRawDetallesBajaModal({{ json_encode([
+                                                            'nombre' => $matricula->estudiante->nombres . ' ' . $matricula->estudiante->apellido_paterno,
+                                                            'motivo_baja' => $matricula->motivo_baja,
+                                                            'fecha_baja' => $matricula->fecha_baja ? \Carbon\Carbon::parse($matricula->fecha_baja)->format('d/m/Y') : '',
+                                                            'observaciones_baja' => $matricula->observaciones_baja,
+                                                        ]) }})" class="text-gray-600 hover:text-gray-900 font-bold text-xs">Detalles de Baja</button>
+                                                    @else
+                                                        <span class="text-xs text-gray-400 italic">Solo lectura</span>
+                                                    @endif
                                                 @endif
                                             </td>
                                         </tr>

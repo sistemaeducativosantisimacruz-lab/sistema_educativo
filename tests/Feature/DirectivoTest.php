@@ -34,6 +34,7 @@ class DirectivoTest extends TestCase
             $table->boolean('must_change_password')->default(false);
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('directivos', function (Blueprint $table) {
@@ -46,6 +47,7 @@ class DirectivoTest extends TestCase
             $table->string('direccion', 255)->nullable();
             $table->string('email', 100)->nullable();
             $table->foreignId('user_id')->nullable();
+            $table->boolean('activo')->default(true);
             $table->timestamps();
         });
 

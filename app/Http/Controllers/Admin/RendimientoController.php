@@ -19,6 +19,11 @@ class RendimientoController extends Controller
     {
         $anoActivo = AnoLectivo::where('activo', true)->first();
         $tab = $request->query('tab', 'notas');
+
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
+        if ($nivelPermitido) {
+            $request->merge(['nivel' => $nivelPermitido]);
+        }
         
         $gradoSecciones = collect();
         $bimestres = collect();
@@ -31,21 +36,30 @@ class RendimientoController extends Controller
         $estudiantesList = collect();
 
         if ($anoActivo) {
-            $gradoSecciones = GradoSeccion::join('grados', 'grado_secciones.grado_id', '=', 'grados.id')
+            $gradoSeccionesQuery = GradoSeccion::join('grados', 'grado_secciones.grado_id', '=', 'grados.id')
                 ->join('secciones', 'grado_secciones.seccion_id', '=', 'secciones.id')
                 ->where('grado_secciones.ano_lectivo_id', $anoActivo->id)
                 ->orderBy('grados.nivel')
                 ->orderBy('grados.orden')
                 ->orderBy('secciones.nombre')
                 ->select('grado_secciones.*')
-                ->with(['grado', 'seccion'])
-                ->get();
+                ->with(['grado', 'seccion']);
+
+            if ($nivelPermitido) {
+                $gradoSeccionesQuery->where('grados.nivel', $nivelPermitido);
+            }
+
+            $gradoSecciones = $gradoSeccionesQuery->get();
 
             $bimestres = \App\Models\Bimestre::where('ano_lectivo_id', $anoActivo->id)
                 ->orderBy('numero')
                 ->get();
 
-            $niveles = DB::table('grados')->distinct()->orderBy('nivel')->pluck('nivel');
+            if ($nivelPermitido) {
+                $niveles = collect([$nivelPermitido]);
+            } else {
+                $niveles = DB::table('grados')->distinct()->orderBy('nivel')->pluck('nivel');
+            }
 
             // Lógica delegada al servicio según la pestaña activa
             switch ($tab) {
@@ -809,6 +823,11 @@ class RendimientoController extends Controller
 
     public function exportarConsolidado(Request $request)
     {
+        $nivelPermitido = auth()->user()?->nivelPermitidoDirectivo();
+        if ($nivelPermitido) {
+            $request->merge(['nivel' => $nivelPermitido]);
+        }
+
         $request->validate([
             'nivel' => 'required|in:primaria,secundaria',
             'bimestre_id' => 'required|exists:bimestres,id'

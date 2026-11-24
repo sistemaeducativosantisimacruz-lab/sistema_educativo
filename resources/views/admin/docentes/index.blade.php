@@ -25,6 +25,7 @@
                     <h3 class="text-2xl font-bold text-gray-800">Directorio de Personal</h3>
                     <p class="text-gray-600">Administra a los docentes y al equipo directivo de la institución educativa.</p>
                 </div>
+                @if(auth()->user()->puedeEditar())
                 <div class="flex flex-wrap items-center gap-3">
                     <button x-show="activeTab === 'docentes'" @click="showModal = true" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded shadow transition flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
@@ -35,6 +36,7 @@
                         Registrar Directivo
                     </button>
                 </div>
+                @endif
             </div>
 
             @if(session('success'))
@@ -229,26 +231,33 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div class="flex items-center justify-end gap-2">
-                                                    <button type="button" @click="$dispatch('open-edit-docente', {
-                                                            id: {{ $docente->id }},
-                                                            dni: '{{ $docente->dni }}',
-                                                            nombres: '{{ addslashes($docente->nombres) }}',
-                                                            apellido_paterno: '{{ addslashes($docente->apellido_paterno) }}',
-                                                            apellido_materno: '{{ addslashes($docente->apellido_materno) }}',
-                                                            email: '{{ $docente->user->email ?? '' }}',
-                                                            celular: '{{ $docente->celular ?? '' }}',
-                                                            tipo: '{{ $docente->tipo }}',
-                                                            nivel: '{{ $docente->nivel }}',
-                                                            activo: {{ $docente->activo ? 'true' : 'false' }},
-                                                            curso_ids: {{ json_encode($docente->cursos->pluck('id')->map(fn($id) => (string)$id)) }}
-                                                        })"
-                                                        class="inline-block bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-2 rounded border border-emerald-200 transition shadow-sm text-xs sm:text-sm">
-                                                        Editar Datos
-                                                    </button>
-                                                    <a href="{{ route('admin.docentes.show', $docente) }}"
-                                                       class="inline-block {{ $docente->activo ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border-gray-300' }} font-bold px-3 py-2 rounded border transition shadow-sm text-xs sm:text-sm">
-                                                        {{ $docente->activo ? 'Asignar / Ver' : 'Ver Asignaciones' }}
-                                                    </a>
+                                                    @if(auth()->user()->puedeEditar())
+                                                        <button type="button" @click="$dispatch('open-edit-docente', {
+                                                                id: {{ $docente->id }},
+                                                                dni: '{{ $docente->dni }}',
+                                                                nombres: '{{ addslashes($docente->nombres) }}',
+                                                                apellido_paterno: '{{ addslashes($docente->apellido_paterno) }}',
+                                                                apellido_materno: '{{ addslashes($docente->apellido_materno) }}',
+                                                                email: '{{ $docente->user->email ?? '' }}',
+                                                                celular: '{{ $docente->celular ?? '' }}',
+                                                                tipo: '{{ $docente->tipo }}',
+                                                                nivel: '{{ $docente->nivel }}',
+                                                                activo: {{ $docente->activo ? 'true' : 'false' }},
+                                                                curso_ids: {{ json_encode($docente->cursos->pluck('id')->map(fn($id) => (string)$id)) }}
+                                                            })"
+                                                            class="inline-block bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-2 rounded border border-emerald-200 transition shadow-sm text-xs sm:text-sm">
+                                                            Editar Datos
+                                                        </button>
+                                                        <a href="{{ route('admin.docentes.show', $docente) }}"
+                                                           class="inline-block {{ $docente->activo ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border-gray-300' }} font-bold px-3 py-2 rounded border transition shadow-sm text-xs sm:text-sm">
+                                                            {{ $docente->activo ? 'Asignar / Ver' : 'Ver Asignaciones' }}
+                                                        </a>
+                                                    @else
+                                                        <a href="{{ route('admin.docentes.show', $docente) }}"
+                                                           class="inline-block bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 font-bold px-3 py-2 rounded border transition shadow-sm text-xs sm:text-sm">
+                                                            Ver Asignaciones
+                                                        </a>
+                                                    @endif
                                                 </div>
                                             </td>
                                         </tr>
@@ -279,10 +288,12 @@
                             <p class="text-xs text-gray-600">Registro oficial de las autoridades del colegio: Director(a), Subdirector(a) de Secundaria y Subdirector(a) de Primaria.</p>
                         </div>
                     </div>
-                    <button @click="showDirectivoModal = true" class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition text-xs shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                        + Nuevo Directivo
-                    </button>
+                    @if(auth()->user()->puedeEditar())
+                        <button @click="showDirectivoModal = true" class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition text-xs shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            + Nuevo Directivo
+                        </button>
+                    @endif
                 </div>
 
                 {{-- Tabla de Directivos --}}
@@ -294,11 +305,13 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                                 <p class="font-bold text-gray-700 text-base mb-1">No hay directivos registrados actualmente</p>
-                                <p class="text-xs text-gray-500 mb-4">Haga clic en el botón para agregar al Director(a) o Subdirectores de la institución.</p>
-                                <button @click="showDirectivoModal = true" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-lg shadow transition text-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                                    Registrar Directivo
-                                </button>
+                                @if(auth()->user()->puedeEditar())
+                                    <p class="text-xs text-gray-500 mb-4">Haga clic en el botón para agregar al Director(a) o Subdirectores de la institución.</p>
+                                    <button @click="showDirectivoModal = true" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-lg shadow transition text-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                        Registrar Directivo
+                                    </button>
+                                @endif
                             </div>
                         @else
                             <div class="overflow-x-auto">
@@ -309,6 +322,7 @@
                                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">DNI</th>
                                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Apellidos y Nombres</th>
                                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Cargo</th>
+                                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Estado</th>
                                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Teléfono</th>
                                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Dirección</th>
                                             <th class="px-6 py-4 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Acciones</th>
@@ -361,6 +375,17 @@
                                                         </span>
                                                     @endif
                                                 </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                                    @if($directivo->activo)
+                                                        <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                            En Ejercicio
+                                                        </span>
+                                                    @else
+                                                        <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                                                            Cesado / Retirado
+                                                        </span>
+                                                    @endif
+                                                </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     {{ $directivo->telefono ?? '—' }}
                                                 </td>
@@ -368,29 +393,57 @@
                                                     {{ $directivo->direccion ?? '—' }}
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div class="flex items-center justify-end gap-2">
-                                                        <button type="button"
-                                                            @click="$dispatch('open-edit-directivo', {
-                                                                id: {{ $directivo->id }},
-                                                                dni: '{{ $directivo->dni }}',
-                                                                nombres: '{{ addslashes($directivo->nombres) }}',
-                                                                apellidos: '{{ addslashes($directivo->apellidos) }}',
-                                                                cargo: '{{ addslashes($directivo->cargo) }}',
-                                                                telefono: '{{ addslashes($directivo->telefono ?? '') }}',
-                                                                direccion: '{{ addslashes($directivo->direccion ?? '') }}',
-                                                                email: '{{ addslashes($directivo->email ?? '') }}'
-                                                            })"
-                                                            class="inline-block bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-2 rounded border border-emerald-200 transition shadow-sm text-xs sm:text-sm">
-                                                            Editar
-                                                        </button>
-                                                        <form action="{{ route('admin.directivos.destroy', $directivo) }}" method="POST" class="inline" onsubmit="return confirm('¿Está seguro de que desea eliminar a este directivo del registro?');">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="inline-block bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold px-3 py-2 rounded border border-rose-200 transition shadow-sm text-xs sm:text-sm">
-                                                                Eliminar
-                                                            </button>
-                                                        </form>
-                                                    </div>
+                                                    @if(auth()->user()->puedeEditar())
+                                                        <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                                                            @if($directivo->activo)
+                                                                <button type="button"
+                                                                    @click="$dispatch('open-edit-directivo', {
+                                                                        id: {{ $directivo->id }},
+                                                                        dni: '{{ $directivo->dni }}',
+                                                                        nombres: '{{ addslashes($directivo->nombres) }}',
+                                                                        apellidos: '{{ addslashes($directivo->apellidos) }}',
+                                                                        cargo: '{{ addslashes($directivo->cargo) }}',
+                                                                        telefono: '{{ addslashes($directivo->telefono ?? '') }}',
+                                                                        direccion: '{{ addslashes($directivo->direccion ?? '') }}',
+                                                                        email: '{{ addslashes($directivo->email ?? '') }}'
+                                                                    })"
+                                                                    class="inline-block bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-2.5 py-1.5 rounded border border-emerald-200 transition shadow-sm text-xs">
+                                                                    Editar
+                                                                </button>
+                                                                <button type="button"
+                                                                    @click="$dispatch('open-reemplazar-directivo', {
+                                                                        id: {{ $directivo->id }},
+                                                                        cargo: '{{ addslashes($directivo->cargo) }}',
+                                                                        actual: '{{ addslashes($directivo->apellidos . ' ' . $directivo->nombres) }}'
+                                                                    })"
+                                                                    class="inline-block bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold px-2.5 py-1.5 rounded border border-blue-200 transition shadow-sm text-xs" title="Designar a un nuevo titular para este cargo">
+                                                                    Reemplazar
+                                                                </button>
+                                                                <form action="{{ route('admin.directivos.quitar', $directivo) }}" method="POST" class="inline" onsubmit="return confirm('¿Está seguro de remover a este directivo del cargo? Perderá acceso de consulta al sistema escolar.');">
+                                                                    @csrf
+                                                                    <button type="submit" class="inline-block bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold px-2.5 py-1.5 rounded border border-amber-200 transition shadow-sm text-xs" title="Cesar del cargo activo">
+                                                                        Quitar
+                                                                    </button>
+                                                                </form>
+                                                            @else
+                                                                <form action="{{ route('admin.directivos.reincorporar', $directivo) }}" method="POST" class="inline" onsubmit="return confirm('¿Desea reincorporar a este directivo en su cargo? Se reactivará su acceso de consulta.');">
+                                                                    @csrf
+                                                                    <button type="submit" class="inline-block bg-green-50 text-green-700 hover:bg-green-100 font-bold px-2.5 py-1.5 rounded border border-green-200 transition shadow-sm text-xs">
+                                                                        Reincorporar
+                                                                    </button>
+                                                                </form>
+                                                            @endif
+                                                            <form action="{{ route('admin.directivos.destroy', $directivo) }}" method="POST" class="inline" onsubmit="return confirm('¿Está seguro de que desea eliminar definitivamente a este directivo del registro?');">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="inline-block bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold px-2.5 py-1.5 rounded border border-rose-200 transition shadow-sm text-xs">
+                                                                    Eliminar
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-xs text-gray-400 italic">Solo lectura</span>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -403,6 +456,7 @@
             </div> {{-- Fin Sección: Equipo Directivo --}}
         </div>
 
+        @if(auth()->user()->puedeEditar())
         {{-- ─── Modal: Registrar Docente ───────────────────────────────── --}}
         <div x-show="showModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-docente" role="dialog" aria-modal="true" x-cloak>
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -1025,6 +1079,121 @@
                 </div>
             </div>
         </div>
+
+        {{-- ─── Modal: Reemplazar Directivo ───────────────────────────────── --}}
+        <div x-data="{
+                showReemplazarModal: false,
+                target: { id: '', cargo: '', actual: '' },
+                openReemplazar(data) {
+                    this.target = data;
+                    this.showReemplazarModal = true;
+                }
+            }"
+            @open-reemplazar-directivo.window="openReemplazar($event.detail)"
+            x-show="showReemplazarModal"
+            class="fixed inset-0 z-50 overflow-y-auto"
+            style="display: none;"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            x-cloak>
+
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+                <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true" @click="showReemplazarModal = false"></div>
+
+                <div class="relative inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-xl w-full"
+                    x-show="showReemplazarModal"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+
+                    <form :action="'{{ url('admin/directivos') }}/' + target.id + '/reemplazar'" method="POST">
+                        @csrf
+                        <div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4 border-t-4 border-blue-600">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="p-2.5 bg-blue-100 text-blue-700 rounded-lg shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold leading-6 text-gray-900">
+                                        Reemplazar Titular del Cargo
+                                    </h3>
+                                    <p class="text-xs text-gray-500">Designar un nuevo profesional en el cargo directivo.</p>
+                                </div>
+                            </div>
+
+                            <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                                Cargo: <strong class="font-bold" x-text="target.cargo"></strong><br>
+                                Titular saliente: <strong class="font-semibold" x-text="target.actual"></strong> (quedará en estado cesado/inactivo).
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                                {{-- DNI --}}
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700">DNI del Nuevo Titular *</label>
+                                    <input type="text" name="dni" required maxlength="8" pattern="\d{8}" placeholder="8 dígitos"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                {{-- Teléfono --}}
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700">Teléfono / Celular</label>
+                                    <input type="text" name="telefono" placeholder="Ej: 987654321"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                {{-- Nombres --}}
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700">Nombres *</label>
+                                    <input type="text" name="nombres" required placeholder="Nombres del nuevo titular"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                {{-- Apellidos --}}
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700">Apellidos *</label>
+                                    <input type="text" name="apellidos" required placeholder="Apellidos completos"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                {{-- Dirección --}}
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-bold text-gray-700">Dirección</label>
+                                    <input type="text" name="direccion" placeholder="Dirección domiciliaria"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                {{-- Correo electrónico --}}
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-bold text-gray-700">Correo Electrónico (Opcional)</label>
+                                    <input type="email" name="email" placeholder="directivo@colegio.edu.pe"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
+                            <button type="submit"
+                                class="inline-flex justify-center w-full px-4 py-2 text-base font-bold text-white border border-transparent rounded-md shadow-sm bg-blue-600 hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition">
+                                Confirmar Reemplazo
+                            </button>
+                            <button type="button" @click="showReemplazarModal = false"
+                                class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-bold text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        @endif
 
     <!-- Script para preservar posición de scroll tras guardar cambios y reabrir modal si hay errores -->
     <script>

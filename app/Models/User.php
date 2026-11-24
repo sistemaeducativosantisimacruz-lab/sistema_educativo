@@ -70,6 +70,62 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Estudiante::class);
     }
 
+    public function directivo(): HasOne
+    {
+        return $this->hasOne(Directivo::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role?->nombre === 'admin';
+    }
+
+    public function isDirectivo(): bool
+    {
+        return $this->role?->nombre === 'directivo';
+    }
+
+    public function isDocente(): bool
+    {
+        return $this->role?->nombre === 'docente';
+    }
+
+    public function isEstudiante(): bool
+    {
+        return $this->role?->nombre === 'estudiante';
+    }
+
+    /**
+     * Determina si el usuario tiene permisos de edición/escritura administrativa.
+     * Los directivos tienen perfil de SOLO CONSULTA.
+     */
+    public function puedeEditar(): bool
+    {
+        return $this->isAdmin();
+    }
+
+    public function directivoActivo(): ?Directivo
+    {
+        return Directivo::where('user_id', $this->id)->where('activo', true)->first();
+    }
+
+    public function cargoDirectivo(): ?string
+    {
+        return $this->directivoActivo()?->cargo;
+    }
+
+    public function nivelPermitidoDirectivo(): ?string
+    {
+        $cargo = $this->cargoDirectivo();
+        if ($cargo === Directivo::CARGO_SUBDIRECTOR_PRIMARIA) {
+            return 'primaria';
+        }
+        if ($cargo === Directivo::CARGO_SUBDIRECTOR_SECUNDARIA) {
+            return 'secundaria';
+        }
+        return null;
+    }
+
     public function esEntrevistador(): bool
     {
         if ($this->role?->nombre === 'admin') {

@@ -36,6 +36,7 @@
                     </div>
                 </div>
 
+                @if(auth()->user()->puedeEditar())
                 <!-- Botón Llenar Entrevista en Línea -->
                 <a href="{{ route('admin.admision.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:from-emerald-700 hover:to-teal-700 shadow-md shadow-emerald-200 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,6 +60,7 @@
                     </svg>
                     Importar Entrevistas
                 </button>
+                @endif
             </div>
         </div>
     </x-slot>
@@ -517,20 +519,22 @@
 
                                     <!-- Acciones -->
                                     <td class="px-5 py-4 text-right space-x-1.5">
-                                        <!-- Continuar o Editar -->
-                                        @if($entrevista->esBorrador())
-                                            <a href="{{ route('admin.admision.edit', $entrevista) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 shadow-sm transition" title="Continuar llenando la ficha">
-                                                <svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                </svg>
-                                                Continuar
-                                            </a>
-                                        @else
-                                            <a href="{{ route('admin.admision.edit', $entrevista) }}" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition inline-block" title="Editar Ficha">
-                                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                </svg>
-                                            </a>
+                                        @if(auth()->user()->puedeEditar())
+                                            <!-- Continuar o Editar -->
+                                            @if($entrevista->esBorrador())
+                                                <a href="{{ route('admin.admision.edit', $entrevista) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 shadow-sm transition" title="Continuar llenando la ficha">
+                                                    <svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                    </svg>
+                                                    Continuar
+                                                </a>
+                                            @else
+                                                <a href="{{ route('admin.admision.edit', $entrevista) }}" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition inline-block" title="Editar Ficha">
+                                                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                    </svg>
+                                                </a>
+                                            @endif
                                         @endif
 
                                         <!-- Ver Detalle -->
@@ -541,30 +545,32 @@
                                             </svg>
                                         </button>
 
-                                        <!-- Asignar Sección / Matricular -->
-                                        @if($entrevista->estado === 'nuevo_ingresante')
-                                            @if($puedeMatricular)
-                                                <button type="button" @click="openAssign({{ json_encode($entrevista) }})" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition" title="Asignar Sección y Matricular">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                                        @if(auth()->user()->puedeEditar())
+                                            <!-- Asignar Sección / Matricular -->
+                                            @if($entrevista->estado === 'nuevo_ingresante')
+                                                @if($puedeMatricular)
+                                                    <button type="button" @click="openAssign({{ json_encode($entrevista) }})" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition" title="Asignar Sección y Matricular">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                                                        </svg>
+                                                        Matricular
+                                                    </button>
+                                                @else
+                                                    <button type="button" @click="mostrarAvisoMatriculaBloqueada()" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 border border-gray-300 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-200 hover:text-gray-800 shadow-sm transition cursor-pointer" title="Matrícula bloqueada: requiere que los 4 bimestres del año lectivo estén cerrados">
+                                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                                        </svg>
+                                                        Matricular
+                                                    </button>
+                                                @endif
+
+                                                <!-- Eliminar Ficha con SweetAlert2 -->
+                                                <button type="button" @click="confirmarEliminarEntrevista('{{ route('admin.admision.destroy', $entrevista) }}', '{{ addslashes($entrevista->nombre_completo_estudiante) }}')" class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar Ficha">
+                                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                     </svg>
-                                                    Matricular
-                                                </button>
-                                            @else
-                                                <button type="button" @click="mostrarAvisoMatriculaBloqueada()" class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 border border-gray-300 text-gray-500 rounded-lg text-xs font-semibold hover:bg-gray-200 hover:text-gray-800 shadow-sm transition cursor-pointer" title="Matrícula bloqueada: requiere que los 4 bimestres del año lectivo estén cerrados">
-                                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                                    </svg>
-                                                    Matricular
                                                 </button>
                                             @endif
-
-                                            <!-- Eliminar Ficha con SweetAlert2 -->
-                                            <button type="button" @click="confirmarEliminarEntrevista('{{ route('admin.admision.destroy', $entrevista) }}', '{{ addslashes($entrevista->nombre_completo_estudiante) }}')" class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar Ficha">
-                                                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
                                         @endif
                                     </td>
                                 </tr>

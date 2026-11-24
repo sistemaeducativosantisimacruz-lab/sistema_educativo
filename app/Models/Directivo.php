@@ -31,7 +31,25 @@ class Directivo extends Model
         'direccion',
         'email',
         'user_id',
+        'activo',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'activo' => 'boolean',
+        ];
+    }
+
+    public function isActivo(): bool
+    {
+        return (bool) ($this->activo ?? true);
+    }
+
+    public function scopeActivos($query)
+    {
+        return $query->where('activo', true);
+    }
 
     /**
      * Accesor para nombre completo en formato "Apellidos, Nombres".

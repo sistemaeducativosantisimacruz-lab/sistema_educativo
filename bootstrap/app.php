@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'password.change' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
             'entrevistador' => \App\Http\Middleware\EnsureIsEntrevistador::class,
+            'directivo.activo' => \App\Http\Middleware\EnsureActiveDirectivo::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
