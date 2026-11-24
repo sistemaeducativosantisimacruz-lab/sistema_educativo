@@ -57,7 +57,7 @@
 
                         <!-- 2. Gestión Escolar (Dropdown) -->
                         <div class="relative inline-flex items-center" x-data="{ open: false }" @click.outside="open = false">
-                            <button @click="open = !open" type="button" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 h-full transition duration-150 ease-in-out {{ request()->routeIs(['admin.estudiantes.*', 'admin.docentes.*', 'admin.grado-secciones.*']) ? 'border-indigo-500 text-gray-900 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                            <button @click="open = !open" type="button" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 h-full transition duration-150 ease-in-out {{ request()->routeIs(['admin.estudiantes.*', 'admin.docentes.*', 'admin.directivos.*', 'admin.grado-secciones.*']) ? 'border-indigo-500 text-gray-900 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                                 <span>{{ __('Gestión Escolar') }}</span>
                                 <svg class="ms-1.5 h-4 w-4 fill-current text-gray-400 transition-transform duration-150" :class="{ 'rotate-180': open }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -75,9 +75,9 @@
                                     <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                     {{ __('Estudiantes') }}
                                 </a>
-                                <a href="{{ route('admin.docentes.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('admin.docentes.*') ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
+                                <a href="{{ route('admin.docentes.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs(['admin.docentes.*', 'admin.directivos.*']) ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
                                     <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
-                                    {{ __('Docentes') }}
+                                    {{ __('Docentes y Directivos') }}
                                 </a>
                                 <a href="{{ route('admin.grado-secciones.index') }}" class="flex items-center gap-2.5 px-4 py-2.5 text-sm {{ request()->routeIs('admin.grado-secciones.*') ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
                                     <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
@@ -244,8 +244,8 @@
                 <x-responsive-nav-link :href="route('admin.estudiantes.index')" :active="request()->routeIs('admin.estudiantes.*')">
                     {{ __('Estudiantes') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.docentes.index')" :active="request()->routeIs('admin.docentes.*')">
-                    {{ __('Docentes') }}
+                <x-responsive-nav-link :href="route('admin.docentes.index')" :active="request()->routeIs(['admin.docentes.*', 'admin.directivos.*'])">
+                    {{ __('Docentes y Directivos') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.grado-secciones.index')" :active="request()->routeIs('admin.grado-secciones.*')">
                     {{ __('Secciones y Aulas') }}

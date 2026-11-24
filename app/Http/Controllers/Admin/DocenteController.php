@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Docente;
+use App\Models\Directivo;
 use App\Models\Curso;
 use App\Models\Grado;
 use App\Models\User;
@@ -66,8 +67,9 @@ class DocenteController extends Controller
         $docentes = $query->orderBy('apellido_paterno')->paginate(10)->withQueryString();
         $cursos   = Curso::where('activo', true)->soloCursos()->orderBy('nombre')->get();
         $grados   = Grado::orderBy('orden')->get();
+        $directivos = Directivo::orderBy('cargo')->orderBy('apellidos')->get();
 
-        return view('admin.docentes.index', compact('docentes', 'cursos', 'grados'));
+        return view('admin.docentes.index', compact('docentes', 'cursos', 'grados', 'directivos'));
     }
 
     public function store(StoreDocenteRequest $request)

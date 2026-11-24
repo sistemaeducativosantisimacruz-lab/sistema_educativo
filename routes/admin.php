@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\MensualidadController;
 use App\Http\Controllers\Admin\AnoLectivoController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AdmisionController;
+use App\Http\Controllers\Admin\DirectivoController;
 
 Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->name('admin.')->group(function () {
 
@@ -31,6 +32,9 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     Route::post('docentes/{docente}/asignar', [DocenteController::class, 'asignar'])->name('docentes.asignar');
     Route::post('docentes/{docente}/verificar-conflictos', [DocenteController::class, 'verificarConflictos'])->name('docentes.verificarConflictos');
     Route::delete('docentes/{docente}/desasignar/{asignacion}', [DocenteController::class, 'desasignar'])->name('docentes.desasignar');
+
+    // Directivos
+    Route::resource('directivos', DirectivoController::class)->only(['store', 'update', 'destroy']);
 
     // Estudiantes
     Route::resource('estudiantes', EstudianteController::class);
