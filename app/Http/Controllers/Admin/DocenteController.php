@@ -54,6 +54,14 @@ class DocenteController extends Controller
             $query->whereHas('cursos', fn($q) => $q->where('cursos.id', $request->curso_id));
         }
 
+        if ($request->filled('estado')) {
+            if ($request->estado === 'activo') {
+                $query->where('activo', true);
+            } elseif ($request->estado === 'retirado') {
+                $query->where('activo', false);
+            }
+        }
+
         if ($request->filled('grado_id')) {
             $anoActivo = AnoLectivo::where('activo', true)->first();
             if ($anoActivo) {
@@ -131,6 +139,10 @@ class DocenteController extends Controller
 
     public function asignar(Request $request, Docente $docente)
     {
+        if (!$docente->activo) {
+            return back()->with('error', 'El docente se encuentra en estado RETIRADO y no puede ser asignado a cursos, grados ni secciones.');
+        }
+
         $anoActivo = AnoLectivo::where('activo', true)->first();
         if (!$anoActivo) {
             return back()->with('error', 'No hay año lectivo activo.');
@@ -237,6 +249,17 @@ class DocenteController extends Controller
 
     public function verificarConflictos(Request $request, Docente $docente)
     {
+        if (!$docente->activo) {
+            return response()->json([
+                'conflictos' => [
+                    [
+                        'seccion' => 'Estado del Docente',
+                        'mensaje' => 'El docente se encuentra en estado RETIRADO y no puede recibir nuevas asignaciones.',
+                    ]
+                ]
+            ]);
+        }
+
         $anoActivo = AnoLectivo::where('activo', true)->first();
         if (!$anoActivo) {
             return response()->json(['conflictos' => []]);
@@ -285,5 +308,21 @@ class DocenteController extends Controller
 
         return redirect()->route('admin.docentes.show', $docente)
             ->with('success', 'Asignación removida correctamente.');
+    }
+
+    public function retirar(Docente $docente)
+    {
+        $docente->update(['activo' => false]);
+
+        return redirect()->route('admin.docentes.index')
+            ->with('success', "El docente {$docente->nombre_completo} ha sido marcado como RETIRADO. No podrá ser asignado a cursos, grados ni secciones.");
+    }
+
+    public function reincorporar(Docente $docente)
+    {
+        $docente->update(['activo' => true]);
+
+        return redirect()->route('admin.docentes.index')
+            ->with('success', "El docente {$docente->nombre_completo} ha sido reingresado como ACTIVO.");
     }
 }

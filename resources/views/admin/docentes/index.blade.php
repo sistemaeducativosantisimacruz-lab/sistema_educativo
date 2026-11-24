@@ -74,7 +74,7 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6 border border-gray-200">
                 <div class="p-5">
                     <form action="{{ route('admin.docentes.index') }}" method="GET">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                             <div>
                                 <label for="search" class="block text-xs font-bold text-gray-600 uppercase mb-1">DNI o Nombre</label>
                                 <input type="text" name="search" id="search" value="{{ request('search') }}"
@@ -106,6 +106,14 @@
                                             {{ $curso->nombre }}
                                         </option>
                                     @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="f_estado" class="block text-xs font-bold text-gray-600 uppercase mb-1">Estado</label>
+                                <select name="estado" id="f_estado" class="block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                    <option value="">Todos los estados</option>
+                                    <option value="activo"   {{ request('estado') === 'activo'   ? 'selected' : '' }}>Activo</option>
+                                    <option value="retirado" {{ request('estado') === 'retirado' ? 'selected' : '' }}>Retirado</option>
                                 </select>
                             </div>
                         </div>
@@ -150,8 +158,15 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-700 hidden sm:table-cell">{{ $docente->dni }}</td>
                                             <td class="px-6 py-4">
-                                                <div class="text-sm font-bold text-gray-900">
-                                                    {{ $docente->apellido_paterno }} {{ $docente->apellido_materno }}, {{ $docente->nombres }}
+                                                <div class="flex items-center gap-2">
+                                                    <div class="text-sm font-bold {{ $docente->activo ? 'text-gray-900' : 'text-gray-500' }}">
+                                                        {{ $docente->apellido_paterno }} {{ $docente->apellido_materno }}, {{ $docente->nombres }}
+                                                    </div>
+                                                    @if(!$docente->activo)
+                                                        <span class="px-2 py-0.5 inline-flex text-xs font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                                                            Retirado
+                                                        </span>
+                                                    @endif
                                                 </div>
                                                 <div class="text-xs text-gray-400 lg:hidden mt-0.5">
                                                     {{ $docente->user->email ?? 'Sin correo' }} | {{ $docente->celular ?? 'Sin celular' }}
@@ -224,14 +239,15 @@
                                                             celular: '{{ $docente->celular ?? '' }}',
                                                             tipo: '{{ $docente->tipo }}',
                                                             nivel: '{{ $docente->nivel }}',
+                                                            activo: {{ $docente->activo ? 'true' : 'false' }},
                                                             curso_ids: {{ json_encode($docente->cursos->pluck('id')->map(fn($id) => (string)$id)) }}
                                                         })"
                                                         class="inline-block bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-2 rounded border border-emerald-200 transition shadow-sm text-xs sm:text-sm">
                                                         Editar Datos
                                                     </button>
                                                     <a href="{{ route('admin.docentes.show', $docente) }}"
-                                                       class="inline-block bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold px-3 py-2 rounded border border-blue-200 transition shadow-sm text-xs sm:text-sm">
-                                                        Asignar / Ver
+                                                       class="inline-block {{ $docente->activo ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border-gray-300' }} font-bold px-3 py-2 rounded border transition shadow-sm text-xs sm:text-sm">
+                                                        {{ $docente->activo ? 'Asignar / Ver' : 'Ver Asignaciones' }}
                                                     </a>
                                                 </div>
                                             </td>
@@ -556,10 +572,24 @@
         {{-- Modal Editar Docente --}}
         <div x-data="{
                 showEditModal: false,
-                docente: { id: '', dni: '', nombres: '', apellido_paterno: '', apellido_materno: '', email: '', celular: '', tipo: '', nivel: '', curso_ids: [] },
+                docente: { id: '', dni: '', nombres: '', apellido_paterno: '', apellido_materno: '', email: '', celular: '', tipo: '', nivel: '', activo: true, curso_ids: [] },
                 openEdit(data) {
                     this.docente = data;
                     this.showEditModal = true;
+                },
+                retirarDocente() {
+                    if (confirm('¿Está seguro de retirar a este docente? El docente permanecerá en el sistema pero no podrá ser asignado a cursos, grados ni secciones.')) {
+                        const f = document.getElementById('formRetirarDocente');
+                        f.action = '{{ url('admin/docentes') }}/' + this.docente.id + '/retirar';
+                        f.submit();
+                    }
+                },
+                reincorporarDocente() {
+                    if (confirm('¿Desea ingresar nuevamente a este docente como activo? Podrá volver a ser asignado a cursos y secciones.')) {
+                        const f = document.getElementById('formReincorporarDocente');
+                        f.action = '{{ url('admin/docentes') }}/' + this.docente.id + '/reincorporar';
+                        f.submit();
+                    }
                 }
             }"
             @open-edit-docente.window="openEdit($event.detail)"
@@ -589,9 +619,21 @@
                         @csrf
                         @method('PUT')
                         <div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4 border-t-4 border-emerald-500">
-                            <h3 class="text-lg font-bold leading-6 text-gray-900 mb-4" id="modal-title">
-                                Editar Datos del Docente
-                            </h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold leading-6 text-gray-900" id="modal-title">
+                                    Editar Datos del Docente
+                                </h3>
+                                <template x-if="docente.activo">
+                                    <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800 border border-green-300 inline-flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-green-500"></span> Activo
+                                    </span>
+                                </template>
+                                <template x-if="!docente.activo">
+                                    <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Retirado
+                                    </span>
+                                </template>
+                            </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                                 {{-- DNI --}}
@@ -698,20 +740,50 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
-                            <button type="submit"
-                                class="inline-flex justify-center w-full px-4 py-2 text-base font-bold text-white border border-transparent rounded-md shadow-sm bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 sm:ml-3 sm:w-auto sm:text-sm transition">
-                                Guardar Cambios
-                            </button>
-                            <button type="button" @click="showEditModal = false"
-                                class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-bold text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition">
-                                Cancelar
-                            </button>
+                        <div class="px-4 py-3 bg-gray-50 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-200">
+                            <div>
+                                <button type="button"
+                                    x-show="docente.activo"
+                                    @click="retirarDocente()"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded-md hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                                    </svg>
+                                    Retirar docente
+                                </button>
+                                <button type="button"
+                                    x-show="!docente.activo"
+                                    @click="reincorporarDocente()"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-md hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                    Ingresar docente
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                <button type="button" @click="showEditModal = false"
+                                    class="w-full sm:w-auto inline-flex justify-center px-4 py-2 text-base sm:text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                                    Cancelar
+                                </button>
+                                <button type="submit"
+                                    class="w-full sm:w-auto inline-flex justify-center px-4 py-2 text-base sm:text-sm font-bold text-white border border-transparent rounded-md shadow-sm bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition">
+                                    Guardar Cambios
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+
+        {{-- Formularios ocultos para Retirar / Reincorporar Docente --}}
+        <form id="formRetirarDocente" method="POST" style="display: none;">
+            @csrf
+        </form>
+        <form id="formReincorporarDocente" method="POST" style="display: none;">
+            @csrf
+        </form>
 
         {{-- ─── Modal: Registrar Directivo ─────────────────────────────── --}}
         <div x-show="showDirectivoModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-directivo-title" role="dialog" aria-modal="true" x-cloak>

@@ -57,7 +57,7 @@ class GradoSeccionController extends Controller
 
         $grados = Grado::orderBy('orden')->get();
         $secciones = Seccion::orderBy('nombre')->get();
-        $docentes = Docente::orderBy('apellido_paterno')->get();
+        $docentes = Docente::where('activo', true)->orderBy('apellido_paterno')->get();
 
         $assignedTutors = [];
         if ($anoActivo) {
@@ -141,9 +141,11 @@ class GradoSeccionController extends Controller
     public function updateTutores(Request $request, GradoSeccion $gradoSeccione)
     {
         $request->validate([
-            'tutor_id'   => 'nullable|exists:docentes,id',
-            'cotutor_id' => 'nullable|exists:docentes,id|different:tutor_id',
+            'tutor_id'   => ['nullable', Rule::exists('docentes', 'id')->where('activo', true)],
+            'cotutor_id' => ['nullable', 'different:tutor_id', Rule::exists('docentes', 'id')->where('activo', true)],
         ], [
+            'tutor_id.exists' => 'El docente seleccionado como tutor está retirado o no existe.',
+            'cotutor_id.exists' => 'El docente seleccionado como co-tutor está retirado o no existe.',
             'cotutor_id.different' => 'El Co-tutor debe ser distinto al Tutor principal.',
         ]);
 
@@ -211,6 +213,7 @@ class GradoSeccionController extends Controller
         // Docentes que enseñan cursos de este nivel (especialistas con ese curso, y polidocentes del mismo nivel)
         $docentesDelNivel = Docente::with('cursos')
             ->where('nivel', $nivel)
+            ->where('activo', true)
             ->orderBy('apellido_paterno')
             ->get();
 
@@ -350,6 +353,14 @@ class GradoSeccionController extends Controller
 
             // Crear nueva si hay docente seleccionado
             if ($docenteId) {
+                $docenteModel = \App\Models\Docente::find($docenteId);
+                if (!$docenteModel || !$docenteModel->activo) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se puede asignar un docente que se encuentra en estado retirado.'
+                    ], 422);
+                }
+
                 $skipCrear = false;
                 
                 // Si es polidocencia, el tutor ya tiene los cursos (excepto Educación Física y Tutoría, que requieren manejo explícito)

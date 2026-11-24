@@ -24,6 +24,7 @@ class Docente extends Model
         'apellido_materno',
         'nombres',
         'es_entrevistador',
+        'activo',
     ];
 
     protected function casts(): array
@@ -31,7 +32,28 @@ class Docente extends Model
         return [
             'tipo' => 'string',
             'es_entrevistador' => 'boolean',
+            'activo' => 'boolean',
         ];
+    }
+
+    public function isActivo(): bool
+    {
+        return (bool) ($this->activo ?? true);
+    }
+
+    public function isRetirado(): bool
+    {
+        return !$this->isActivo();
+    }
+
+    public function scopeActivos($query)
+    {
+        return $query->where('activo', true);
+    }
+
+    public function scopeRetirados($query)
+    {
+        return $query->where('activo', false);
     }
 
     /* ── Relaciones ──────────────────────────────────────── */

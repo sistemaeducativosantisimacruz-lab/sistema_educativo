@@ -81,6 +81,15 @@
                         <span class="px-3 py-1 rounded-full text-xs font-bold {{ $docente->esPolidocente() ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' }}">
                             {{ ucfirst($docente->tipo) }}
                         </span>
+                        @if($docente->activo)
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-300">
+                                Activo
+                            </span>
+                        @else
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                Retirado
+                            </span>
+                        @endif
                     </div>
                     <div class="border-t pt-4">
                         <p class="text-sm font-bold text-gray-700 mb-2">{{ $docente->esPolidocente() ? 'Modalidad:' : 'Curso(s) que imparte:' }}</p>
@@ -133,7 +142,17 @@
                         </p>
                     </div>
                     <div class="p-6">
-                        @if(!$anoActivo)
+                        @if(!$docente->activo)
+                            <div class="bg-rose-50 border border-rose-300 text-rose-800 p-4 rounded-lg shadow-sm">
+                                <div class="flex items-center gap-2 font-bold text-sm mb-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                    </svg>
+                                    <span>Docente en Estado RETIRADO</span>
+                                </div>
+                                <p class="text-xs text-rose-700">Este docente no se encuentra en estado activo. No se le pueden asignar cursos, grados ni secciones a menos que sea reingresado desde el Directorio de Docentes.</p>
+                            </div>
+                        @elseif(!$anoActivo)
                             <p class="text-red-500 text-sm font-bold bg-red-50 p-3 rounded">No hay un año lectivo activo.</p>
                         @elseif($gradoSeccionesDisponibles->isEmpty())
                             <p class="text-yellow-600 text-sm font-bold bg-yellow-50 p-3 rounded border border-yellow-200">No hay secciones disponibles para este docente.</p>

@@ -32,6 +32,8 @@ Route::middleware(['auth', 'role:admin', 'password.change'])->prefix('admin')->n
     Route::post('docentes/{docente}/asignar', [DocenteController::class, 'asignar'])->name('docentes.asignar');
     Route::post('docentes/{docente}/verificar-conflictos', [DocenteController::class, 'verificarConflictos'])->name('docentes.verificarConflictos');
     Route::delete('docentes/{docente}/desasignar/{asignacion}', [DocenteController::class, 'desasignar'])->name('docentes.desasignar');
+    Route::post('docentes/{docente}/retirar', [DocenteController::class, 'retirar'])->name('docentes.retirar');
+    Route::post('docentes/{docente}/reincorporar', [DocenteController::class, 'reincorporar'])->name('docentes.reincorporar');
 
     // Directivos
     Route::resource('directivos', DirectivoController::class)->only(['store', 'update', 'destroy']);
